@@ -1,0 +1,29 @@
+# Web Framework
+fastapi==0.115.2          # Latest, supports Python 3.12
+uvicorn==0.30.6           # Latest
+pydantic==2.9.2           # Latest in 2.x series, compatible with FastAPI 0.115.0
+starlette==0.40.0
+email-validator==2.1.1    # Added for email validation with Pydantic
+
+# Database
+sqlalchemy==2.0.35        # Latest
+geoalchemy2==0.15.2       # Latest
+
+# Security
+python-jose[cryptography]==3.3.0  # Works with Python 3.12
+passlib[bcrypt]==1.7.4    # Works with Python 3.12
+python-multipart==0.0.7   # Added for form data handling
+
+# Utilities
+python-dotenv==1.0.1      # Latest
+pandas==2.2.3             # Latest, supports Python 3.12
+numpy==2.1.1              # Latest, supports Python 3.12
+faker==30.1.0             # Latest
+
+# Testing
+pytest==8.3.3             # Latest
+httpx==0.27.2             # Latest
+
+# Additional
+websockets==13.0.1        # Latest
+requests==2.32.3          # Latest
