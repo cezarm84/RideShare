@@ -80,6 +80,13 @@ class RideDetailedResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Add RideDetailResponse class as a subclass of RideDetailedResponse
+class RideDetailResponse(RideDetailedResponse):
+    """
+    Alias for RideDetailedResponse to maintain compatibility with imports
+    """
+    pass
+
 # Keep the original simple response for backward compatibility
 class RideResponse(BaseModel):
     id: int
@@ -118,3 +125,15 @@ class RideCreate(BaseModel):
     capacity: int = Field(gt=0)
     driver_id: Optional[int] = None
     status: str = "scheduled"
+
+# Add missing RideUpdate schema that's being imported
+class RideUpdate(BaseModel):
+    starting_hub_id: Optional[int] = None
+    destination_id: Optional[int] = None
+    departure_time: Optional[datetime] = None
+    arrival_time: Optional[datetime] = None
+    status: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    capacity: Optional[int] = None
+    available_seats: Optional[int] = None
+    driver_id: Optional[int] = None

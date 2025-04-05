@@ -180,6 +180,17 @@ class UserResponse(UserInDBBase):
             return ", ".join(filter(None, parts))
         return self.work_address
 
+# Add the missing TokenData class for JWT payload
+class TokenData(BaseModel):
+    """Schema for JWT token data/payload"""
+    user_id: int
+    email: Optional[str] = None
+    user_type: Optional[str] = None
+    exp: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
 class TokenResponse(BaseModel):
     """Schema for token response after authentication"""
     access_token: str

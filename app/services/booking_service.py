@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from app.models.ride import Ride, RideBooking
 from app.models.payment import Payment
-from app.schemas.booking import BookingCreate, PaymentProcess
+from app.schemas.booking import BookingCreate, PaymentCreate
 from app.services.notification_service import NotificationService
 
 class BookingService:
@@ -13,6 +13,13 @@ class BookingService:
 
     def get_user_bookings(self, user_id: int) -> list[RideBooking]:
         return self.db.query(RideBooking).filter(RideBooking.user_id == user_id).all()
+        
+    def get_booking_by_id(self, booking_id: int) -> RideBooking:
+        """Get a booking by its ID"""
+        booking = self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail=f"Booking with ID {booking_id} not found")
+        return booking
 
     async def create_booking(self, user_id: int, booking: BookingCreate) -> RideBooking:
         # Check if ride exists
@@ -44,16 +51,26 @@ class BookingService:
         await self.notification_service.notify_ride_confirmation(db_booking.id)
         return db_booking
 
-    async def process_payment(self, booking_id: int, user_id: int, payment: PaymentProcess) -> Payment:
-        booking = self.db.query(RideBooking).filter(RideBooking.id == booking_id, RideBooking.user_id == user_id).first()
-        if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found")
+    async def process_payment(self, booking_id: int, payment: PaymentCreate) -> Payment:
+        """Process payment for a booking
+        
+        Args:
+            booking_id: ID of the booking to process payment for
+            payment: Payment information
+            
+        Returns:
+            The created payment record
+        """
+        booking = self.get_booking_by_id(booking_id)
+        
+        # Create payment record
         db_payment = Payment(
             booking_id=booking_id,
-            user_id=user_id,
+            user_id=booking.user_id,
             amount=booking.price,
             payment_method=payment.payment_method,
-            transaction_id=f"txn_{booking_id}_{int(datetime.utcnow().timestamp())}"
+            transaction_id=f"txn_{booking_id}_{int(datetime.utcnow().timestamp())}",
+            status="completed"  # Assuming payment is successful for simplicity
         )
         self.db.add(db_payment)
         self.db.commit()
@@ -61,6 +78,8 @@ class BookingService:
         
         # Notify payment success
         await self.notification_service.notify_custom_message(
-            user_id, "Payment Successful", f"Payment of {booking.price} SEK for booking {booking_id} completed."
+            booking.user_id, 
+            "Payment Successful", 
+            f"Payment of {booking.price} SEK for booking {booking_id} completed."
         )
         return db_payment
