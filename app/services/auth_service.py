@@ -23,7 +23,7 @@ class AuthService:
             stmt = text("""
                 SELECT id, email, password_hash, first_name, last_name, 
                        phone_number, user_type, is_active, user_id, created_at
-                FROM "user"
+                FROM "users"
                 WHERE email = :email
                 LIMIT 1
             """)
@@ -67,7 +67,7 @@ class AuthService:
     def check_user_exists(self, email: str):
         """Check if a user exists without performing password verification."""
         try:
-            stmt = text('SELECT 1 FROM "user" WHERE email = :email LIMIT 1')
+            stmt = text('SELECT 1 FROM "users" WHERE email = :email LIMIT 1')
             result = self.db.execute(stmt, {"email": email}).fetchone()
             return result is not None
         except Exception as e:

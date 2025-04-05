@@ -15,6 +15,7 @@ from app.models.user import User, Enterprise, EnterpriseUser
 from app.models.location import Hub, Location
 from app.models.ride import Ride, RideBooking
 from app.models.payment import Payment
+from app.models.address import Address  # Import the Address model
 from app.db.base import Base
 from app.core.security import get_password_hash
 from app.core.config import settings
@@ -63,6 +64,7 @@ def generate_fake_database():
         db.query(User).delete()
         db.query(Hub).delete()
         db.query(Location).delete()
+        db.query(Address).delete()  # Also clear addresses
         db.query(Enterprise).delete()
         db.commit()
 
@@ -72,35 +74,72 @@ def generate_fake_database():
         db.add_all([volvo, molnlycke_park])
         db.commit()
 
+        # Create Address objects first
+        volvo_address = Address(
+            street="Volvo Torslanda",
+            house_number="1",
+            post_code="405 31",
+            city="Göteborg",
+            country="Sweden",
+            coordinates="POINT(11.8583 57.7181)"  # Approx Torslanda coords
+        )
+        molnlycke_address = Address(
+            street="Industrivägen",
+            house_number="1",
+            post_code="435 33",
+            city="Mölnlycke",
+            country="Sweden",
+            coordinates="POINT(12.1167 57.6589)"  # Approx Mölnlycke coords
+        )
+        gothenburg_address = Address(
+            street="Drottningtorget",
+            house_number="1",
+            post_code="411 03",
+            city="Göteborg",
+            country="Sweden",
+            coordinates="POINT(11.9750 57.7089)"  # Approx central Gothenburg
+        )
+        db.add_all([volvo_address, molnlycke_address, gothenburg_address])
+        db.commit()
+
         # Locations (Destinations)
         volvo_location = Location(
             name="Volvo Torslanda Plant",
-            address="Volvo Torslanda, 405 31 Göteborg",
-            coordinates="POINT(11.8583 57.7181)",  # Approx Torslanda coords
+            address=volvo_address,
             enterprise_id=volvo.id
         )
         molnlycke_location = Location(
             name="Mölnlycke Industrial Park",
-            address="Industrivägen, 435 33 Mölnlycke",
-            coordinates="POINT(12.1167 57.6589)",  # Approx Mölnlycke coords
+            address=molnlycke_address,
             enterprise_id=molnlycke_park.id
         )
         private_destination = Location(
             name="Gothenburg Central",
-            address="Drottningtorget, 411 03 Göteborg",
-            coordinates="POINT(11.9750 57.7089)"  # Approx central Gothenburg
+            address=gothenburg_address
         )
         db.add_all([volvo_location, molnlycke_location, private_destination])
         db.commit()
 
+        # Create Hub addresses
+        hub_addresses = [
+            Address(street="North Göteborg", house_number="1", post_code="41000", city="Göteborg", country="Sweden", coordinates="POINT(11.8500 57.7500)"),
+            Address(street="South Göteborg", house_number="1", post_code="41001", city="Göteborg", country="Sweden", coordinates="POINT(11.8700 57.6900)"),
+            Address(street="East Göteborg", house_number="1", post_code="41002", city="Göteborg", country="Sweden", coordinates="POINT(11.9000 57.7200)"),
+            Address(street="West Göteborg", house_number="1", post_code="41003", city="Göteborg", country="Sweden", coordinates="POINT(11.8200 57.7300)"),
+            Address(street="Mölnlycke Center", house_number="1", post_code="43500", city="Mölnlycke", country="Sweden", coordinates="POINT(12.1000 57.6600)"),
+            Address(street="Residential Area", house_number="1", post_code="41004", city="Göteborg", country="Sweden", coordinates="POINT(11.9300 57.6800)")
+        ]
+        db.add_all(hub_addresses)
+        db.commit()
+
         # Hubs (Starting Points)
         hubs = [
-            Hub(name="Hub North", address="North Göteborg", coordinates="POINT(11.8500 57.7500)", is_active=True),  # North of Torslanda
-            Hub(name="Hub South", address="South Göteborg", coordinates="POINT(11.8700 57.6900)", is_active=True),  # South of Torslanda
-            Hub(name="Hub East", address="East Göteborg", coordinates="POINT(11.9000 57.7200)", is_active=True),   # East of Torslanda
-            Hub(name="Hub West", address="West Göteborg", coordinates="POINT(11.8200 57.7300)", is_active=True),   # West of Torslanda
-            Hub(name="Mölnlycke Hub", address="Mölnlycke Center", coordinates="POINT(12.1000 57.6600)", is_active=True),  # Near Mölnlycke
-            Hub(name="Private Hub", address="Residential Area", coordinates="POINT(11.9300 57.6800)", is_active=True)  # Private users hub
+            Hub(name="Hub North", address=hub_addresses[0], is_active=True),
+            Hub(name="Hub South", address=hub_addresses[1], is_active=True),
+            Hub(name="Hub East", address=hub_addresses[2], is_active=True),
+            Hub(name="Hub West", address=hub_addresses[3], is_active=True),
+            Hub(name="Mölnlycke Hub", address=hub_addresses[4], is_active=True),
+            Hub(name="Private Hub", address=hub_addresses[5], is_active=True)
         ]
         db.add_all(hubs)
         db.commit()
@@ -111,19 +150,44 @@ def generate_fake_database():
             parts = point_str.split()
             return float(parts[0]), float(parts[1])
 
+        # Helper function to create an address with coordinates
+        def create_address_with_coords(street_name, city_name, coords):
+            # Split street name into street and number
+            parts = street_name.split()
+            house_number = parts[-1] if len(parts) > 1 and parts[-1].isdigit() else "1"
+            street = " ".join(parts[:-1]) if len(parts) > 1 and parts[-1].isdigit() else street_name
+            
+            # Generate a postal code for the area
+            post_code = "".join([str(random.randint(0, 9)) for _ in range(3)]) + " " + "".join([str(random.randint(0, 9)) for _ in range(2)])
+            
+            address = Address(
+                street=street,
+                house_number=house_number,
+                post_code=post_code,
+                city=city_name,
+                country="Sweden",
+                coordinates=coords
+            )
+            db.add(address)
+            db.commit()
+            return address
+
         # Volvo Torslanda Employees (100 users, 25 per hub)
         volvo_users = []
         for i in range(100):
             hub_idx = i // 25  # Divide into 4 groups
-            hub_x, hub_y = extract_coords(hubs[hub_idx].coordinates)
+            hub_x, hub_y = extract_coords(hub_addresses[hub_idx].coordinates)
             home_coords = f"POINT({hub_x + random.uniform(-0.01, 0.01)} {hub_y + random.uniform(-0.01, 0.01)})"
-            home_address = fake.street_address() + ", Göteborg"
+            home_street = fake.street_name() + " " + str(random.randint(1, 100))
             
             # Try geocoding for some addresses
             if i % 5 == 0:  # Every 5th user, try to geocode
-                coords = geocoding_service.get_coordinates(home_address)
+                coords = geocoding_service.get_coordinates(f"{home_street}, Göteborg")
                 if coords:
                     home_coords = f"POINT({coords[1]} {coords[0]})"
+            
+            # Create home address
+            home_address = create_address_with_coords(home_street, "Göteborg", home_coords)
             
             user = User(
                 user_id=generate_unique_user_id(),
@@ -133,10 +197,10 @@ def generate_fake_database():
                 last_name=fake.last_name(),
                 phone_number=fake.phone_number(),
                 user_type="enterprise",
-                home_address=home_address,
+                home_address=home_address.street,  # Just store the street as a string
                 home_location=home_coords,
-                work_address="Volvo Torslanda, 405 31 Göteborg",
-                work_location=volvo_location.coordinates,
+                work_address=volvo_address.street,  # Just store the street as a string
+                work_location=volvo_address.coordinates,
                 created_at=utc_now()
             )
             volvo_users.append(user)
@@ -158,15 +222,18 @@ def generate_fake_database():
         # Private Users (50 users sharing a hub and destination)
         private_users = []
         for i in range(50):
-            hub_x, hub_y = extract_coords(hubs[5].coordinates)
+            hub_x, hub_y = extract_coords(hub_addresses[5].coordinates)
             home_coords = f"POINT({hub_x + random.uniform(-0.005, 0.005)} {hub_y + random.uniform(-0.005, 0.005)})"
-            home_address = fake.street_address() + ", Göteborg"
+            home_street = fake.street_name() + " " + str(random.randint(1, 100))
             
             # Try geocoding for some addresses
             if i % 5 == 0:  # Every 5th user, try to geocode
-                coords = geocoding_service.get_coordinates(home_address)
+                coords = geocoding_service.get_coordinates(f"{home_street}, Göteborg")
                 if coords:
                     home_coords = f"POINT({coords[1]} {coords[0]})"
+            
+            # Create home address
+            home_address = create_address_with_coords(home_street, "Göteborg", home_coords)
             
             user = User(
                 user_id=generate_unique_user_id(),
@@ -176,10 +243,10 @@ def generate_fake_database():
                 last_name=fake.last_name(),
                 phone_number=fake.phone_number(),
                 user_type="private",
-                home_address=home_address,
+                home_address=home_address.street,  # Just store the street as a string
                 home_location=home_coords,
-                work_address="Drottningtorget, 411 03 Göteborg",
-                work_location=private_destination.coordinates,
+                work_address=gothenburg_address.street,  # Just store the street as a string
+                work_location=gothenburg_address.coordinates,
                 created_at=utc_now()
             )
             private_users.append(user)
@@ -189,15 +256,18 @@ def generate_fake_database():
         # Mölnlycke Industrial Park Users (20 users sharing a hub)
         molnlycke_users = []
         for i in range(20):
-            hub_x, hub_y = extract_coords(hubs[4].coordinates)
+            hub_x, hub_y = extract_coords(hub_addresses[4].coordinates)
             home_coords = f"POINT({hub_x + random.uniform(-0.008, 0.008)} {hub_y + random.uniform(-0.008, 0.008)})"
-            home_address = fake.street_address() + ", Mölnlycke"
+            home_street = fake.street_name() + " " + str(random.randint(1, 100))
             
             # Try geocoding for some addresses
             if i % 5 == 0:  # Every 5th user, try to geocode
-                coords = geocoding_service.get_coordinates(home_address)
+                coords = geocoding_service.get_coordinates(f"{home_street}, Mölnlycke")
                 if coords:
                     home_coords = f"POINT({coords[1]} {coords[0]})"
+                    
+            # Create home address
+            home_address = create_address_with_coords(home_street, "Mölnlycke", home_coords)
             
             user = User(
                 user_id=generate_unique_user_id(),
@@ -207,10 +277,10 @@ def generate_fake_database():
                 last_name=fake.last_name(),
                 phone_number=fake.phone_number(),
                 user_type="enterprise",
-                home_address=home_address,
+                home_address=home_address.street,  # Just store the street as a string
                 home_location=home_coords,
-                work_address="Industrivägen, 435 33 Mölnlycke",
-                work_location=molnlycke_location.coordinates,
+                work_address=molnlycke_address.street,  # Just store the street as a string
+                work_location=molnlycke_address.coordinates,
                 created_at=utc_now()
             )
             molnlycke_users.append(user)
