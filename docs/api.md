@@ -7,7 +7,7 @@ All API calls (except registration and login) require authentication using Beare
 ### Login
 
 ```
-POST /api/auth/token
+POST /api/v1/auth/token
 ```
 
 **Request Body:**
@@ -35,7 +35,7 @@ POST /api/auth/token
 ### Create User
 
 ```
-POST /api/users
+POST /api/v1/users
 ```
 
 **Request Body:**
@@ -57,7 +57,7 @@ POST /api/users
 ### Get Current User
 
 ```
-GET /api/users/me
+GET /api/v1/users/me
 ```
 
 **Headers:**
@@ -69,7 +69,7 @@ Authorization: Bearer {your_token}
 ### Update Current User
 
 ```
-PUT /api/users/me
+PUT /api/v1/users/me
 ```
 
 **Headers:**
@@ -88,6 +88,115 @@ Authorization: Bearer {your_token}
 }
 ```
 
+## Driver Endpoints
+
+### Driver Registration
+
+```
+POST /api/v1/drivers/with-user
+```
+
+**Request Body:**
+
+```json
+{
+  "email": "driver@example.com",
+  "password": "password123",
+  "first_name": "John",
+  "last_name": "Driver",
+  "phone_number": "0701234567",
+  "license_number": "DL12345678",
+  "license_expiry": "2026-04-08",
+  "license_state": "Västra Götaland",
+  "license_country": "Sweden",
+  "license_class": "B",
+  "preferred_radius_km": 15.0,
+  "max_passengers": 4,
+  "bio": "Experienced driver with 5 years of driving history",
+  "languages": "Swedish, English",
+  "ride_type_permissions": ["hub_to_hub", "hub_to_destination"]
+}
+```
+
+### Get Driver Profile
+
+```
+GET /api/v1/drivers/me
+```
+
+**Headers:**
+
+```
+Authorization: Bearer {your_token}
+```
+
+### Update Driver Profile
+
+```
+PUT /api/v1/drivers/me
+```
+
+**Headers:**
+
+```
+Authorization: Bearer {your_token}
+```
+
+**Request Body:**
+
+```json
+{
+  "bio": "Updated driver bio",
+  "languages": "Swedish, English, German",
+  "preferred_radius_km": 20.0
+}
+```
+
+### Update Driver Location
+
+```
+PUT /api/v1/drivers/{driver_id}/location
+```
+
+**Headers:**
+
+```
+Authorization: Bearer {your_token}
+```
+
+**Request Body:**
+
+```json
+{
+  "latitude": 57.7089,
+  "longitude": 11.9746
+}
+```
+
+### Add Vehicle to Driver
+
+```
+POST /api/v1/drivers/{driver_id}/vehicles
+```
+
+**Headers:**
+
+```
+Authorization: Bearer {your_token}
+```
+
+**Request Body:**
+
+```json
+{
+  "vehicle_id": 1,
+  "inspection_status": "passed",
+  "last_inspection_date": "2023-01-15",
+  "next_inspection_date": "2024-01-15",
+  "is_primary": true
+}
+```
+
 ## Admin Endpoints
 
 All admin endpoints require a user with admin privileges.
@@ -95,7 +204,25 @@ All admin endpoints require a user with admin privileges.
 ### Get All Users
 
 ```
-GET /api/users
+GET /api/v1/users
 ```
 
+### Get All Drivers
 
+```
+GET /api/v1/drivers
+```
+
+### Update Driver Status
+
+```
+PUT /api/v1/drivers/{driver_id}/status
+```
+
+**Request Body:**
+
+```json
+{
+  "status": "active"
+}
+```
