@@ -1,77 +1,44 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-from app.db.base import Base
+from sqlalchemy.sql import func
 
-class Hub(Base):
-    __tablename__ = "hubs"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    
-    # Address relationship
-    address_id = Column(Integer, ForeignKey("addresses.id"))
-    address = relationship("Address", foreign_keys=[address_id])
-    
-    # Direct coordinates storage
-    coordinates = Column(String, nullable=True)
-    
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now())
-    
-    # Helper methods for coordinates
-    def get_coordinates_tuple(self):
-        """Returns (longitude, latitude) tuple"""
-        if self.coordinates:
-            # Parse from POINT(lng lat) format
-            point_str = self.coordinates.replace("POINT(", "").replace(")", "")
-            parts = point_str.split()
-            if len(parts) == 2:
-                return (float(parts[0]), float(parts[1]))
-        
-        # Fallback to address if direct coordinates not available
-        if self.address:
-            return self.address.get_coordinates_tuple()
-        
-        return None
-        
-    # Helper properties for coordinates
-    @property
-    def longitude(self):
-        coords = self.get_coordinates_tuple()
-        return coords[0] if coords else None
-        
-    @property
-    def latitude(self):
-        coords = self.get_coordinates_tuple()
-        return coords[1] if coords else None
+from app.db.base_class import Base
 
 class Location(Base):
+    """Model for saved locations (addresses, points of interest, etc.)"""
+    
     __tablename__ = "locations"
+    
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    address = Column(String, nullable=True)
     
-    # Address relationship
-    address_id = Column(Integer, ForeignKey("addresses.id"))
-    address = relationship("Address", foreign_keys=[address_id])
+    # Location coordinates
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
     
-    # Direct coordinates storage
-    coordinates = Column(String, nullable=True)
+    # User who created this location (optional)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
-    enterprise_id = Column(Integer, ForeignKey("enterprises.id"), nullable=True)
+    # Metadata
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    # Helper methods for coordinates
-    def get_coordinates_tuple(self):
-        """Returns (longitude, latitude) tuple"""
-        if self.coordinates:
-            # Parse from POINT(lng lat) format
-            point_str = self.coordinates.replace("POINT(", "").replace(")", "")
-            parts = point_str.split()
-            if len(parts) == 2:
-                return (float(parts[0]), float(parts[1]))
-        
-        # Fallback to address if direct coordinates not available
-        if self.address:
-            return self.address.get_coordinates_tuple()
-        
-        return None
+    # Relationship with User model - matches the saved_locations property in User
+    user = relationship("User", back_populates="saved_locations")
+    
+    def __repr__(self):
+        return f"<Location(id={self.id}, name='{self.name}', coordinates=({self.latitude}, {self.longitude})>"
+
+class GeocodingCache(Base):
+    """Cache for geocoded addresses to reduce API calls"""
+    __tablename__ = "geocoding_cache"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    address = Column(String, unique=True, index=True, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    coordinates = Column(String, nullable=False)  # Formatted as "lat,lng"
+    created_at = Column(DateTime, default=func.now())
+    last_used = Column(DateTime, default=func.now(), onupdate=func.now())

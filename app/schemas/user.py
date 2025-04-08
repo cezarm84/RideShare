@@ -154,11 +154,23 @@ class UserInDBBase(UserBase):
 class UserResponse(UserInDBBase):
     home_coordinates: Optional[tuple] = None
     work_coordinates: Optional[tuple] = None
+    full_name: str = ""
+    phone_number: Optional[str] = ""  # Make phone_number optional with empty string default
+    created_at: datetime = Field(default_factory=datetime.utcnow)  # Ensure created_at has a default
     
-    @property
-    def full_name(self):
-        """Return user's full name"""
-        return f"{self.first_name} {self.last_name}"
+    @validator('full_name', pre=True, always=True)
+    def set_full_name(cls, v, values):
+        """Compute full name from first and last name"""
+        first = values.get('first_name', '')
+        last = values.get('last_name', '')
+        
+        if first and last:
+            return f"{first} {last}"
+        elif first:
+            return first
+        elif last:
+            return last
+        return ""
         
     @property
     def formatted_home_address(self):

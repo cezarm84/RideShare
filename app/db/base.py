@@ -1,26 +1,19 @@
-# Import all the models, so that Base has them before being
-# imported by Alembic
-from app.db.base_class import Base  # noqa
+# Import all models here that should be registered with SQLAlchemy
+# This file is imported by alembic
+# Import base first to ensure proper initialization
+from app.db.base_class import Base
 
-# Import all models here for Alembic to detect
-from app.models.user import User  # noqa
-from app.models.user import Enterprise  # noqa
-from app.models.user import EnterpriseUser  # noqa
-from app.models.address import Address  # noqa
+# Import all models to register them with SQLAlchemy
+from app.models.user import User
+from app.models.address import Address
+from app.models.ride import Ride, RideBooking
+from app.models.location import Location
+from app.models.hub import Hub, HubPair
+from app.models.payment import Payment
+# Do not import Message here to avoid circular import
+# from app.models.message import Message
+from app.models.attachment import MessageAttachment
+from app.models.vehicle import VehicleType
 
-# Avoid circular imports by moving Location import to the end
-# and wrapping all imports in try-except blocks
-try:
-    from app.models.ride import Ride  # noqa
-except ImportError:
-    pass
-try:
-    from app.models.payment import Payment  # noqa
-except ImportError:
-    pass
-# Add the Location import at the end to avoid the circular import problem
-try:
-    from app.models.location import Location  # noqa
-    from app.models.location import Hub  # noqa
-except ImportError:
-    pass
+# Note: This import approach allows Alembic to detect models
+# without causing circular import issues

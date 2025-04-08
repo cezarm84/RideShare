@@ -27,3 +27,4 @@ httpx==0.27.2             # Latest
 # Additional
 websockets==13.0.1        # Latest
 requests==2.32.3          # Latest
+alembic>=1.7.5

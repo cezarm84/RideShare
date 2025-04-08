@@ -1,5 +1,40 @@
+# Development tools and directories
 .qodo
-__pycache__
+dev_tools/
+
+# Python cache files
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
 .env
-rideshare.db
+.env.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db

@@ -3,14 +3,15 @@
 ## Project Overview
 
 RideShare is a comprehensive ridesharing platform designed to facilitate efficient, sustainable transportation for individuals and enterprises. The application consists of three primary interfaces:
+
 1. **User App**: Enables riders to book, manage, and track rides.
 2. **Enterprise Portal**: Allows company administrators to manage employee transportation and analyze usage.
 3. **Admin Dashboard**: Provides system administrators with tools to oversee users, enterprises, rides, and system configurations.
 
 The project aims to streamline commuting by integrating advanced ride-matching algorithms, real-time tracking, and enterprise-specific features, all while prioritizing accessibility, scalability, and user experience.
 
-
 ### Backend Development
+
 - **Data Models**: Defined and implemented SQLAlchemy models for `User`, `Enterprise`, `Hub`, `Location`, `Ride`, `RideBooking`, and `Payment`, supporting spatial data with GeoAlchemy2.
 - **Database Initialization**: Set up a SQLite database (configurable to PostgreSQL/PostGIS) with automatic table creation and a fake data generator for testing.
 - **Business Services**: Created services for:
@@ -38,4 +39,15 @@ The project aims to streamline commuting by integrating advanced ride-matching a
 - **Testing Framework**: Set up `pytest` with basic tests for user creation and geocoding functionality.
 
 ### Project Structure
+
 The backend is organized for clarity and scalability:
+
+### Documentation
+
+Detailed API documentation is available in the following files:
+
+- [API Usage Guide](docs/api_usage.md): General guide for using the API, including authentication and common endpoints
+- [Ride Creation Examples](docs/ride_creation_examples.md): Detailed examples for creating different types of rides
+- [Booking Management](docs/booking_management.md): Guide for managing ride bookings
+- [Driver Management](docs/driver_management.md): Guide for driver-related operations and endpoints
+- [Enterprise Operations](docs/enterprise_operations.md): Enterprise-specific operations and examples
