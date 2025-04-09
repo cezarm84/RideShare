@@ -110,6 +110,8 @@ GET /api/v1/rides/{ride_id}
 POST /api/v1/rides
 ```
 
+**Note:** When using the API documentation interface, you may receive default templates with placeholder values like "string" and "0". Please refer to the [Preloaded Request Templates](ride_creation_examples.md#preloaded-request-templates) section in the Ride Creation Examples document for improved templates with realistic values that you can use directly.
+
 #### 1. Hub-to-Hub Ride
 
 For rides between two transportation hubs:

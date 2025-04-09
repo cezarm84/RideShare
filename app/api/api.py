@@ -9,7 +9,7 @@ from app.api.routes import (
     admin_routes,
     admin_vehicle_types
 )
-from app.api.endpoints import test_rides
+from app.api.endpoints import test_rides, payment_methods, bookings, user_preferences
 
 api_router = APIRouter()
 
@@ -42,6 +42,27 @@ api_router.include_router(
     admin_vehicle_types.router,
     prefix="/admin/vehicle-types",
     tags=["admin", "vehicles"]
+)
+
+# Payment methods routes
+api_router.include_router(
+    payment_methods.router,
+    prefix="/payment-methods",
+    tags=["payments"]
+)
+
+# User preferences routes
+api_router.include_router(
+    user_preferences.router,
+    prefix="/user-preferences",
+    tags=["users"]
+)
+
+# Booking routes
+api_router.include_router(
+    bookings.router,
+    prefix="/bookings",
+    tags=["bookings"]
 )
 
 # Test routes

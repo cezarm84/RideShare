@@ -61,34 +61,98 @@ class DestinationInfo(BaseModel):
 # Base schema for ride creation with distinct ride types
 class RideCreate(BaseModel):
     # Basic ride information
-    ride_type: RideType = Field(..., description="Type of ride to create")
+    ride_type: RideType = Field(
+        ...,
+        description="Type of ride to create",
+        example="hub_to_hub"
+    )
 
     # Hub and destination information
-    starting_hub_id: int = Field(..., description="ID of the starting hub")
+    starting_hub_id: int = Field(
+        ...,
+        description="ID of the starting hub",
+        example=1
+    )
 
     # One of the following destination types must be provided
-    destination_hub_id: Optional[int] = Field(None, description="ID of the destination hub (for hub_to_hub)")
-    destination: Optional[DestinationInfo] = Field(None, description="Custom destination details (for hub_to_destination)")
+    destination_hub_id: Optional[int] = Field(
+        None,
+        description="ID of the destination hub (for hub_to_hub)",
+        example=2
+    )
+    destination: Optional[DestinationInfo] = Field(
+        None,
+        description="Custom destination details (for hub_to_destination)",
+        example={
+            "name": "Gothenburg Central Station",
+            "address": "Drottningtorget 5",
+            "city": "Gothenburg",
+            "latitude": 57.7089,
+            "longitude": 11.9746,
+            "postal_code": "411 03",
+            "country": "Sweden"
+        }
+    )
 
     # Enterprise information (required for enterprise rides)
-    enterprise_id: Optional[int] = Field(None, description="ID of the enterprise (required for enterprise rides)")
+    enterprise_id: Optional[int] = Field(
+        None,
+        description="ID of the enterprise (required for enterprise rides)",
+        example=1
+    )
 
     # Schedule information
-    recurrence_pattern: RecurrencePattern = Field(RecurrencePattern.ONE_TIME, description="How often the ride repeats")
-    start_date: Optional[str] = Field(None, description="Start date for the recurrence pattern (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="End date for the recurrence pattern (YYYY-MM-DD)")
+    recurrence_pattern: RecurrencePattern = Field(
+        RecurrencePattern.ONE_TIME,
+        description="How often the ride repeats",
+        example="one_time"
+    )
+    start_date: Optional[str] = Field(
+        None,
+        description="Start date for the recurrence pattern (YYYY-MM-DD)",
+        example="2025-05-15"
+    )
+    end_date: Optional[str] = Field(
+        None,
+        description="End date for the recurrence pattern (YYYY-MM-DD)",
+        example="2025-05-15"
+    )
 
     # For one-time rides or the first instance of recurring rides
-    departure_time: Optional[str] = Field(None, description="Departure time for one-time rides (various formats accepted)")
+    departure_time: Optional[str] = Field(
+        None,
+        description="Exact date and time for one-time rides or first instance of recurring rides (REQUIRED FORMAT: YYYY-MM-DDThh:mm:ss)",
+        example="2025-05-15T08:00:00"
+    )
 
     # For recurring rides, specify times without dates
-    departure_times: Optional[List[str]] = Field(None, description="List of departure times for recurring rides (HH:MM format)")
+    departure_times: Optional[List[str]] = Field(
+        None,
+        description="Time(s) of day for all instances of recurring rides, can include multiple times per day (REQUIRED FORMAT: HH:MM:SS)",
+        example=["08:00:00", "17:00:00"]
+    )
 
     # Ride details
-    vehicle_type_id: int = Field(..., description="ID of the vehicle type")
-    price_per_seat: float = Field(..., description="Price per seat in SEK")
-    available_seats: int = Field(..., description="Number of available seats")
-    status: str = Field("scheduled", description="Ride status")
+    vehicle_type_id: int = Field(
+        ...,
+        description="ID of the vehicle type",
+        example=1
+    )
+    price_per_seat: float = Field(
+        ...,
+        description="Price per seat in SEK",
+        example=50.0
+    )
+    available_seats: int = Field(
+        ...,
+        description="Number of available seats (must be at least 1)",
+        example=4
+    )
+    status: str = Field(
+        "scheduled",
+        description="Ride status",
+        example="scheduled"
+    )
 
     # Validate ride type specific fields
     @root_validator(pre=True)
@@ -376,14 +440,51 @@ class RideDetailResponse(RideResponse):
             # Pydantic v1
             return cls.parse_obj(obj)
 
+# Schema for passenger information in ride response
+class RidePassengerInfo(BaseModel):
+    id: int
+    booking_id: int
+    user_id: Optional[int] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    is_primary: bool = False
+    created_at: datetime
+    user_details: Optional[Dict[str, Any]] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True  # For Pydantic v2
+
+# Schema for booking information in ride response
+class RideBookingInfo(BaseModel):
+    id: int
+    passenger_id: int
+    ride_id: int
+    seats_booked: int
+    booking_status: str
+    created_at: datetime
+    passengers: Optional[List[RidePassengerInfo]] = None
+
+    # For backward compatibility
+    user_id: Optional[int] = None
+    passenger_count: Optional[int] = None
+    status: Optional[str] = None
+    booking_time: Optional[datetime] = None
+    price: Optional[float] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True  # For Pydantic v2
+
 # Add the missing RideDetailedResponse class
 class RideDetailedResponse(RideResponse):
     """
     Detailed response for rides, including additional information.
     This class is needed for backward compatibility with existing imports.
     """
-    # Additional fields can be added here if needed
-    pass
+    # Add bookings field for passenger information
+    bookings: Optional[List[RideBookingInfo]] = None
 
 # Schema for ride booking
 class RideBookingCreate(BaseModel):

@@ -453,6 +453,11 @@ class RideService:
             # Force loading of passengers
             _ = [booking.passenger for booking in ride.bookings]
 
+            # Load detailed passenger information for each booking
+            from app.models.booking_passenger import BookingPassenger
+            for booking in ride.bookings:
+                booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking.id).all()
+
         return ride
 
     @staticmethod
@@ -514,9 +519,14 @@ class RideService:
 
         # Eager load relationships if needed
         if include_passengers:
+            from app.models.booking_passenger import BookingPassenger
             for ride in rides:
                 # Force loading of passengers
                 _ = [booking.passenger for booking in ride.bookings]
+
+                # Load detailed passenger information for each booking
+                for booking in ride.bookings:
+                    booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking.id).all()
 
         return rides
 

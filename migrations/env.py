@@ -15,6 +15,9 @@ from app.models.ride import Ride, RideBooking
 from app.models.hub import Hub  # Import Hub from hub.py
 from app.models.location import Location, GeocodingCache
 from app.models.payment import Payment
+from app.models.payment_method import PaymentMethod
+from app.models.booking_passenger import BookingPassenger
+from app.models.user_preference import UserPreference
 from app.models.message import Conversation, Message, UserMessageSettings
 
 # This is the Alembic Config object
@@ -55,7 +58,7 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata
         )
 

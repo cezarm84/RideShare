@@ -221,6 +221,9 @@ class RideBooking(Base):
     # Relationship with payment - ensure this matches exactly with Payment model
     payment = relationship("Payment", back_populates="booking", uselist=False)
 
+    # Relationship with passengers
+    passengers = relationship("BookingPassenger", back_populates="booking", cascade="all, delete-orphan")
+
     # Add a property for backward compatibility
     @property
     def passenger(self):

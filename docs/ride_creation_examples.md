@@ -11,6 +11,7 @@ Before creating rides, you should:
 3. Know the IDs of hubs, vehicle types, and enterprises (if applicable)
 
 You can get reference data using:
+
 ```
 GET /api/v1/rides/reference-data
 ```
@@ -34,6 +35,7 @@ For a simple one-time ride between two transportation hubs:
 ```
 
 ### Required Fields:
+
 - `ride_type`: Must be "hub_to_hub"
 - `starting_hub_id`: ID of the starting hub
 - `destination_hub_id`: ID of the destination hub
@@ -54,10 +56,7 @@ For a recurring ride between two transportation hubs:
   "recurrence_pattern": "weekdays",
   "start_date": "2025-04-15",
   "end_date": "2025-05-15",
-  "departure_times": [
-    "08:00",
-    "17:00"
-  ],
+  "departure_times": ["08:00:00", "17:00:00"],
   "vehicle_type_id": 1,
   "price_per_seat": 50,
   "available_seats": 15,
@@ -66,6 +65,7 @@ For a recurring ride between two transportation hubs:
 ```
 
 ### Required Fields for Recurring Rides:
+
 - `recurrence_pattern`: "daily", "weekdays", "weekly", or "monthly"
 - `start_date`: Start date for the recurrence pattern
 - `departure_times`: List of departure times for each day
@@ -97,6 +97,7 @@ For rides from a hub to a custom destination:
 ```
 
 ### Required Fields:
+
 - `ride_type`: Must be "hub_to_destination"
 - `destination`: Object with destination details
   - `name`: Name of the destination
@@ -126,6 +127,7 @@ For one-time rides for company employees:
 ```
 
 ### Required Fields:
+
 - `ride_type`: Must be "enterprise"
 - `enterprise_id`: ID of the enterprise
 - Note: The destination will automatically use the enterprise's address
@@ -142,10 +144,7 @@ For recurring rides for company employees:
   "recurrence_pattern": "weekdays",
   "start_date": "2025-04-15",
   "end_date": "2025-05-15",
-  "departure_times": [
-    "08:00",
-    "17:00"
-  ],
+  "departure_times": ["08:00", "17:00"],
   "vehicle_type_id": 1,
   "price_per_seat": 0,
   "available_seats": 15,
@@ -197,19 +196,169 @@ For enterprise rides to a transportation hub:
 }
 ```
 
-## Date and Time Formats
+## Date and Time Fields Explained
 
-The API accepts various date and time formats:
+The API uses two different time-related fields that serve distinct purposes:
 
-### Date Formats
-- ISO format: "2025-04-15"
-- European format: "15/04/2025"
-- American format: "04/15/2025"
-- With text month: "15 Apr 2025" or "Apr 15 2025"
+### Understanding the Difference
 
-### Time Formats
-- 24-hour format: "14:30" or "14:30:00"
-- With timezone: "2025-04-15T14:30:00Z"
+1. **`departure_time`**: Specifies the exact date and time of a one-time ride or the first instance of a recurring ride
+
+   - Used for: One-time rides and the first instance of recurring rides
+   - **Required format**: ISO 8601 datetime format: "2025-04-15T08:00:00"
+   - Includes both date and time components
+   - The date portion should match the `start_date`
+
+2. **`departure_times`**: Specifies the time(s) of day for all instances of a recurring ride
+   - Used for: Recurring rides (daily, weekly, monthly)
+   - **Required format**: 24-hour time format: "08:00:00"
+   - Includes only the time component (no date)
+   - Can contain multiple times for multiple departures on each day
+   - Example: `["08:00:00", "17:00:00"]` for rides at 8 AM and 5 PM on each day
+
+### Example Usage
+
+- **One-time ride**: Only `departure_time` is used
+- **Recurring ride**: `departure_time` is used for the first instance, and `departure_times` is used for all instances
+
+#### Recurring Ride Example
+
+```json
+{
+  "ride_type": "hub_to_hub",
+  "starting_hub_id": 1,
+  "destination_hub_id": 2,
+  "recurrence_pattern": "weekly",
+  "start_date": "2025-05-15",
+  "end_date": "2025-06-15",
+  "departure_time": "2025-05-15T08:00:00", // First instance date and time
+  "departure_times": ["08:00:00", "17:00:00"], // Times for all recurring instances
+  "vehicle_type_id": 1,
+  "price_per_seat": 50,
+  "available_seats": 4,
+  "status": "scheduled"
+}
+```
+
+This creates a weekly recurring ride from May 15 to June 15, with two departures each day: one at 8:00 AM and another at 5:00 PM.
+
+### Required Formats
+
+- For `start_date` and `end_date`: ISO format: "2025-04-15"
+- For `departure_time`: ISO 8601 datetime format: "2025-04-15T08:00:00"
+- For `departure_times`: 24-hour time format: "08:00:00"
+
+### Important Notes
+
+- For `departure_time`, you **must** use the ISO 8601 datetime format (YYYY-MM-DDThh:mm:ss)
+- For `departure_times` in recurring rides, you **must** use the 24-hour time format (HH:MM:SS)
+- Always ensure dates are in the future
+- Always set `available_seats` to at least 1
+- Using incorrect formats will result in validation errors
+
+## Preloaded Request Templates
+
+When using the API documentation interface, you may receive default templates with placeholder values like "string" and "0". Below are improved templates with realistic values that you can use directly.
+
+### Hub-to-Hub Ride Template
+
+```json
+{
+  "ride_type": "hub_to_hub",
+  "starting_hub_id": 1,
+  "destination_hub_id": 2,
+  "destination": null,
+  "enterprise_id": null,
+  "recurrence_pattern": "one_time",
+  "start_date": "2023-04-15",
+  "end_date": "2023-04-15",
+  "departure_time": "2023-04-15T08:00:00",
+  "departure_times": ["08:00:00"],
+  "vehicle_type_id": 1,
+  "price_per_seat": 40,
+  "available_seats": 4,
+  "status": "scheduled"
+}
+```
+
+### Hub-to-Destination Ride Template
+
+```json
+{
+  "ride_type": "hub_to_destination",
+  "starting_hub_id": 1,
+  "destination_hub_id": null,
+  "destination": {
+    "name": "Gothenburg Central Station",
+    "address": "Drottningtorget 5",
+    "city": "Gothenburg",
+    "latitude": 57.7089,
+    "longitude": 11.9746,
+    "postal_code": "411 03",
+    "country": "Sweden"
+  },
+  "enterprise_id": null,
+  "recurrence_pattern": "one_time",
+  "start_date": "2023-04-15",
+  "end_date": "2023-04-15",
+  "departure_time": "2023-04-15T08:00:00",
+  "departure_times": ["08:00:00"],
+  "vehicle_type_id": 1,
+  "price_per_seat": 45,
+  "available_seats": 4,
+  "status": "scheduled"
+}
+```
+
+### Enterprise Ride Template
+
+```json
+{
+  "ride_type": "enterprise",
+  "starting_hub_id": 1,
+  "destination_hub_id": null,
+  "destination": {
+    "name": "Volvo Cars Headquarters",
+    "address": "Assar Gabrielssons Väg 9",
+    "city": "Gothenburg",
+    "latitude": 57.7242,
+    "longitude": 11.9079,
+    "postal_code": "405 31",
+    "country": "Sweden"
+  },
+  "enterprise_id": 1,
+  "recurrence_pattern": "one_time",
+  "start_date": "2023-04-15",
+  "end_date": "2023-04-15",
+  "departure_time": "2023-04-15T08:00:00",
+  "departure_times": ["08:00:00"],
+  "vehicle_type_id": 1,
+  "price_per_seat": 50,
+  "available_seats": 4,
+  "status": "scheduled"
+}
+```
+
+### Recurring Ride Template (Weekly)
+
+```json
+{
+  "ride_type": "hub_to_hub",
+  "starting_hub_id": 1,
+  "destination_hub_id": 2,
+  "destination": null,
+  "enterprise_id": null,
+  "recurrence_pattern": "weekly",
+  "start_date": "2023-04-15",
+  "end_date": "2023-05-15",
+  "departure_time": "2023-04-15T08:00:00",
+  "departure_times": ["08:00:00"],
+  "vehicle_type_id": 1,
+  "price_per_seat": 40,
+  "available_seats": 4,
+  "status": "scheduled"
+}
+```
 
 ## Common Errors
 
@@ -219,3 +368,4 @@ The API accepts various date and time formats:
 4. **Invalid date/time format**: Use one of the supported formats
 5. **Missing departure_time for one-time rides**: One-time rides require departure_time
 6. **Missing departure_times for recurring rides**: Recurring rides require departure_times
+7. **Invalid available_seats**: Must be at least 1

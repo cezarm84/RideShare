@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from app.models.user import User
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     """Service for handling notifications"""
-    
+
     def __init__(self, db: Session):
         self.db = db
-    
+
     async def notify_ride_confirmation(self, booking_id: int) -> bool:
         """
         Notify a user about a ride booking confirmation.
@@ -26,17 +26,25 @@ class NotificationService:
             logger.error(f"Booking {booking_id} not found for notification")
             return False
 
-        user = self.db.query(User).filter(User.id == booking.user_id).first()
+        user = self.db.query(User).filter(User.id == booking.passenger_id).first()
         if not user:
-            logger.error(f"User {booking.user_id} not found for booking {booking_id}")
+            logger.error(f"User {booking.passenger_id} not found for booking {booking_id}")
             return False
 
         message = (
             f"Your ride booking (ID: {booking_id}) has been confirmed!\n"
             f"Departure: {booking.ride.departure_time}\n"
-            f"From: Hub {booking.ride.starting_hub_id} to Location {booking.ride.destination_id}"
+            f"From: Hub {booking.ride.starting_hub_id}"
         )
-        
+
+        # Add destination information based on ride type
+        if booking.ride.destination_hub_id:
+            message += f" to Hub {booking.ride.destination_hub_id}"
+        elif hasattr(booking.ride, 'destination') and booking.ride.destination:
+            message += f" to {booking.ride.destination.get('name', 'Custom Destination')}"
+        else:
+            message += " to your destination"
+
         notification_data = self.create_ride_notification(
             notification_type="ride_confirmation",
             booking_id=booking_id,
@@ -47,13 +55,13 @@ class NotificationService:
                 "destination_id": booking.ride.destination_id
             }
         )
-        
+
         push_notification = self.format_notification_for_push(
             title="Ride Confirmation",
             body=message,
             data=notification_data
         )
-        
+
         return await self._send_notification(user, "Ride Confirmation", message, push_notification)
 
     async def notify_ride_update(self, booking_id: int, update_type: str, details: str) -> bool:
@@ -65,13 +73,13 @@ class NotificationService:
             logger.error(f"Booking {booking_id} not found for update notification")
             return False
 
-        user = self.db.query(User).filter(User.id == booking.user_id).first()
+        user = self.db.query(User).filter(User.id == booking.passenger_id).first()
         if not user:
-            logger.error(f"User {booking.user_id} not found for booking {booking_id}")
+            logger.error(f"User {booking.passenger_id} not found for booking {booking_id}")
             return False
 
         message = f"Your ride (ID: {booking_id}) has an update: {update_type}\nDetails: {details}"
-        
+
         notification_data = self.create_ride_notification(
             notification_type="ride_update",
             booking_id=booking_id,
@@ -81,13 +89,13 @@ class NotificationService:
                 "details": details
             }
         )
-        
+
         push_notification = self.format_notification_for_push(
             title=f"Ride Update: {update_type}",
             body=message,
             data=notification_data
         )
-        
+
         return await self._send_notification(user, f"Ride Update: {update_type}", message, push_notification)
 
     async def notify_custom_message(self, user_id: int, title: str, message: str) -> bool:
@@ -103,17 +111,17 @@ class NotificationService:
             "type": "custom",
             "title": title,
             "message": message,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
         push_notification = self.format_notification_for_push(
             title=title,
             body=message,
             data=notification_data
         )
-        
+
         return await self._send_notification(user, title, message, push_notification)
-    
+
     async def notify_new_message(self, message_id: int) -> bool:
         """
         Notify a user about a new message.
@@ -122,25 +130,25 @@ class NotificationService:
         if not message:
             logger.error(f"Message {message_id} not found for notification")
             return False
-        
+
         # Get the conversation
         conversation = self.db.query(Conversation).filter(Conversation.id == message.conversation_id).first()
         if not conversation:
             logger.error(f"Conversation {message.conversation_id} not found for message {message_id}")
             return False
-        
+
         # Get the sender
         sender = self.db.query(User).filter(User.id == message.sender_id).first()
         if not sender:
             logger.error(f"Sender {message.sender_id} not found for message {message_id}")
             return False
-        
+
         # Create notification data
         notification_data = self.create_message_notification(message)
-        
+
         # Get recipients (all participants except sender)
         recipients = self.get_notification_recipients(message)
-        
+
         success = True
         for recipient in recipients:
             # Format notification for this recipient
@@ -149,16 +157,16 @@ class NotificationService:
                 body=message.content[:50] + ("..." if len(message.content) > 50 else ""),
                 data=notification_data
             )
-            
+
             # Send notification
             if not await self._send_notification(
-                recipient, 
-                f"New message from {sender.first_name} {sender.last_name}", 
-                message.content, 
+                recipient,
+                f"New message from {sender.first_name} {sender.last_name}",
+                message.content,
                 push_notification
             ):
                 success = False
-        
+
         return success
 
     def create_message_notification(self, message: Message) -> Dict[str, Any]:
@@ -168,13 +176,13 @@ class NotificationService:
         if not sender:
             logger.error(f"Sender not found for message {message.id}")
             return {}
-        
+
         # Get the conversation
         conversation = self.db.query(Conversation).filter(Conversation.id == message.conversation_id).first()
         if not conversation:
             logger.error(f"Conversation not found for message {message.id}")
             return {}
-        
+
         # Create notification data
         notification_data = {
             "type": "new_message",
@@ -188,21 +196,21 @@ class NotificationService:
             "conversation_title": conversation.title or "Direct Message",
             "conversation_type": conversation.conversation_type if hasattr(conversation, 'conversation_type') else "direct"
         }
-        
+
         return notification_data
-    
+
     def create_ride_notification(self, notification_type: str, booking_id: int, user_id: int, details: Dict[str, Any]) -> Dict[str, Any]:
         """Create a notification for a ride update"""
         notification_data = {
             "type": notification_type,
             "booking_id": booking_id,
             "user_id": user_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "details": details
         }
-        
+
         return notification_data
-    
+
     def get_notification_recipients(self, message: Message) -> List[User]:
         """Get the list of users who should receive notifications for a message"""
         # Get the conversation
@@ -210,27 +218,27 @@ class NotificationService:
         if not conversation:
             logger.error(f"Conversation not found for message {message.id}")
             return []
-        
+
         # Get all participants except the sender
         recipients = [
-            user for user in conversation.participants 
-            if user.id != message.sender_id and 
+            user for user in conversation.participants
+            if user.id != message.sender_id and
                self.should_notify_user(user.id)
         ]
-        
+
         return recipients
-    
+
     def should_notify_user(self, user_id: int) -> bool:
         """Check if a user should receive notifications"""
         # Get user's message settings
         settings = self.db.query(UserMessageSettings).filter(UserMessageSettings.user_id == user_id).first()
-        
+
         # If no settings exist, default to sending notifications
         if not settings:
             return True
-        
+
         return settings.notifications_enabled
-    
+
     def format_notification_for_push(self, title: str, body: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Format a notification for sending as a push notification"""
         return {
@@ -279,14 +287,14 @@ class NotificationService:
         # Example with SendGrid:
         # from sendgrid import SendGridAPIClient
         # from sendgrid.helpers.mail import Mail
-        # 
+        #
         # message = Mail(
         #     from_email='noreply@rideshare.com',
         #     to_emails=email,
         #     subject=title,
         #     html_content=f'<p>{message}</p>'
         # )
-        # 
+        #
         # try:
         #     sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         #     response = sg.send(message)
@@ -299,13 +307,13 @@ class NotificationService:
         # Implement with Twilio
         # Example with Twilio:
         # from twilio.rest import Client
-        # 
+        #
         # account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
         # auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
         # from_number = os.environ.get('TWILIO_PHONE_NUMBER')
-        # 
+        #
         # client = Client(account_sid, auth_token)
-        # 
+        #
         # try:
         #     message = client.messages.create(
         #         body=message,
@@ -321,14 +329,14 @@ class NotificationService:
         # Implement with Firebase Cloud Messaging
         # Example with Firebase:
         # from firebase_admin import messaging
-        # 
+        #
         # # Get the user's device tokens from the database
         # user_tokens = self.db.query(UserDeviceToken).filter(UserDeviceToken.user_id == user_id).all()
-        # 
+        #
         # if not user_tokens:
         #     logger.warning(f"No device tokens found for user {user_id}")
         #     return
-        # 
+        #
         # for token in user_tokens:
         #     try:
         #         message = messaging.Message(

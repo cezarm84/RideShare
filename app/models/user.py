@@ -71,6 +71,9 @@ class User(Base):
     # Add the missing payments relationship that's referenced in the Payment model
     payments = relationship("Payment", back_populates="user")
 
+    # Payment methods relationship
+    payment_methods = relationship("PaymentMethod", back_populates="user")
+
     # Use a single relationship for locations to avoid overlap warnings
     saved_locations = relationship("Location", back_populates="user", overlaps="locations")
 

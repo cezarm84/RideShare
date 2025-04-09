@@ -7,9 +7,12 @@ from app.db.base_class import Base
 from app.models.user import User
 from app.models.address import Address
 from app.models.ride import Ride, RideBooking
+from app.models.payment import Payment
+from app.models.payment_method import PaymentMethod
+from app.models.booking_passenger import BookingPassenger
+from app.models.user_preference import UserPreference
 from app.models.location import Location
 from app.models.hub import Hub, HubPair
-from app.models.payment import Payment
 # Do not import Message here to avoid circular import
 # from app.models.message import Message
 from app.models.attachment import MessageAttachment

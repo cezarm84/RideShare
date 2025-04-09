@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from app.api.endpoints import (
     auth, users, rides, bookings, matching, analytics, messaging, drivers,
-    admin_hubs, admin_vehicle_types, admin_enterprises, admin_destinations
+    admin_hubs, admin_vehicle_types, admin_enterprises, admin_destinations,
+    payment_methods, user_preferences
 )
 
 api_router = APIRouter()
@@ -19,6 +20,10 @@ api_router.include_router(matching.router, prefix="/matching", tags=["matching"]
 # Analytics and Messaging
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
+
+# Payment and Preferences
+api_router.include_router(payment_methods.router, prefix="/payment-methods", tags=["payments"])
+api_router.include_router(user_preferences.router, prefix="/user-preferences", tags=["users"])
 
 # Admin Endpoints (restricted to admin users)
 api_router.include_router(admin_hubs.router, prefix="/admin/hubs", tags=["admin", "hubs"])

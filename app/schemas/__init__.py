@@ -2,10 +2,10 @@
 
 # User schemas
 from .user import (
-    UserCreate, 
-    UserResponse, 
-    UserUpdate, 
-    TokenData, 
+    UserCreate,
+    UserResponse,
+    UserUpdate,
+    TokenData,
     TokenResponse,
     EnterpriseResponse,
     EnterpriseCreate,
@@ -14,20 +14,38 @@ from .user import (
 
 # Ride schemas
 from .ride import (
-    RideCreate, 
-    RideResponse, 
-    RideDetailedResponse, 
+    RideCreate,
+    RideResponse,
+    RideDetailedResponse,
     RideDetailResponse,  # Now exists as subclass in ride.py
-    RideBookingResponse, 
+    RideBookingResponse,
     RideUpdate
 )
 
 # Booking schemas
 from .booking import (
-    BookingCreate, 
-    BookingResponse, 
-    PaymentCreate, 
+    BookingCreate,
+    BookingResponse,
+    BookingPassengerResponse,
+    PassengerInfo,
+    PaymentCreate,
     PaymentResponse
+)
+
+# Payment method schemas
+from .payment_method import (
+    PaymentMethodBase,
+    PaymentMethodCreate,
+    PaymentMethodResponse,
+    PaymentMethodUpdate
+)
+
+# User preference schemas
+from .user_preference import (
+    UserPreferenceBase,
+    UserPreferenceCreate,
+    UserPreferenceUpdate,
+    UserPreferenceResponse
 )
 
 # Matching schemas
@@ -38,11 +56,11 @@ from .matching import (
 
 # Location schemas
 from .location import (
-    LocationCreate, 
-    LocationResponse, 
-    LocationUpdate, 
-    HubCreate, 
-    HubResponse, 
-    HubUpdate, 
+    LocationCreate,
+    LocationResponse,
+    LocationUpdate,
+    HubCreate,
+    HubResponse,
+    HubUpdate,
     CoordinatesModel
 )

@@ -203,7 +203,12 @@ def ride_to_schema(ride: Ride, include_passengers: bool = False) -> Dict[str, An
 
     # Only include bookings if requested
     if include_passengers and ride.bookings:
-        ride_dict["bookings"] = [booking_to_schema(booking) for booking in ride.bookings]
+        bookings_list = []
+        for booking in ride.bookings:
+            booking_dict = booking_to_schema(booking)
+            # Add to the list
+            bookings_list.append(booking_dict)
+        ride_dict["bookings"] = bookings_list
     else:
         ride_dict["bookings"] = []
 
@@ -213,7 +218,7 @@ def booking_to_schema(booking: RideBooking) -> Dict[str, Any]:
     """
     Convert a RideBooking ORM model to a dictionary suitable for Pydantic schema.
     """
-    return {
+    result = {
         "id": booking.id,
         "passenger_id": booking.passenger_id,
         "user_id": booking.passenger_id,  # For backward compatibility
@@ -226,6 +231,36 @@ def booking_to_schema(booking: RideBooking) -> Dict[str, Any]:
         "price": 0.0,  # Default value not in model
         "passenger": booking.user  # User relationship
     }
+
+    # Add passenger information if available
+    if hasattr(booking, 'passengers') and booking.passengers:
+        passengers = []
+        for passenger in booking.passengers:
+            # Get user details if available
+            user_details = None
+            if passenger.user:
+                user_details = {
+                    "id": passenger.user.id,
+                    "email": passenger.user.email,
+                    "name": f"{passenger.user.first_name} {passenger.user.last_name}".strip(),
+                    "phone": passenger.user.phone_number
+                }
+
+            passengers.append({
+                "id": passenger.id,
+                "booking_id": passenger.booking_id,
+                "user_id": passenger.user_id,
+                "email": passenger.email,
+                "name": passenger.name,
+                "phone": passenger.phone,
+                "is_primary": passenger.is_primary,
+                "created_at": passenger.created_at,
+                "user_details": user_details
+            })
+
+        result["passengers"] = passengers
+
+    return result
 
 @router.get("", response_model=List[RideDetailedResponse])
 async def get_rides(
