@@ -7,10 +7,12 @@ from app.db.session import get_db
 from app.api.dependencies import (
     get_current_user,
     get_current_admin_user,
-    get_current_driver_user
+    get_current_driver_user,
+    get_current_user_optional
 )
+from app.core.security import get_password_hash
 from app.models.user import User, UserRole, UserType
-from app.models.driver import DriverProfile, DriverVehicle, DriverDocument, DriverSchedule, DriverStatus, DriverVerificationStatus
+from app.models.driver import DriverProfile, DriverVehicle, DriverDocument, DriverSchedule, DriverStatus, DriverVerificationStatus, driver_ride_type_permissions
 from app.schemas.driver import (
     DriverProfileCreate,
     DriverProfileUpdate,
@@ -157,14 +159,16 @@ async def get_driver(
 
     return driver
 
-@router.post("/with-user", response_model=DriverProfileResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/with-user", response_model=DriverProfileResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_driver_with_user(
     driver_data: DriverWithUserCreate,
     db: Session = Depends(get_db)
 ):
     """
-    Create a new user account and driver profile in one step.
-    This endpoint allows creating a driver with login credentials in a single API call.
+    [DEPRECATED] Create a new user account and driver profile in one step.
+
+    This endpoint is deprecated. Please use POST /api/v1/drivers instead, which now supports
+    both creating a driver profile for an existing user and creating a new user with driver profile.
     """
     # Check if user with this email already exists
     existing_user = db.query(User).filter(User.email == driver_data.email).first()
@@ -207,8 +211,19 @@ async def create_driver_with_user(
     )
 
     db.add(new_driver)
-    db.commit()
+    db.commit()  # Commit to get the driver ID
     db.refresh(new_driver)
+
+    # Add ride type permissions if provided
+    if driver_data.ride_type_permissions:
+        for permission in driver_data.ride_type_permissions:
+            db.execute(
+                driver_ride_type_permissions.insert().values(
+                    driver_profile_id=new_driver.id,
+                    ride_type=permission
+                )
+            )
+        db.commit()  # Commit the permissions
 
     return new_driver
 
@@ -216,26 +231,70 @@ async def create_driver_with_user(
 async def create_driver(
     driver_data: DriverProfileCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
-    Create a new driver profile for an existing user.
-    Admin only endpoint. For driver self-registration, use the /drivers/with-user endpoint.
-    """
-    # Check if driver profile already exists for this user
-    existing_profile = db.query(DriverProfile).filter(
-        DriverProfile.user_id == driver_data.user_id
-    ).first()
+    Create a new driver profile with or without a user account.
 
-    if existing_profile:
+    This endpoint supports two scenarios:
+    1. Creating a driver profile for an existing user (admin only)
+    2. Creating both a user account and driver profile in one step (self-registration)
+
+    For scenario 1, provide user_id.
+    For scenario 2, provide email, password, first_name, last_name, and phone_number.
+    """
+    # Determine if this is admin-only operation (existing user) or self-registration
+    is_admin_operation = driver_data.user_id is not None
+
+    # For admin operations, ensure the current user has admin privileges
+    if is_admin_operation and (current_user is None or not current_user.has_admin_privileges()):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Driver profile already exists for this user"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can create driver profiles for existing users"
         )
+
+    # Handle user creation if needed (self-registration)
+    user_id = None
+    if not is_admin_operation:
+        # Check if user with this email already exists
+        existing_user = db.query(User).filter(User.email == driver_data.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+        # Create new user with driver role
+        new_user = User(
+            email=driver_data.email,
+            password_hash=get_password_hash(driver_data.password),
+            first_name=driver_data.first_name,
+            last_name=driver_data.last_name,
+            phone_number=driver_data.phone_number,
+            role=UserRole.DRIVER,
+            user_type=UserType.DRIVER,
+            is_active=True
+        )
+
+        db.add(new_user)
+        db.flush()  # Flush to get the user ID
+        user_id = new_user.id
+    else:
+        # Check if driver profile already exists for this user
+        existing_profile = db.query(DriverProfile).filter(
+            DriverProfile.user_id == driver_data.user_id
+        ).first()
+
+        if existing_profile:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Driver profile already exists for this user"
+            )
+        user_id = driver_data.user_id
 
     # Create new driver profile
     new_driver = DriverProfile(
-        user_id=driver_data.user_id,
+        user_id=user_id,
         license_number=driver_data.license_number,
         license_expiry=driver_data.license_expiry,
         license_state=driver_data.license_state,
@@ -251,8 +310,19 @@ async def create_driver(
     )
 
     db.add(new_driver)
-    db.commit()
+    db.commit()  # Commit to get the driver ID
     db.refresh(new_driver)
+
+    # Add ride type permissions if provided
+    if driver_data.ride_type_permissions:
+        for permission in driver_data.ride_type_permissions:
+            db.execute(
+                driver_ride_type_permissions.insert().values(
+                    driver_profile_id=new_driver.id,
+                    ride_type=permission
+                )
+            )
+        db.commit()  # Commit the permissions
 
     return new_driver
 
@@ -292,8 +362,33 @@ async def update_driver(
 
     # Update driver profile with provided data
     update_data = driver_data.dict(exclude_unset=True)
+
+    # Handle ride_type_permissions separately
+    ride_type_permissions = None
+    if 'ride_type_permissions' in update_data:
+        ride_type_permissions = update_data.pop('ride_type_permissions')
+
+    # Update other fields
     for key, value in update_data.items():
         setattr(driver, key, value)
+
+    # Update ride type permissions if provided
+    if ride_type_permissions is not None:
+        # Delete existing permissions
+        db.execute(
+            driver_ride_type_permissions.delete().where(
+                driver_ride_type_permissions.c.driver_profile_id == driver_id
+            )
+        )
+
+        # Add new permissions
+        for permission in ride_type_permissions:
+            db.execute(
+                driver_ride_type_permissions.insert().values(
+                    driver_profile_id=driver_id,
+                    ride_type=permission
+                )
+            )
 
     db.commit()
     db.refresh(driver)
@@ -344,6 +439,25 @@ async def add_vehicle_to_driver(
             detail="Driver not found"
         )
 
+    # Validate inspection status
+    if vehicle_data.inspection_status == "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot add a vehicle with pending inspection status to a driver. Vehicle must pass inspection first."
+        )
+
+    # Check if the inspection date has passed
+    from datetime import datetime
+    today = datetime.now().date()
+
+    if vehicle_data.next_inspection_date and vehicle_data.next_inspection_date < today:
+        # If inspection date has passed, automatically set status to pending
+        vehicle_data.inspection_status = "pending"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The vehicle's inspection date has expired. Please get a new inspection before adding this vehicle."
+        )
+
     # Create new vehicle
     new_vehicle = DriverVehicle(
         driver_id=driver_id,
@@ -386,6 +500,54 @@ async def get_driver_vehicles(
     vehicles = db.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id).all()
 
     return vehicles
+
+@router.put("/{driver_id}/vehicles/{vehicle_id}/inspection", response_model=DriverVehicleResponse)
+async def update_driver_vehicle_inspection(
+    driver_id: int,
+    vehicle_id: int,
+    inspection_status: str = Query(..., description="New inspection status (passed, failed, expired)"),
+    last_inspection_date: Optional[date] = Query(None, description="Date of last inspection"),
+    next_inspection_date: Optional[date] = Query(None, description="Date of next inspection"),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user)  # Admin only
+):
+    """
+    Update the inspection status of a vehicle associated with a driver.
+    Admin only endpoint.
+    """
+    # Check if driver-vehicle association exists
+    driver_vehicle = db.query(DriverVehicle).filter(
+        DriverVehicle.driver_id == driver_id,
+        DriverVehicle.id == vehicle_id
+    ).first()
+
+    if not driver_vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vehicle not found for this driver"
+        )
+
+    # Validate inspection status
+    valid_statuses = ["passed", "failed", "expired"]
+    if inspection_status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid inspection status. Must be one of: {', '.join(valid_statuses)}"
+        )
+
+    # Update inspection status
+    driver_vehicle.inspection_status = inspection_status
+
+    if last_inspection_date:
+        driver_vehicle.last_inspection_date = last_inspection_date
+
+    if next_inspection_date:
+        driver_vehicle.next_inspection_date = next_inspection_date
+
+    db.commit()
+    db.refresh(driver_vehicle)
+
+    return driver_vehicle
 
 @router.post("/{driver_id}/documents", response_model=DriverDocumentResponse)
 async def upload_driver_document(

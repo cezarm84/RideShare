@@ -6,13 +6,20 @@ This document provides detailed examples for driver-related operations in the Ri
 
 ### Registration Process
 
-#### Driver Registration (Recommended Method)
+#### Driver Registration
 
-The recommended way to register as a driver is using the one-step registration process:
+The recommended way to register as a driver is using the consolidated driver creation endpoint:
 
 ```
-POST /api/v1/drivers/with-user
+POST /api/v1/drivers
 ```
+
+This endpoint supports two scenarios:
+
+1. **Self-registration** - Creating both a user account and driver profile in one step
+2. **Admin-only** - Creating a driver profile for an existing user
+
+##### Scenario 1: Self-registration
 
 Request body:
 
@@ -36,17 +43,39 @@ Request body:
 }
 ```
 
-This endpoint creates both a user account with driver privileges and a driver profile in one step. After registration, the driver can immediately log in with their email and password.
+This creates both a user account with driver privileges and a driver profile in one step. After registration, the driver can immediately log in with their email and password.
 
-#### Admin-Only Driver Profile Creation
+##### Scenario 2: Admin-only (Creating a driver profile for an existing user)
 
-For administrative purposes, there is also an endpoint that allows admins to create a driver profile for an existing user:
+Request body:
+
+```json
+{
+  "user_id": 123,
+  "license_number": "DL12345678",
+  "license_expiry": "2026-04-08",
+  "license_state": "Västra Götaland",
+  "license_country": "Sweden",
+  "license_class": "B",
+  "preferred_radius_km": 15.0,
+  "max_passengers": 4,
+  "bio": "Experienced driver",
+  "languages": "Swedish, English",
+  "ride_type_permissions": ["hub_to_hub", "hub_to_destination"]
+}
+```
+
+**Note:** This scenario requires admin authentication and is used when you want to create a driver profile for an existing user account.
+
+#### Legacy Endpoint (Deprecated)
+
+The following endpoint is deprecated and will be removed in a future version:
 
 ```
-POST /api/v1/drivers
+POST /api/v1/drivers/with-user
 ```
 
-**Note:** This endpoint is primarily for admin use and backward compatibility. For new driver registrations, use the `/api/v1/drivers/with-user` endpoint instead.
+Please use the consolidated `POST /api/v1/drivers` endpoint instead.
 
 Request body:
 

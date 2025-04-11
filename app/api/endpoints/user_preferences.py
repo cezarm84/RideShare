@@ -16,9 +16,29 @@ async def get_user_preferences(
     current_user: User = Depends(get_current_user)
 ):
     """Get preferences for the current user"""
-    preference_service = UserPreferenceService(db)
-    preferences = preference_service.get_user_preferences(current_user.id)
-    return preferences
+    try:
+        preference_service = UserPreferenceService(db)
+        preferences = preference_service.get_user_preferences(current_user.id)
+
+        # Convert the SQLAlchemy model to a dictionary
+        return {
+            "id": preferences.id,
+            "user_id": preferences.user_id,
+            "theme": preferences.theme,
+            "language": preferences.language,
+            "notifications": preferences.notifications,
+            "email_frequency": preferences.email_frequency,
+            "push_enabled": preferences.push_enabled,
+            "created_at": preferences.created_at,
+            "updated_at": preferences.updated_at
+        }
+    except Exception as e:
+        # Log any errors
+        logger.error(f"Error getting user preferences: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting user preferences: {str(e)}"
+        )
 
 @router.post("", response_model=UserPreferenceResponse, status_code=status.HTTP_201_CREATED)
 async def create_user_preferences(
@@ -30,7 +50,19 @@ async def create_user_preferences(
     try:
         preference_service = UserPreferenceService(db)
         db_preferences = preference_service.create_user_preferences(current_user.id, preferences)
-        return db_preferences
+
+        # Convert the SQLAlchemy model to a dictionary
+        return {
+            "id": db_preferences.id,
+            "user_id": db_preferences.user_id,
+            "theme": db_preferences.theme,
+            "language": db_preferences.language,
+            "notifications": db_preferences.notifications,
+            "email_frequency": db_preferences.email_frequency,
+            "push_enabled": db_preferences.push_enabled,
+            "created_at": db_preferences.created_at,
+            "updated_at": db_preferences.updated_at
+        }
     except HTTPException as e:
         # Pass through HTTP exceptions
         raise e
@@ -52,7 +84,19 @@ async def update_user_preferences(
     try:
         preference_service = UserPreferenceService(db)
         db_preferences = preference_service.update_user_preferences(current_user.id, preferences)
-        return db_preferences
+
+        # Convert the SQLAlchemy model to a dictionary
+        return {
+            "id": db_preferences.id,
+            "user_id": db_preferences.user_id,
+            "theme": db_preferences.theme,
+            "language": db_preferences.language,
+            "notifications": db_preferences.notifications,
+            "email_frequency": db_preferences.email_frequency,
+            "push_enabled": db_preferences.push_enabled,
+            "created_at": db_preferences.created_at,
+            "updated_at": db_preferences.updated_at
+        }
     except HTTPException as e:
         # Pass through HTTP exceptions
         raise e

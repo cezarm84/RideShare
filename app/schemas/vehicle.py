@@ -51,3 +51,57 @@ class VehicleTypeResponse(BaseModel):
     class Config:
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
+
+
+class VehicleBase(BaseModel):
+    """Base schema for vehicle data"""
+    make: str
+    model: str
+    year: int
+    color: Optional[str] = None
+    license_plate: str
+    passenger_capacity: int
+    vehicle_type_id: int
+    is_active: bool = True
+
+
+class VehicleCreate(VehicleBase):
+    """Schema for creating a new vehicle"""
+    owner_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class VehicleUpdate(BaseModel):
+    """Schema for updating an existing vehicle"""
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    color: Optional[str] = None
+    license_plate: Optional[str] = None
+    passenger_capacity: Optional[int] = None
+    vehicle_type_id: Optional[int] = None
+    is_active: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
+
+
+class VehicleResponse(BaseModel):
+    """Schema for vehicle API responses"""
+    id: int
+    owner_id: int
+    make: str
+    model: str
+    year: int
+    color: Optional[str] = None
+    license_plate: str
+    passenger_capacity: int
+    vehicle_type_id: int
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

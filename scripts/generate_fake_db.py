@@ -58,7 +58,7 @@ def generate_fake_database():
             "addresses",
             "enterprises",
             "vehicle_types",
-            "destinations"  # Add this table
+            "destinations"  
         ]
 
         for table in tables:

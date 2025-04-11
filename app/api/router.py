@@ -17,6 +17,8 @@ api_router.include_router(rides.router, prefix="/rides", tags=["rides"])
 api_router.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
 api_router.include_router(matching.router, prefix="/matching", tags=["matching"])
 
+# Vehicle Management is handled through admin/vehicle-types endpoints
+
 # Analytics and Messaging
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])

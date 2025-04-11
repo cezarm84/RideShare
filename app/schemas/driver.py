@@ -114,7 +114,17 @@ class DriverDocumentBase(BaseModel):
 
 # Create schemas
 class DriverProfileCreate(BaseModel):
-    user_id: int
+    # User information (optional for backward compatibility)
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+
+    # User ID (optional if user information is provided)
+    user_id: Optional[int] = None
+
+    # Driver information (required)
     license_number: str
     license_expiry: date
     license_state: str
@@ -126,6 +136,13 @@ class DriverProfileCreate(BaseModel):
     bio: Optional[str] = None
     languages: Optional[str] = None
     ride_type_permissions: Optional[List[RideTypePermission]] = None
+
+    @validator('user_id')
+    def validate_user_id_or_credentials(cls, v, values):
+        # Either user_id or (email and password) must be provided
+        if v is None and (values.get('email') is None or values.get('password') is None):
+            raise ValueError("Either user_id or (email and password) must be provided")
+        return v
 
 # Combined schema for creating a user and driver profile in one step
 class DriverWithUserCreate(BaseModel):

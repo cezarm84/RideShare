@@ -89,6 +89,14 @@ async def startup_db_client():
         else:
             logger.error("Failed to configure SQLAlchemy relationships")
 
+    # Start the task scheduler
+    try:
+        from app.tasks.scheduler_new import scheduler
+        scheduler.start()
+        logger.info("Task scheduler started successfully")
+    except Exception as e:
+        logger.error(f"Error starting task scheduler: {e}")
+
     logger.info("Application startup complete")
 
     # Log available routes for debugging
@@ -100,6 +108,14 @@ async def startup_db_client():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    # Stop the task scheduler
+    try:
+        from app.tasks.scheduler_new import scheduler
+        scheduler.shutdown()
+        logger.info("Task scheduler stopped successfully")
+    except Exception as e:
+        logger.error(f"Error stopping task scheduler: {e}")
+
     logger.info("Application shutdown complete")
 
 # Include API router with the correct prefix

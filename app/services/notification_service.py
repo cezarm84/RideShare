@@ -4,9 +4,11 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import json
 
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.ride import RideBooking
 from app.models.message import Message, Conversation, UserMessageSettings
+from app.models.driver import DriverVehicle, DriverProfile
+from app.models.vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
 
@@ -352,3 +354,96 @@ class NotificationService:
         #     except Exception as e:
         #         logger.error(f"Firebase error: {str(e)}")
         pass
+
+    @staticmethod
+    def send_inspection_expired_notification(db: Session, driver_vehicle: DriverVehicle):
+        """
+        Send notification that a vehicle's inspection has expired.
+
+        Args:
+            db: Database session
+            driver_vehicle: The DriverVehicle object with expired inspection
+        """
+        # Get the driver
+        driver = db.query(DriverProfile).filter(DriverProfile.id == driver_vehicle.driver_id).first()
+        if not driver:
+            logger.warning(f"Driver not found for vehicle {driver_vehicle.id}")
+            return
+
+        # Get the driver's user
+        driver_user = db.query(User).filter(User.id == driver.user_id).first()
+        if not driver_user:
+            logger.warning(f"User not found for driver {driver.id}")
+            return
+
+        # Get the vehicle
+        vehicle = db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        if not vehicle:
+            logger.warning(f"Vehicle not found with ID {driver_vehicle.vehicle_id}")
+            return
+
+        # Get all admin users
+        admins = db.query(User).filter(User.role == UserRole.ADMIN).all()
+
+        # Prepare notification message
+        message = f"IMPORTANT: The inspection for your vehicle {vehicle.make} {vehicle.model} " \
+                 f"(license plate: {vehicle.license_plate}) has expired. " \
+                 f"This vehicle cannot be used for rides until it passes a new inspection."
+
+        # Log notification to driver (in a real system, this would send an email/SMS)
+        logger.info(f"Notification to driver {driver_user.email}: {message}")
+
+        # Notify admins
+        admin_message = f"Vehicle inspection expired: Driver {driver_user.first_name} {driver_user.last_name} " \
+                        f"({driver_user.email}) has a vehicle with expired inspection: " \
+                        f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+
+        for admin in admins:
+            logger.info(f"Notification to admin {admin.email}: {admin_message}")
+
+    @staticmethod
+    def send_inspection_reminder_notification(db: Session, driver_vehicle: DriverVehicle, days_remaining: int):
+        """
+        Send reminder notification that a vehicle's inspection is approaching expiration.
+
+        Args:
+            db: Database session
+            driver_vehicle: The DriverVehicle object with upcoming inspection deadline
+            days_remaining: Number of days until inspection expires
+        """
+        # Get the driver
+        driver = db.query(DriverProfile).filter(DriverProfile.id == driver_vehicle.driver_id).first()
+        if not driver:
+            logger.warning(f"Driver not found for vehicle {driver_vehicle.id}")
+            return
+
+        # Get the driver's user
+        driver_user = db.query(User).filter(User.id == driver.user_id).first()
+        if not driver_user:
+            logger.warning(f"User not found for driver {driver.id}")
+            return
+
+        # Get the vehicle
+        vehicle = db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        if not vehicle:
+            logger.warning(f"Vehicle not found with ID {driver_vehicle.vehicle_id}")
+            return
+
+        # Get all admin users
+        admins = db.query(User).filter(User.role == UserRole.ADMIN).all()
+
+        # Prepare notification message
+        message = f"REMINDER: The inspection for your vehicle {vehicle.make} {vehicle.model} " \
+                 f"(license plate: {vehicle.license_plate}) will expire in {days_remaining} days. " \
+                 f"Please schedule an inspection soon to avoid interruption in your ability to provide rides."
+
+        # Log notification to driver (in a real system, this would send an email/SMS)
+        logger.info(f"Notification to driver {driver_user.email}: {message}")
+
+        # Notify admins
+        admin_message = f"Vehicle inspection reminder: Driver {driver_user.first_name} {driver_user.last_name} " \
+                        f"({driver_user.email}) has a vehicle with inspection expiring in {days_remaining} days: " \
+                        f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+
+        for admin in admins:
+            logger.info(f"Notification to admin {admin.email}: {admin_message}")

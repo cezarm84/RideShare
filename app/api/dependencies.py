@@ -15,6 +15,41 @@ logger = logging.getLogger(__name__)
 # Set auto_error=False to allow handling missing tokens in get_current_user
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token", auto_error=False)
 
+def get_current_user_optional(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme)
+) -> Optional[User]:
+    """
+    Dependency to get the current authenticated user from JWT token, or None if no token.
+
+    Args:
+        db: Database session
+        token: JWT token extracted from request
+
+    Returns:
+        User object if authentication is successful, None if no token
+    """
+    if token is None:
+        return None
+
+    try:
+        # Decode the token
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+
+        # Get the user from the database
+        user = db.query(User).filter(User.email == email).first()
+        if user is None:
+            return None
+
+        return user
+    except JWTError:
+        return None
+
 def get_current_user(
     db: Session = Depends(get_db),
     token: Optional[str] = Depends(oauth2_scheme)

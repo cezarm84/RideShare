@@ -12,6 +12,16 @@ from .user import (
     EnterpriseUpdate
 )
 
+# Vehicle schemas
+from .vehicle import (
+    VehicleTypeCreate,
+    VehicleTypeResponse,
+    VehicleTypeUpdate,
+    VehicleCreate,
+    VehicleResponse,
+    VehicleUpdate
+)
+
 # Ride schemas
 from .ride import (
     RideCreate,

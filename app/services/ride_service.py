@@ -17,6 +17,7 @@ from app.models.ride import (
 from app.models.hub import Hub
 from app.models.vehicle import VehicleType
 from app.models.user import User, Enterprise
+from app.models.driver import DriverProfile, DriverVehicle
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,22 @@ class RideService:
         For one-time rides, returns a single Ride.
         For recurring rides, creates the pattern and returns a list of generated Rides.
         """
+        # Check if driver has a vehicle with passed inspection status
+        driver_vehicles = db.query(DriverVehicle).filter(
+            DriverVehicle.driver_id == driver_id,
+            DriverVehicle.is_primary == True
+        ).all()
+
+        # Check if any of the driver's primary vehicles have passed inspection
+        has_passed_vehicle = False
+        for vehicle in driver_vehicles:
+            if vehicle.inspection_status == "passed":
+                has_passed_vehicle = True
+                break
+
+        if not has_passed_vehicle:
+            raise ValueError("Driver does not have any vehicles with passed inspection status. Cannot create rides.")
+
         # Validate that starting hub exists
         starting_hub = db.query(Hub).filter(Hub.id == ride_data.get("starting_hub_id")).first()
         if not starting_hub:
