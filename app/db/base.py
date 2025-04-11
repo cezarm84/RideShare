@@ -18,5 +18,10 @@ from app.models.hub import Hub, HubPair
 from app.models.attachment import MessageAttachment
 from app.models.vehicle import VehicleType
 
+# Import new matching-related models
+from app.models.user_travel_pattern import UserTravelPattern
+from app.models.user_matching_preference import UserMatchingPreference
+from app.models.ride_match_history import RideMatchHistory
+
 # Note: This import approach allows Alembic to detect models
 # without causing circular import issues

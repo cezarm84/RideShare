@@ -20,7 +20,11 @@ class RideMatchResponse(BaseModel):
     available_seats: int
     total_capacity: int
     overall_score: float
-    
+    match_reasons: List[str] = []
+    driver_name: Optional[str] = None
+    driver_rating: Optional[float] = None
+    estimated_price: Optional[float] = None
+
     class Config:
         # Updated from orm_mode = True to from_attributes = True for Pydantic v2
         from_attributes = True
