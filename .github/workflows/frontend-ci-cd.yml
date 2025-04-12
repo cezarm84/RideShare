@@ -16,6 +16,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      build_success: ${{ steps.build.outputs.build_success }}
     defaults:
       run:
         working-directory: ./frontend
@@ -41,13 +43,21 @@ jobs:
         run: npm run lint || echo "Linting failed but continuing..."
 
       - name: Build
-        run: npm run build || echo "Build failed but continuing..."
+        id: build
+        run: |
+          if npm run build; then
+            echo "build_success=true" >> $GITHUB_OUTPUT
+            echo "Build succeeded"
+          else
+            echo "Build failed but continuing..."
+          fi
 
       - name: Test
         run: npm test -- --passWithNoTests --coverage || echo "Tests failed but continuing..."
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
+        if: steps.build.outputs.build_success == 'true'
         with:
           directory: ./frontend/coverage
           flags: frontend
@@ -55,6 +65,7 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        if: steps.build.outputs.build_success == 'true'
         with:
           name: frontend-build
           path: frontend/dist
@@ -62,7 +73,7 @@ jobs:
 
   deploy-staging:
     needs: build-and-test
-    if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && needs.build-and-test.outputs.build_success == 'true'
     runs-on: ubuntu-latest
     environment: staging
 
@@ -83,7 +94,7 @@ jobs:
 
   deploy-production:
     needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.build-and-test.outputs.build_success == 'true'
     runs-on: ubuntu-latest
     environment: production
 
