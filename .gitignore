@@ -50,6 +50,7 @@ yarn-error.log*
 # IDE files
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 *.sublime-workspace
@@ -86,6 +87,13 @@ out/
 # Test files
 test-results/
 playwright-report/
+coverage/
+.nyc_output/
+cypress/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/results/
 
 # Generated files
 generated/
