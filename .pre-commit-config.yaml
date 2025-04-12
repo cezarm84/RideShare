@@ -1,0 +1,98 @@
+# Exclude patterns
+exclude: |
+  (?x)(
+    ^venv/|
+    ^env/|
+    ^.venv/|
+    ^.env/|
+    ^node_modules/|
+    ^frontend/node_modules/|
+    ^.git/|
+    ^.pytest_cache/|
+    ^__pycache__/|
+    ^.coverage/|
+    ^htmlcov/|
+    ^dist/|
+    ^build/|
+    ^.next/
+  )
+
+repos:
+  # Python formatting and linting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [commit]
+      - id: end-of-file-fixer
+        stages: [commit]
+      - id: check-yaml
+        stages: [commit]
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+        stages: [commit]
+      - id: check-merge-conflict
+        stages: [commit]
+      - id: debug-statements
+        stages: [commit]
+
+  # Python code formatting
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3
+        stages: [commit]
+
+  # Python import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+        stages: [commit]
+
+  # Python linting
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.3.3
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        stages: [commit]
+
+  # TypeScript/JavaScript linting
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.0.0-beta.2
+    hooks:
+      - id: eslint
+        files: \.(js|ts|tsx)$
+        types: [file]
+        stages: [commit]
+        additional_dependencies:
+          - eslint@9.0.0-beta.2
+          - eslint-plugin-react@7.34.1
+          - eslint-plugin-react-hooks@5.0.0-canary-7118f5dd7-20230705
+          - typescript@5.7.2
+          - "@typescript-eslint/eslint-plugin@8.22.0"
+          - "@typescript-eslint/parser@8.22.0"
+
+  # Conventional commit message validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.1.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          [
+            feat,
+            fix,
+            docs,
+            style,
+            refactor,
+            perf,
+            test,
+            build,
+            ci,
+            chore,
+            revert,
+          ]

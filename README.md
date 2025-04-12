@@ -71,3 +71,34 @@ Detailed API documentation is available in the following files:
 - **One-Step Driver Registration**: Simplified driver registration process with a single API call.
 - **Project Organization**: Improved project structure with development tools moved to a separate directory and updated .gitignore.
 - **Documentation Updates**: Comprehensive documentation for all API endpoints, including driver management and enterprise operations.
+- **Development Workflow**: Added pre-commit hooks for code quality and consistency.
+
+### Development Setup
+
+#### Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality and consistency. To set up the hooks:
+
+1. Install pre-commit:
+
+```bash
+pip install pre-commit
+```
+
+2. Install the git hooks:
+
+```bash
+pre-commit install
+pre-commit install --hook-type commit-msg
+```
+
+3. The hooks will now run automatically when you commit code. They will:
+   - Check for trailing whitespace
+   - Ensure files end with a newline
+   - Validate YAML files
+   - Check for large files
+   - Format Python code with Black
+   - Sort imports with isort
+   - Lint Python code with Ruff
+   - Lint JavaScript/TypeScript with ESLint
+   - Validate commit messages follow the Conventional Commits format
