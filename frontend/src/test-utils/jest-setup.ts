@@ -6,3 +6,18 @@ import '@testing-library/jest-dom';
 // Configure fetch mock
 import fetchMock from 'jest-fetch-mock';
 fetchMock.enableMocks();
+
+// Mock the cn function from utils
+jest.mock('@/lib/utils', () => ({
+  cn: (...inputs: any[]) => inputs.join(' '),
+}));
+
+// Mock React.forwardRef for components that use it
+import React from 'react';
+const originalForwardRef = React.forwardRef;
+if (!originalForwardRef) {
+  // @ts-ignore
+  React.forwardRef = function forwardRefShim(Component) {
+    return Component;
+  };
+}

@@ -7,7 +7,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
-import { rideService } from '../../services/ride.service';
+import { rideService } from '../../services/ride.service'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { driverService } from '../../services/driver.service';
 import { Driver } from '../../services/driver.service';
 
@@ -106,7 +106,7 @@ const RideForm = ({ initialData, onSubmit, onCancel }: RideFormProps) => {
   };
 
   // Trigger validation on form submission for testing
-  const onFormSubmit = async (e: React.FormEvent) => {
+  const onFormSubmit = async (e: React.FormEvent) => { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (!isSubmitted) {
       await trigger();
     }

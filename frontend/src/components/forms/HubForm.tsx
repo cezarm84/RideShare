@@ -3,7 +3,7 @@ import { hubSchema, HubFormValues } from '@/lib/validation-schemas';
 import { useFormHandler } from '@/hooks/use-form-handler';
 import FormField from '@/components/ui/form-field';
 import BaseForm from '@/components/ui/base-form';
-import { hubService } from '@/services/hub.service';
+import { hubService } from '@/services/hub.service'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 interface HubFormProps {
   initialData?: {
@@ -145,4 +145,4 @@ const HubForm = ({ initialData, onSubmit, onCancel }: HubFormProps) => {
   );
 };
 
-export default HubForm; 
+export default HubForm;

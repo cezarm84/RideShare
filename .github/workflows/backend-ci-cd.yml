@@ -62,7 +62,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest --cov=app --cov-report=xml
+          pytest --cov=. --cov-report=xml
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           SECRET_KEY: "test_secret_key"

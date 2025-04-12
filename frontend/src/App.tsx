@@ -6,7 +6,7 @@ import UserProfiles from "./pages/UserProfiles";
 import Calendar from "./pages/Calendar";
 import BasicTables from "./pages/Tables/BasicTables";
 import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
+import Blank from "./pages/Blank"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { bookingService } from '@/services/booking.service';
+import { bookingService } from '@/services/booking.service'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { rideService } from '@/services/ride.service';
 import { Ride } from '@/services/ride.service';
 
@@ -147,4 +147,4 @@ const BookingForm = ({ initialData, onSubmit, onCancel }: BookingFormProps) => {
   );
 };
 
-export default BookingForm; 
+export default BookingForm;

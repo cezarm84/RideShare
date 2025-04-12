@@ -34,19 +34,19 @@ jest.mock('@/components/ui/card', () => ({
 describe('Dashboard Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock useAuth
     (useAuth as jest.Mock).mockReturnValue({
       user: { id: 1, name: 'Test User' },
     });
-    
+
     // Mock service responses
     (rideService.getRides as jest.Mock).mockResolvedValue([
       { id: '1', status: 'active' },
       { id: '2', status: 'completed' },
       { id: '3', status: 'active' },
     ]);
-    
+
     (bookingService.getBookings as jest.Mock).mockResolvedValue([
       { id: '1', status: 'pending', price: 50 },
       { id: '2', status: 'confirmed', price: 75 },
@@ -57,24 +57,24 @@ describe('Dashboard Component', () => {
   it('should render dashboard with stats', async () => {
     // Act
     render(<Dashboard />);
-    
+
     // Assert - initially should show loading state or empty stats
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(rideService.getRides).toHaveBeenCalled();
       expect(bookingService.getBookings).toHaveBeenCalled();
     });
-    
+
     // Check stats are displayed correctly
     await waitFor(() => {
       expect(screen.getByText('Total Rides')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument(); // Total rides
+      expect(screen.getAllByText('3')[0]).toBeInTheDocument(); // Total rides
       expect(screen.getByText('Active Rides')).toBeInTheDocument();
       expect(screen.getByText('2')).toBeInTheDocument(); // Active rides
       expect(screen.getByText('Total Bookings')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument(); // Total bookings
+      expect(screen.getAllByText('3')[1]).toBeInTheDocument(); // Total bookings
       expect(screen.getByText('Revenue')).toBeInTheDocument();
       expect(screen.getByText('$155.00')).toBeInTheDocument(); // Total revenue
     });
@@ -84,19 +84,19 @@ describe('Dashboard Component', () => {
     // Arrange
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     (rideService.getRides as jest.Mock).mockRejectedValue(new Error('API error'));
-    
+
     // Act
     render(<Dashboard />);
-    
+
     // Assert
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching dashboard data:', expect.any(Error));
     });
-    
+
     // Should still render the dashboard structure
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Total Rides')).toBeInTheDocument();
-    
+
     // Cleanup
     consoleErrorSpy.mockRestore();
   });
@@ -104,7 +104,7 @@ describe('Dashboard Component', () => {
   it('should render recent activity and upcoming rides sections', async () => {
     // Act
     render(<Dashboard />);
-    
+
     // Assert
     await waitFor(() => {
       expect(screen.getByText('Recent Activity')).toBeInTheDocument();

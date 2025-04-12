@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState } from 'react'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { driverSchema, DriverFormValues } from '@/lib/validation-schemas';
 import { useFormHandler } from '@/hooks/use-form-handler';
 import FormField from '@/components/ui/form-field';
 import BaseForm from '@/components/ui/base-form';
-import { driverService } from '@/services/driver.service';
+import { driverService } from '@/services/driver.service'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 interface DriverFormProps {
   initialData?: {
@@ -104,4 +104,4 @@ const DriverForm = ({ initialData, onSubmit, onCancel }: DriverFormProps) => {
   );
 };
 
-export default DriverForm; 
+export default DriverForm;

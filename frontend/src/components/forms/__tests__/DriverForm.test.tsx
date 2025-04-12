@@ -1,6 +1,6 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils/test-setup';
-import { mockDriverProfile, mockErrorResponse, mockApiResponse, mockApiError } from '@/test-utils/api-mocks';
+import { mockErrorResponse, mockApiResponse, mockApiError } from '@/test-utils/api-mocks';
 import DriverForm from '../DriverForm';
 import { useToast } from '@/components/ui/use-toast';
 import { DriverProfileCreate } from '@/types/driver';
@@ -30,7 +30,7 @@ describe('DriverForm', () => {
 
   it('renders all form fields', () => {
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     expect(screen.getByLabelText(/driver name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/phone number/i)).toBeInTheDocument();
@@ -40,10 +40,10 @@ describe('DriverForm', () => {
 
   it('shows validation errors for empty form submission', async () => {
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     // Submit empty form
     fireEvent.click(screen.getByRole('button', { name: /add driver/i }));
-    
+
     // Check for validation messages
     await waitFor(() => {
       expect(screen.getByText(/name is required/i)).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('DriverForm', () => {
 
   it('submits form with valid data', async () => {
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     // Fill in form fields
     fireEvent.change(screen.getByLabelText(/driver name/i), {
       target: { value: 'John Doe' },
@@ -73,18 +73,18 @@ describe('DriverForm', () => {
     fireEvent.change(screen.getByLabelText(/license plate/i), {
       target: { value: 'ABC123' },
     });
-    
+
     // Submit form
     fireEvent.click(screen.getByRole('button', { name: /add driver/i }));
-    
+
     // Check if onSubmit was called with correct data
     await waitFor(() => {
       // Check that onSubmit was called at least once
       expect(mockOnSubmit).toHaveBeenCalled();
-      
+
       // Get the first argument of the first call
       const firstCallArg = mockOnSubmit.mock.calls[0][0];
-      
+
       // Check the data structure
       expect(firstCallArg).toEqual({
         name: 'John Doe',
@@ -101,7 +101,7 @@ describe('DriverForm', () => {
     mockOnSubmit.mockRejectedValueOnce(mockErrorResponse);
 
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     // Fill in form fields
     fireEvent.change(screen.getByLabelText(/driver name/i), {
       target: { value: 'John Doe' },
@@ -118,10 +118,10 @@ describe('DriverForm', () => {
     fireEvent.change(screen.getByLabelText(/license plate/i), {
       target: { value: 'ABC123' },
     });
-    
+
     // Submit form
     fireEvent.click(screen.getByRole('button', { name: /add driver/i }));
-    
+
     // Check if error message is shown in the UI
     await waitFor(() => {
       expect(screen.getByText(/an unexpected error occurred/i)).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('DriverForm', () => {
     mockOnSubmit.mockRejectedValueOnce(mockApiError);
 
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     // Fill in form fields
     fireEvent.change(screen.getByLabelText(/driver name/i), {
       target: { value: 'John Doe' },
@@ -150,10 +150,10 @@ describe('DriverForm', () => {
     fireEvent.change(screen.getByLabelText(/license plate/i), {
       target: { value: 'ABC123' },
     });
-    
+
     // Submit form
     fireEvent.click(screen.getByRole('button', { name: /add driver/i }));
-    
+
     // Check if error message is shown in the UI
     await waitFor(() => {
       expect(screen.getByText(/network error/i)).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('DriverForm', () => {
     mockOnSubmit.mockImplementationOnce(() => new Promise(resolve => setTimeout(resolve, 1000)));
 
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     // Fill in form fields
     fireEvent.change(screen.getByLabelText(/driver name/i), {
       target: { value: 'John Doe' },
@@ -182,25 +182,25 @@ describe('DriverForm', () => {
     fireEvent.change(screen.getByLabelText(/license plate/i), {
       target: { value: 'ABC123' },
     });
-    
+
     // Submit form
     fireEvent.click(screen.getByRole('button', { name: /add driver/i }));
-    
+
     // Check if loading state is shown
     expect(screen.getByRole('button', { name: /saving/i })).toBeInTheDocument();
-    
+
     // Wait for submission to complete
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalled();
     });
-    
+
     // The button remains in "Saving..." state after submission
     expect(screen.getByRole('button', { name: /saving/i })).toBeInTheDocument();
   });
 
   it('calls onCancel when cancel button is clicked', () => {
     renderWithProviders(<DriverForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    
+
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(mockOnCancel).toHaveBeenCalled();
   });
@@ -216,17 +216,17 @@ describe('DriverForm', () => {
     };
 
     renderWithProviders(
-      <DriverForm 
+      <DriverForm
         initialData={initialData}
         onSubmit={mockOnSubmit}
         onCancel={mockOnCancel}
       />
     );
-    
+
     expect(screen.getByLabelText(/driver name/i)).toHaveValue('John Doe');
     expect(screen.getByLabelText(/email/i)).toHaveValue('john@example.com');
     expect(screen.getByLabelText(/phone number/i)).toHaveValue('1234567890');
     expect(screen.getByLabelText(/vehicle model/i)).toHaveValue('Toyota Camry');
     expect(screen.getByLabelText(/license plate/i)).toHaveValue('ABC123');
   });
-}); 
+});
