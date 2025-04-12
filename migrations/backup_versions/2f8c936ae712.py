@@ -5,16 +5,17 @@ Revises: 8c1b8acd7d26
 Create Date: 2023-04-06
 
 """
+
 from typing import Sequence, Union
+
+import sqlalchemy as sa
 from sqlalchemy import inspect
 
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
-revision: str = '2f8c936ae712'
-down_revision: Union[str, None] = '8c1b8acd7d26'
+revision: str = "2f8c936ae712"
+down_revision: Union[str, None] = "8c1b8acd7d26"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -24,10 +25,12 @@ def upgrade() -> None:
     # Check if column already exists before adding it
     conn = op.get_bind()
     insp = inspect(conn)
-    columns = [col['name'] for col in insp.get_columns('rides')]
-    
-    if 'vehicle_type_id' not in columns:
-        op.add_column('rides', sa.Column('vehicle_type_id', sa.Integer(), nullable=True))
+    columns = [col["name"] for col in insp.get_columns("rides")]
+
+    if "vehicle_type_id" not in columns:
+        op.add_column(
+            "rides", sa.Column("vehicle_type_id", sa.Integer(), nullable=True)
+        )
         # Add foreign key constraint if you have a vehicle_types table
         # op.create_foreign_key(
         #     'fk_rides_vehicle_type',
@@ -44,11 +47,11 @@ def downgrade() -> None:
     # Check if column exists before removing it
     conn = op.get_bind()
     insp = inspect(conn)
-    columns = [col['name'] for col in insp.get_columns('rides')]
-    
-    if 'vehicle_type_id' in columns:
+    columns = [col["name"] for col in insp.get_columns("rides")]
+
+    if "vehicle_type_id" in columns:
         # Drop foreign key first if you added it in upgrade
         # op.drop_constraint('fk_rides_vehicle_type', 'rides', type_='foreignkey')
-        
+
         # Drop the column
-        op.drop_column('rides', 'vehicle_type_id')
+        op.drop_column("rides", "vehicle_type_id")

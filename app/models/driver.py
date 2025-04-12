@@ -1,46 +1,73 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, Boolean, Text, Time, Date, Table
-from sqlalchemy.orm import relationship
 import datetime
 import enum
 
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    Time,
+)
+from sqlalchemy.orm import relationship
+
 from app.db.base_class import Base
+
 
 class DriverStatus(str, enum.Enum):
     """Status of a driver in the system"""
-    PENDING = "pending"           # Waiting for approval
-    ACTIVE = "active"             # Approved and active
-    INACTIVE = "inactive"         # Temporarily inactive
-    SUSPENDED = "suspended"       # Suspended due to violations
-    REJECTED = "rejected"         # Application rejected
+
+    PENDING = "pending"  # Waiting for approval
+    ACTIVE = "active"  # Approved and active
+    INACTIVE = "inactive"  # Temporarily inactive
+    SUSPENDED = "suspended"  # Suspended due to violations
+    REJECTED = "rejected"  # Application rejected
+
 
 class DriverVerificationStatus(str, enum.Enum):
     """Verification status for driver documents"""
-    PENDING = "pending"           # Documents submitted, waiting for verification
-    VERIFIED = "verified"         # Documents verified
-    REJECTED = "rejected"         # Documents rejected
-    EXPIRED = "expired"           # Documents expired
+
+    PENDING = "pending"  # Documents submitted, waiting for verification
+    VERIFIED = "verified"  # Documents verified
+    REJECTED = "rejected"  # Documents rejected
+    EXPIRED = "expired"  # Documents expired
+
 
 class VehicleInspectionStatus(str, enum.Enum):
     """Status of vehicle inspection"""
-    PENDING = "pending"           # Waiting for inspection
-    PASSED = "passed"             # Passed inspection
-    FAILED = "failed"             # Failed inspection
-    EXPIRED = "expired"           # Inspection expired
+
+    PENDING = "pending"  # Waiting for inspection
+    PASSED = "passed"  # Passed inspection
+    FAILED = "failed"  # Failed inspection
+    EXPIRED = "expired"  # Inspection expired
+
 
 class RideTypePermission(str, enum.Enum):
     """Types of rides a driver is permitted to drive"""
+
     HUB_TO_HUB = "hub_to_hub"
     HUB_TO_DESTINATION = "hub_to_destination"
     ENTERPRISE = "enterprise"
     ALL = "all"
 
+
 # Association table for driver ride type permissions
 driver_ride_type_permissions = Table(
     "driver_ride_type_permissions",
     Base.metadata,
-    Column("driver_profile_id", Integer, ForeignKey("driver_profiles.id"), primary_key=True),
-    Column("ride_type", String, primary_key=True)  # Uses values from RideTypePermission enum
+    Column(
+        "driver_profile_id", Integer, ForeignKey("driver_profiles.id"), primary_key=True
+    ),
+    Column(
+        "ride_type", String, primary_key=True
+    ),  # Uses values from RideTypePermission enum
 )
+
 
 class DriverProfile(Base):
     """Extended profile information for drivers"""
@@ -71,7 +98,9 @@ class DriverProfile(Base):
     cancelled_rides = Column(Integer, default=0)
 
     # Driver preferences
-    preferred_radius_km = Column(Float, default=10.0)  # Preferred driving radius in kilometers
+    preferred_radius_km = Column(
+        Float, default=10.0
+    )  # Preferred driving radius in kilometers
     max_passengers = Column(Integer, default=4)
 
     # Background check information
@@ -84,29 +113,43 @@ class DriverProfile(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     user = relationship("User", backref="driver_profile")
-    vehicles = relationship("DriverVehicle", back_populates="driver", cascade="all, delete-orphan")
-    schedules = relationship("DriverSchedule", back_populates="driver", cascade="all, delete-orphan")
-    reviews = relationship("DriverReview", back_populates="driver", cascade="all, delete-orphan")
-    documents = relationship("DriverDocument", back_populates="driver", cascade="all, delete-orphan")
+    vehicles = relationship(
+        "DriverVehicle", back_populates="driver", cascade="all, delete-orphan"
+    )
+    schedules = relationship(
+        "DriverSchedule", back_populates="driver", cascade="all, delete-orphan"
+    )
+    reviews = relationship(
+        "DriverReview", back_populates="driver", cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "DriverDocument", back_populates="driver", cascade="all, delete-orphan"
+    )
 
     @property
     def ride_type_permissions(self):
         """Get the ride type permissions for this driver"""
         # Import here to avoid circular imports
-        from app.db.session import SessionLocal
         from sqlalchemy import select
+
+        from app.db.session import SessionLocal
 
         # Create a session
         db = SessionLocal()
 
         # Query the permissions
         result = db.execute(
-            select(driver_ride_type_permissions.c.ride_type)
-            .where(driver_ride_type_permissions.c.driver_profile_id == self.id)
+            select(driver_ride_type_permissions.c.ride_type).where(
+                driver_ride_type_permissions.c.driver_profile_id == self.id
+            )
         ).fetchall()
 
         # Close the session
@@ -117,6 +160,7 @@ class DriverProfile(Base):
 
     def __repr__(self):
         return f"<DriverProfile(id={self.id}, user_id={self.user_id}, status={self.status})>"
+
 
 class DriverVehicle(Base):
     """Vehicles registered by drivers for ride-sharing"""
@@ -137,7 +181,11 @@ class DriverVehicle(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     driver = relationship("DriverProfile", back_populates="vehicles")
@@ -145,6 +193,7 @@ class DriverVehicle(Base):
 
     def __repr__(self):
         return f"<DriverVehicle(id={self.id}, driver_id={self.driver_id}, vehicle_id={self.vehicle_id})>"
+
 
 class DriverSchedule(Base):
     """Work schedule for drivers"""
@@ -155,7 +204,9 @@ class DriverSchedule(Base):
     driver_id = Column(Integer, ForeignKey("driver_profiles.id"), nullable=False)
 
     # Schedule type
-    is_recurring = Column(Boolean, default=True)  # True for weekly schedule, False for one-time availability
+    is_recurring = Column(
+        Boolean, default=True
+    )  # True for weekly schedule, False for one-time availability
 
     # For recurring schedules
     day_of_week = Column(Integer, nullable=True)  # 0=Monday, 6=Sunday
@@ -176,7 +227,11 @@ class DriverSchedule(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     driver = relationship("DriverProfile", back_populates="schedules")
@@ -187,6 +242,7 @@ class DriverSchedule(Base):
             return f"<DriverSchedule(id={self.id}, driver_id={self.driver_id}, day={self.day_of_week}, time={self.start_time}-{self.end_time})>"
         else:
             return f"<DriverSchedule(id={self.id}, driver_id={self.driver_id}, date={self.specific_date}, time={self.start_time}-{self.end_time})>"
+
 
 class DriverTimeOff(Base):
     """Time off periods for drivers"""
@@ -208,13 +264,18 @@ class DriverTimeOff(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     driver = relationship("DriverProfile", backref="time_off_periods")
 
     def __repr__(self):
         return f"<DriverTimeOff(id={self.id}, driver_id={self.driver_id}, period={self.start_date} to {self.end_date})>"
+
 
 class DriverReview(Base):
     """Reviews for drivers from passengers"""
@@ -232,7 +293,9 @@ class DriverReview(Base):
 
     # Review categories
     driving_rating = Column(Float, nullable=True)  # 1-5 stars for driving skill
-    cleanliness_rating = Column(Float, nullable=True)  # 1-5 stars for vehicle cleanliness
+    cleanliness_rating = Column(
+        Float, nullable=True
+    )  # 1-5 stars for vehicle cleanliness
     punctuality_rating = Column(Float, nullable=True)  # 1-5 stars for punctuality
 
     # Status
@@ -241,7 +304,11 @@ class DriverReview(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     driver = relationship("DriverProfile", back_populates="reviews")
@@ -250,6 +317,7 @@ class DriverReview(Base):
 
     def __repr__(self):
         return f"<DriverReview(id={self.id}, driver_id={self.driver_id}, rating={self.rating})>"
+
 
 class DriverDocument(Base):
     """Documents uploaded by drivers for verification"""
@@ -260,7 +328,9 @@ class DriverDocument(Base):
     driver_id = Column(Integer, ForeignKey("driver_profiles.id"), nullable=False)
 
     # Document details
-    document_type = Column(String, nullable=False)  # license, insurance, registration, etc.
+    document_type = Column(
+        String, nullable=False
+    )  # license, insurance, registration, etc.
     document_url = Column(String, nullable=False)  # URL to the document in storage
     filename = Column(String, nullable=False)
 
@@ -273,7 +343,11 @@ class DriverDocument(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.now(datetime.timezone.utc),
+        onupdate=datetime.datetime.now(datetime.timezone.utc),
+    )
 
     # Relationships
     driver = relationship("DriverProfile", back_populates="documents")

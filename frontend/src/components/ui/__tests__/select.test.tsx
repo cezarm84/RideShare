@@ -1,14 +1,14 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { 
-  Select, 
-  SelectContent, 
-  SelectGroup, 
-  SelectItem, 
-  SelectLabel, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue
 } from '../select';
 
 describe('Select Component', () => {
@@ -24,7 +24,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger).toBeInTheDocument();
     expect(trigger).toHaveAttribute('data-slot', 'select-trigger');
@@ -43,7 +43,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute('data-size', 'sm');
   });
@@ -59,7 +59,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger.className).toContain('custom-trigger-class');
   });
@@ -75,7 +75,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger).toBeDisabled();
   });
@@ -100,7 +100,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger).toBeInTheDocument();
     expect(screen.getByText('Select with groups')).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByRole('combobox');
     expect(trigger).toBeInTheDocument();
   });
@@ -134,7 +134,7 @@ describe('Select Component', () => {
         </SelectContent>
       </Select>
     );
-    
+
     const trigger = screen.getByTestId('select-trigger');
     expect(trigger).toHaveAttribute('aria-label', 'Test select');
   });

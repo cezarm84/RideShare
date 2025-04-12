@@ -105,4 +105,4 @@ class EnterpriseService {
   }
 }
 
-export const enterpriseService = new EnterpriseService(); 
+export const enterpriseService = new EnterpriseService();

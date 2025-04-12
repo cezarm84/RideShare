@@ -1,9 +1,12 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class DestinationBase(BaseModel):
     """Base schema for destination data"""
+
     name: str
     address: str
     city: str
@@ -14,12 +17,16 @@ class DestinationBase(BaseModel):
     enterprise_id: Optional[int] = None
     is_active: Optional[bool] = True
 
+
 class DestinationCreate(DestinationBase):
     """Schema for creating a new destination"""
+
     pass
+
 
 class DestinationUpdate(BaseModel):
     """Schema for updating a destination"""
+
     name: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
@@ -30,8 +37,10 @@ class DestinationUpdate(BaseModel):
     enterprise_id: Optional[int] = None
     is_active: Optional[bool] = None
 
+
 class DestinationResponse(DestinationBase):
     """Schema for API responses"""
+
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

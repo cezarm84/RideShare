@@ -1,20 +1,20 @@
 import logging
-from typing import Optional, List, Dict, Union, Tuple
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from typing import Dict, List, Optional
+
+from sqlalchemy import and_, func
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.models.driver import Driver
-from app.models.vehicle import Vehicle
 from app.models.ride import Ride, RideBooking
 from app.models.user import User
-from app.models.address import Address
+from app.models.vehicle import Vehicle
+from app.schemas.driver import DriverCreate, DriverUpdate
 from app.tasks.travel_pattern_updater import update_travel_pattern_after_ride
-from app.schemas.driver import DriverCreate, DriverUpdate, DriverResponse
-from app.services.geocoding_service import geocoding_service
 
 logger = logging.getLogger(__name__)
+
 
 class DriverService:
     """Service for managing driver operations and status"""
@@ -43,7 +43,9 @@ class DriverService:
             # Check if user exists
             user = db.query(User).filter(User.id == driver_data.user_id).first()
             if not user:
-                logger.error(f"Cannot create driver: User ID {driver_data.user_id} not found")
+                logger.error(
+                    f"Cannot create driver: User ID {driver_data.user_id} not found"
+                )
                 return None
 
             # Create new driver
@@ -55,13 +57,15 @@ class DriverService:
                 rating=driver_data.rating or 0.0,
                 is_verified=driver_data.is_verified or False,
                 current_location=None,  # Will be updated when driver goes online
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             )
 
             db.add(driver)
             db.commit()
             db.refresh(driver)
-            logger.info(f"Created new driver with ID {driver.id} for user {driver.user_id}")
+            logger.info(
+                f"Created new driver with ID {driver.id} for user {driver.user_id}"
+            )
             return driver
 
         except SQLAlchemyError as e:
@@ -109,7 +113,9 @@ class DriverService:
             logger.error(f"Error retrieving driver for user {user_id}: {str(e)}")
             return None
 
-    def update_driver(self, driver_id: int, driver_data: DriverUpdate, db: Session) -> Optional[Driver]:
+    def update_driver(
+        self, driver_id: int, driver_data: DriverUpdate, db: Session
+    ) -> Optional[Driver]:
         """
         Update driver information
 
@@ -168,15 +174,21 @@ class DriverService:
                 return False
 
             # Check if driver has any active rides
-            active_rides = db.query(Ride).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status.in_(["ACCEPTED", "IN_PROGRESS"])
+            active_rides = (
+                db.query(Ride)
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status.in_(["ACCEPTED", "IN_PROGRESS"]),
+                    )
                 )
-            ).count()
+                .count()
+            )
 
             if active_rides > 0:
-                logger.warning(f"Cannot delete driver {driver_id}: Driver has {active_rides} active rides")
+                logger.warning(
+                    f"Cannot delete driver {driver_id}: Driver has {active_rides} active rides"
+                )
                 return False
 
             # Delete the driver
@@ -194,7 +206,9 @@ class DriverService:
             logger.error(f"Unexpected error deleting driver {driver_id}: {str(e)}")
             return False
 
-    def update_driver_location(self, driver_id: int, latitude: float, longitude: float, db: Session) -> bool:
+    def update_driver_location(
+        self, driver_id: int, latitude: float, longitude: float, db: Session
+    ) -> bool:
         """
         Update driver's current location
 
@@ -210,7 +224,9 @@ class DriverService:
         try:
             driver = db.query(Driver).filter(Driver.id == driver_id).first()
             if not driver:
-                logger.warning(f"Cannot update location: Driver ID {driver_id} not found")
+                logger.warning(
+                    f"Cannot update location: Driver ID {driver_id} not found"
+                )
                 return False
 
             # Update location using PostgreSQL/PostGIS POINT type
@@ -218,7 +234,9 @@ class DriverService:
             driver.last_location_update = datetime.utcnow()
 
             db.commit()
-            logger.info(f"Updated location for driver {driver_id}: ({latitude}, {longitude})")
+            logger.info(
+                f"Updated location for driver {driver_id}: ({latitude}, {longitude})"
+            )
             return True
 
         except Exception as e:
@@ -267,12 +285,14 @@ class DriverService:
             logger.error(f"Error updating driver status for {driver_id}: {str(e)}")
             return False
 
-    def find_available_drivers(self,
-                             pickup_lat: float,
-                             pickup_lng: float,
-                             max_distance_km: float = 5.0,
-                             vehicle_type_id: Optional[int] = None,
-                             db: Session = None) -> List[Dict]:
+    def find_available_drivers(
+        self,
+        pickup_lat: float,
+        pickup_lng: float,
+        max_distance_km: float = 5.0,
+        vehicle_type_id: Optional[int] = None,
+        db: Session = None,
+    ) -> List[Dict]:
         """
         Find available drivers near a pickup location
 
@@ -297,20 +317,23 @@ class DriverService:
 
             # Build the base query
             # PostGIS ST_Distance_Sphere calculates distance in meters
-            query = db.query(
-                Driver,
-                Vehicle,
-                func.ST_Distance_Sphere(func.ST_GeomFromText(Driver.current_location),
-                                        func.ST_GeomFromText(pickup_point)).label('distance')
-            ).join(
-                Vehicle,
-                Vehicle.driver_id == Driver.id
-            ).filter(
-                and_(
-                    Driver.status == "ONLINE",
-                    Driver.is_verified == True,
-                    Driver.current_location.isnot(None),
-                    Vehicle.is_active == True
+            query = (
+                db.query(
+                    Driver,
+                    Vehicle,
+                    func.ST_Distance_Sphere(
+                        func.ST_GeomFromText(Driver.current_location),
+                        func.ST_GeomFromText(pickup_point),
+                    ).label("distance"),
+                )
+                .join(Vehicle, Vehicle.driver_id == Driver.id)
+                .filter(
+                    and_(
+                        Driver.status == "ONLINE",
+                        Driver.is_verified == True,
+                        Driver.current_location.isnot(None),
+                        Vehicle.is_active == True,
+                    )
                 )
             )
 
@@ -320,12 +343,15 @@ class DriverService:
 
             # Add distance filter (max_distance_km in kilometers, convert to meters)
             query = query.filter(
-                func.ST_Distance_Sphere(func.ST_GeomFromText(Driver.current_location),
-                                       func.ST_GeomFromText(pickup_point)) <= max_distance_km * 1000
+                func.ST_Distance_Sphere(
+                    func.ST_GeomFromText(Driver.current_location),
+                    func.ST_GeomFromText(pickup_point),
+                )
+                <= max_distance_km * 1000
             )
 
             # Order by distance (closest first)
-            query = query.order_by('distance')
+            query = query.order_by("distance")
 
             # Execute query
             results = query.all()
@@ -333,18 +359,26 @@ class DriverService:
             # Format the response
             available_drivers = []
             for driver, vehicle, distance in results:
-                available_drivers.append({
-                    "driver_id": driver.id,
-                    "user_id": driver.user_id,
-                    "rating": driver.rating,
-                    "vehicle_id": vehicle.id,
-                    "vehicle_type_id": vehicle.vehicle_type_id,
-                    "license_plate": vehicle.license_plate,
-                    "distance_km": round(distance / 1000, 2),  # Convert meters to kilometers
-                    "estimated_arrival_minutes": round(distance / 1000 * 2)  # Rough estimate: 2 min per km
-                })
+                available_drivers.append(
+                    {
+                        "driver_id": driver.id,
+                        "user_id": driver.user_id,
+                        "rating": driver.rating,
+                        "vehicle_id": vehicle.id,
+                        "vehicle_type_id": vehicle.vehicle_type_id,
+                        "license_plate": vehicle.license_plate,
+                        "distance_km": round(
+                            distance / 1000, 2
+                        ),  # Convert meters to kilometers
+                        "estimated_arrival_minutes": round(
+                            distance / 1000 * 2
+                        ),  # Rough estimate: 2 min per km
+                    }
+                )
 
-            logger.info(f"Found {len(available_drivers)} available drivers near ({pickup_lat}, {pickup_lng})")
+            logger.info(
+                f"Found {len(available_drivers)} available drivers near ({pickup_lat}, {pickup_lng})"
+            )
             return available_drivers
 
         except Exception as e:
@@ -371,7 +405,9 @@ class DriverService:
                 return False
 
             if driver.status != "ONLINE":
-                logger.error(f"Cannot assign ride: Driver {driver_id} is not online (status: {driver.status})")
+                logger.error(
+                    f"Cannot assign ride: Driver {driver_id} is not online (status: {driver.status})"
+                )
                 return False
 
             # Check if ride exists and is pending
@@ -381,7 +417,9 @@ class DriverService:
                 return False
 
             if ride.status != "PENDING":
-                logger.error(f"Cannot assign ride: Ride {ride_id} is not pending (status: {ride.status})")
+                logger.error(
+                    f"Cannot assign ride: Ride {ride_id} is not pending (status: {ride.status})"
+                )
                 return False
 
             # Update ride with driver assignment
@@ -399,11 +437,15 @@ class DriverService:
 
         except SQLAlchemyError as e:
             db.rollback()
-            logger.error(f"Database error assigning ride {ride_id} to driver {driver_id}: {str(e)}")
+            logger.error(
+                f"Database error assigning ride {ride_id} to driver {driver_id}: {str(e)}"
+            )
             return False
         except Exception as e:
             db.rollback()
-            logger.error(f"Unexpected error assigning ride {ride_id} to driver {driver_id}: {str(e)}")
+            logger.error(
+                f"Unexpected error assigning ride {ride_id} to driver {driver_id}: {str(e)}"
+            )
             return False
 
     def complete_ride(self, driver_id: int, ride_id: int, db: Session) -> bool:
@@ -420,16 +462,22 @@ class DriverService:
         """
         try:
             # Check if ride exists and is assigned to this driver
-            ride = db.query(Ride).filter(
-                and_(
-                    Ride.id == ride_id,
-                    Ride.driver_id == driver_id,
-                    Ride.status == "IN_PROGRESS"
+            ride = (
+                db.query(Ride)
+                .filter(
+                    and_(
+                        Ride.id == ride_id,
+                        Ride.driver_id == driver_id,
+                        Ride.status == "IN_PROGRESS",
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if not ride:
-                logger.error(f"Cannot complete ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or not in progress")
+                logger.error(
+                    f"Cannot complete ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or not in progress"
+                )
                 return False
 
             # Get driver
@@ -444,7 +492,9 @@ class DriverService:
 
             # Calculate ride duration and distance if needed
             if ride.started_at:
-                ride.duration_minutes = round((datetime.utcnow() - ride.started_at).total_seconds() / 60)
+                ride.duration_minutes = round(
+                    (datetime.utcnow() - ride.started_at).total_seconds() / 60
+                )
 
             # Update driver status back to ONLINE
             driver.status = "ONLINE"
@@ -456,20 +506,28 @@ class DriverService:
             # Update travel patterns for all passengers
             try:
                 # Get all bookings for this ride
-                bookings = db.query(RideBooking).filter(RideBooking.ride_id == ride_id).all()
+                bookings = (
+                    db.query(RideBooking).filter(RideBooking.ride_id == ride_id).all()
+                )
                 for booking in bookings:
                     # Update travel pattern for each passenger
                     update_travel_pattern_after_ride(booking.passenger_id, ride_id)
-                    logger.info(f"Updated travel pattern for passenger {booking.passenger_id} after ride {ride_id}")
+                    logger.info(
+                        f"Updated travel pattern for passenger {booking.passenger_id} after ride {ride_id}"
+                    )
             except Exception as e:
                 # Don't fail the ride completion if travel pattern update fails
-                logger.error(f"Error updating travel patterns for ride {ride_id}: {str(e)}")
+                logger.error(
+                    f"Error updating travel patterns for ride {ride_id}: {str(e)}"
+                )
 
             return True
 
         except Exception as e:
             db.rollback()
-            logger.error(f"Error completing ride {ride_id} by driver {driver_id}: {str(e)}")
+            logger.error(
+                f"Error completing ride {ride_id} by driver {driver_id}: {str(e)}"
+            )
             return False
 
     def start_ride(self, driver_id: int, ride_id: int, db: Session) -> bool:
@@ -486,16 +544,22 @@ class DriverService:
         """
         try:
             # Check if ride exists and is assigned to this driver
-            ride = db.query(Ride).filter(
-                and_(
-                    Ride.id == ride_id,
-                    Ride.driver_id == driver_id,
-                    Ride.status == "ACCEPTED"
+            ride = (
+                db.query(Ride)
+                .filter(
+                    and_(
+                        Ride.id == ride_id,
+                        Ride.driver_id == driver_id,
+                        Ride.status == "ACCEPTED",
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if not ride:
-                logger.error(f"Cannot start ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or not accepted")
+                logger.error(
+                    f"Cannot start ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or not accepted"
+                )
                 return False
 
             # Update ride status
@@ -508,10 +572,14 @@ class DriverService:
 
         except Exception as e:
             db.rollback()
-            logger.error(f"Error starting ride {ride_id} by driver {driver_id}: {str(e)}")
+            logger.error(
+                f"Error starting ride {ride_id} by driver {driver_id}: {str(e)}"
+            )
             return False
 
-    def cancel_ride(self, driver_id: int, ride_id: int, reason: str, db: Session) -> bool:
+    def cancel_ride(
+        self, driver_id: int, ride_id: int, reason: str, db: Session
+    ) -> bool:
         """
         Cancel a ride assigned to a driver
 
@@ -526,16 +594,22 @@ class DriverService:
         """
         try:
             # Check if ride exists and is assigned to this driver
-            ride = db.query(Ride).filter(
-                and_(
-                    Ride.id == ride_id,
-                    Ride.driver_id == driver_id,
-                    Ride.status.in_(["ACCEPTED", "IN_PROGRESS"])
+            ride = (
+                db.query(Ride)
+                .filter(
+                    and_(
+                        Ride.id == ride_id,
+                        Ride.driver_id == driver_id,
+                        Ride.status.in_(["ACCEPTED", "IN_PROGRESS"]),
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if not ride:
-                logger.error(f"Cannot cancel ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or in wrong status")
+                logger.error(
+                    f"Cannot cancel ride: Ride {ride_id} not found, not assigned to driver {driver_id}, or in wrong status"
+                )
                 return False
 
             # Get driver
@@ -560,10 +634,14 @@ class DriverService:
 
         except Exception as e:
             db.rollback()
-            logger.error(f"Error cancelling ride {ride_id} by driver {driver_id}: {str(e)}")
+            logger.error(
+                f"Error cancelling ride {ride_id} by driver {driver_id}: {str(e)}"
+            )
             return False
 
-    def get_driver_statistics(self, driver_id: int, period_days: int = 30, db: Session = None) -> Dict:
+    def get_driver_statistics(
+        self, driver_id: int, period_days: int = 30, db: Session = None
+    ) -> Dict:
         """
         Get driver statistics for a given period
 
@@ -591,53 +669,82 @@ class DriverService:
                 return {}
 
             # Get completed rides count
-            completed_rides_count = db.query(func.count(Ride.id)).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status == "COMPLETED",
-                    Ride.completed_at >= start_date
+            completed_rides_count = (
+                db.query(func.count(Ride.id))
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status == "COMPLETED",
+                        Ride.completed_at >= start_date,
+                    )
                 )
-            ).scalar() or 0
+                .scalar()
+                or 0
+            )
 
             # Get cancelled rides count
-            cancelled_rides_count = db.query(func.count(Ride.id)).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status == "CANCELLED",
-                    Ride.cancelled_at >= start_date
+            cancelled_rides_count = (
+                db.query(func.count(Ride.id))
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status == "CANCELLED",
+                        Ride.cancelled_at >= start_date,
+                    )
                 )
-            ).scalar() or 0
+                .scalar()
+                or 0
+            )
 
             # Get total earnings
-            total_earnings = db.query(func.sum(Ride.fare_amount)).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status == "COMPLETED",
-                    Ride.completed_at >= start_date
+            total_earnings = (
+                db.query(func.sum(Ride.fare_amount))
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status == "COMPLETED",
+                        Ride.completed_at >= start_date,
+                    )
                 )
-            ).scalar() or 0
+                .scalar()
+                or 0
+            )
 
             # Get total ride minutes
-            total_minutes = db.query(func.sum(Ride.duration_minutes)).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status == "COMPLETED",
-                    Ride.completed_at >= start_date
+            total_minutes = (
+                db.query(func.sum(Ride.duration_minutes))
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status == "COMPLETED",
+                        Ride.completed_at >= start_date,
+                    )
                 )
-            ).scalar() or 0
+                .scalar()
+                or 0
+            )
 
             # Get total distance
-            total_distance = db.query(func.sum(Ride.distance_km)).filter(
-                and_(
-                    Ride.driver_id == driver_id,
-                    Ride.status == "COMPLETED",
-                    Ride.completed_at >= start_date
+            total_distance = (
+                db.query(func.sum(Ride.distance_km))
+                .filter(
+                    and_(
+                        Ride.driver_id == driver_id,
+                        Ride.status == "COMPLETED",
+                        Ride.completed_at >= start_date,
+                    )
                 )
-            ).scalar() or 0
+                .scalar()
+                or 0
+            )
 
             # Calculate acceptance rate
             total_offered = completed_rides_count + cancelled_rides_count
-            acceptance_rate = (completed_rides_count / total_offered * 100) if total_offered > 0 else 0
+            acceptance_rate = (
+                (completed_rides_count / total_offered * 100)
+                if total_offered > 0
+                else 0
+            )
 
             return {
                 "driver_id": driver_id,
@@ -649,12 +756,13 @@ class DriverService:
                 "total_ride_minutes": total_minutes,
                 "total_distance_km": round(total_distance, 2),
                 "average_rating": driver.rating,
-                "status": driver.status
+                "status": driver.status,
             }
 
         except Exception as e:
             logger.error(f"Error getting statistics for driver {driver_id}: {str(e)}")
             return {}
+
 
 # Create a singleton instance
 driver_service = DriverService()

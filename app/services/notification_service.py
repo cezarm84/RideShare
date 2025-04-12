@@ -1,16 +1,18 @@
-import logging
-from sqlalchemy.orm import Session
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
 import json
+import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from app.models.user import User, UserRole
+from sqlalchemy.orm import Session
+
+from app.models.driver import DriverProfile, DriverVehicle
+from app.models.message import Conversation, Message, UserMessageSettings
 from app.models.ride import RideBooking
-from app.models.message import Message, Conversation, UserMessageSettings
-from app.models.driver import DriverVehicle, DriverProfile
+from app.models.user import User, UserRole
 from app.models.vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
+
 
 class NotificationService:
     """Service for handling notifications"""
@@ -23,14 +25,18 @@ class NotificationService:
         Notify a user about a ride booking confirmation.
         Returns True if notification was sent successfully, False otherwise.
         """
-        booking = self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        booking = (
+            self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        )
         if not booking:
             logger.error(f"Booking {booking_id} not found for notification")
             return False
 
         user = self.db.query(User).filter(User.id == booking.passenger_id).first()
         if not user:
-            logger.error(f"User {booking.passenger_id} not found for booking {booking_id}")
+            logger.error(
+                f"User {booking.passenger_id} not found for booking {booking_id}"
+            )
             return False
 
         message = (
@@ -42,8 +48,10 @@ class NotificationService:
         # Add destination information based on ride type
         if booking.ride.destination_hub_id:
             message += f" to Hub {booking.ride.destination_hub_id}"
-        elif hasattr(booking.ride, 'destination') and booking.ride.destination:
-            message += f" to {booking.ride.destination.get('name', 'Custom Destination')}"
+        elif hasattr(booking.ride, "destination") and booking.ride.destination:
+            message += (
+                f" to {booking.ride.destination.get('name', 'Custom Destination')}"
+            )
         else:
             message += " to your destination"
 
@@ -54,30 +62,36 @@ class NotificationService:
             details={
                 "departure_time": booking.ride.departure_time.isoformat(),
                 "starting_hub_id": booking.ride.starting_hub_id,
-                "destination_id": booking.ride.destination_id
-            }
+                "destination_id": booking.ride.destination_id,
+            },
         )
 
         push_notification = self.format_notification_for_push(
-            title="Ride Confirmation",
-            body=message,
-            data=notification_data
+            title="Ride Confirmation", body=message, data=notification_data
         )
 
-        return await self._send_notification(user, "Ride Confirmation", message, push_notification)
+        return await self._send_notification(
+            user, "Ride Confirmation", message, push_notification
+        )
 
-    async def notify_ride_update(self, booking_id: int, update_type: str, details: str) -> bool:
+    async def notify_ride_update(
+        self, booking_id: int, update_type: str, details: str
+    ) -> bool:
         """
         Notify a user about a ride update (e.g., delay, cancellation).
         """
-        booking = self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        booking = (
+            self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        )
         if not booking:
             logger.error(f"Booking {booking_id} not found for update notification")
             return False
 
         user = self.db.query(User).filter(User.id == booking.passenger_id).first()
         if not user:
-            logger.error(f"User {booking.passenger_id} not found for booking {booking_id}")
+            logger.error(
+                f"User {booking.passenger_id} not found for booking {booking_id}"
+            )
             return False
 
         message = f"Your ride (ID: {booking_id}) has an update: {update_type}\nDetails: {details}"
@@ -86,21 +100,20 @@ class NotificationService:
             notification_type="ride_update",
             booking_id=booking_id,
             user_id=user.id,
-            details={
-                "update_type": update_type,
-                "details": details
-            }
+            details={"update_type": update_type, "details": details},
         )
 
         push_notification = self.format_notification_for_push(
-            title=f"Ride Update: {update_type}",
-            body=message,
-            data=notification_data
+            title=f"Ride Update: {update_type}", body=message, data=notification_data
         )
 
-        return await self._send_notification(user, f"Ride Update: {update_type}", message, push_notification)
+        return await self._send_notification(
+            user, f"Ride Update: {update_type}", message, push_notification
+        )
 
-    async def notify_custom_message(self, user_id: int, title: str, message: str) -> bool:
+    async def notify_custom_message(
+        self, user_id: int, title: str, message: str
+    ) -> bool:
         """
         Send a custom notification to a user.
         """
@@ -113,13 +126,11 @@ class NotificationService:
             "type": "custom",
             "title": title,
             "message": message,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         push_notification = self.format_notification_for_push(
-            title=title,
-            body=message,
-            data=notification_data
+            title=title, body=message, data=notification_data
         )
 
         return await self._send_notification(user, title, message, push_notification)
@@ -134,15 +145,23 @@ class NotificationService:
             return False
 
         # Get the conversation
-        conversation = self.db.query(Conversation).filter(Conversation.id == message.conversation_id).first()
+        conversation = (
+            self.db.query(Conversation)
+            .filter(Conversation.id == message.conversation_id)
+            .first()
+        )
         if not conversation:
-            logger.error(f"Conversation {message.conversation_id} not found for message {message_id}")
+            logger.error(
+                f"Conversation {message.conversation_id} not found for message {message_id}"
+            )
             return False
 
         # Get the sender
         sender = self.db.query(User).filter(User.id == message.sender_id).first()
         if not sender:
-            logger.error(f"Sender {message.sender_id} not found for message {message_id}")
+            logger.error(
+                f"Sender {message.sender_id} not found for message {message_id}"
+            )
             return False
 
         # Create notification data
@@ -156,8 +175,9 @@ class NotificationService:
             # Format notification for this recipient
             push_notification = self.format_notification_for_push(
                 title=f"New message from {sender.first_name} {sender.last_name}",
-                body=message.content[:50] + ("..." if len(message.content) > 50 else ""),
-                data=notification_data
+                body=message.content[:50]
+                + ("..." if len(message.content) > 50 else ""),
+                data=notification_data,
             )
 
             # Send notification
@@ -165,7 +185,7 @@ class NotificationService:
                 recipient,
                 f"New message from {sender.first_name} {sender.last_name}",
                 message.content,
-                push_notification
+                push_notification,
             ):
                 success = False
 
@@ -180,7 +200,11 @@ class NotificationService:
             return {}
 
         # Get the conversation
-        conversation = self.db.query(Conversation).filter(Conversation.id == message.conversation_id).first()
+        conversation = (
+            self.db.query(Conversation)
+            .filter(Conversation.id == message.conversation_id)
+            .first()
+        )
         if not conversation:
             logger.error(f"Conversation not found for message {message.id}")
             return {}
@@ -192,23 +216,36 @@ class NotificationService:
             "conversation_id": message.conversation_id,
             "sender_id": message.sender_id,
             "sender_name": f"{sender.first_name} {sender.last_name}",
-            "content_preview": message.content[:50] + ("..." if len(message.content) > 50 else ""),
-            "message_type": message.message_type if hasattr(message, 'message_type') else "text",
+            "content_preview": message.content[:50]
+            + ("..." if len(message.content) > 50 else ""),
+            "message_type": (
+                message.message_type if hasattr(message, "message_type") else "text"
+            ),
             "sent_at": message.sent_at.isoformat(),
             "conversation_title": conversation.title or "Direct Message",
-            "conversation_type": conversation.conversation_type if hasattr(conversation, 'conversation_type') else "direct"
+            "conversation_type": (
+                conversation.conversation_type
+                if hasattr(conversation, "conversation_type")
+                else "direct"
+            ),
         }
 
         return notification_data
 
-    def create_ride_notification(self, notification_type: str, booking_id: int, user_id: int, details: Dict[str, Any]) -> Dict[str, Any]:
+    def create_ride_notification(
+        self,
+        notification_type: str,
+        booking_id: int,
+        user_id: int,
+        details: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Create a notification for a ride update"""
         notification_data = {
             "type": notification_type,
             "booking_id": booking_id,
             "user_id": user_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "details": details
+            "details": details,
         }
 
         return notification_data
@@ -216,16 +253,20 @@ class NotificationService:
     def get_notification_recipients(self, message: Message) -> List[User]:
         """Get the list of users who should receive notifications for a message"""
         # Get the conversation
-        conversation = self.db.query(Conversation).filter(Conversation.id == message.conversation_id).first()
+        conversation = (
+            self.db.query(Conversation)
+            .filter(Conversation.id == message.conversation_id)
+            .first()
+        )
         if not conversation:
             logger.error(f"Conversation not found for message {message.id}")
             return []
 
         # Get all participants except the sender
         recipients = [
-            user for user in conversation.participants
-            if user.id != message.sender_id and
-               self.should_notify_user(user.id)
+            user
+            for user in conversation.participants
+            if user.id != message.sender_id and self.should_notify_user(user.id)
         ]
 
         return recipients
@@ -233,7 +274,11 @@ class NotificationService:
     def should_notify_user(self, user_id: int) -> bool:
         """Check if a user should receive notifications"""
         # Get user's message settings
-        settings = self.db.query(UserMessageSettings).filter(UserMessageSettings.user_id == user_id).first()
+        settings = (
+            self.db.query(UserMessageSettings)
+            .filter(UserMessageSettings.user_id == user_id)
+            .first()
+        )
 
         # If no settings exist, default to sending notifications
         if not settings:
@@ -241,15 +286,19 @@ class NotificationService:
 
         return settings.notifications_enabled
 
-    def format_notification_for_push(self, title: str, body: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    def format_notification_for_push(
+        self, title: str, body: str, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Format a notification for sending as a push notification"""
-        return {
-            "title": title,
-            "body": body,
-            "data": data
-        }
+        return {"title": title, "body": body, "data": data}
 
-    async def _send_notification(self, user: User, title: str, message: str, push_data: Optional[Dict[str, Any]] = None) -> bool:
+    async def _send_notification(
+        self,
+        user: User,
+        title: str,
+        message: str,
+        push_data: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """
         Internal method to send notifications via multiple channels.
         Currently logs messages; to be extended with real integrations.
@@ -264,7 +313,9 @@ class NotificationService:
 
             # Placeholder for push notification (e.g., using Firebase)
             if push_data:
-                logger.info(f"Push notification to user {user.id}: {json.dumps(push_data)}")
+                logger.info(
+                    f"Push notification to user {user.id}: {json.dumps(push_data)}"
+                )
             else:
                 logger.info(f"Push notification to user {user.id}: {title} - {message}")
 
@@ -326,7 +377,13 @@ class NotificationService:
         #     logger.error(f"Twilio error: {str(e)}")
         pass
 
-    async def _send_push(self, user_id: int, title: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
+    async def _send_push(
+        self,
+        user_id: int,
+        title: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """Send a push notification"""
         # Implement with Firebase Cloud Messaging
         # Example with Firebase:
@@ -356,7 +413,9 @@ class NotificationService:
         pass
 
     @staticmethod
-    def send_inspection_expired_notification(db: Session, driver_vehicle: DriverVehicle):
+    def send_inspection_expired_notification(
+        db: Session, driver_vehicle: DriverVehicle
+    ):
         """
         Send notification that a vehicle's inspection has expired.
 
@@ -365,7 +424,11 @@ class NotificationService:
             driver_vehicle: The DriverVehicle object with expired inspection
         """
         # Get the driver
-        driver = db.query(DriverProfile).filter(DriverProfile.id == driver_vehicle.driver_id).first()
+        driver = (
+            db.query(DriverProfile)
+            .filter(DriverProfile.id == driver_vehicle.driver_id)
+            .first()
+        )
         if not driver:
             logger.warning(f"Driver not found for vehicle {driver_vehicle.id}")
             return
@@ -377,7 +440,9 @@ class NotificationService:
             return
 
         # Get the vehicle
-        vehicle = db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        vehicle = (
+            db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        )
         if not vehicle:
             logger.warning(f"Vehicle not found with ID {driver_vehicle.vehicle_id}")
             return
@@ -386,23 +451,29 @@ class NotificationService:
         admins = db.query(User).filter(User.role == UserRole.ADMIN).all()
 
         # Prepare notification message
-        message = f"IMPORTANT: The inspection for your vehicle {vehicle.make} {vehicle.model} " \
-                 f"(license plate: {vehicle.license_plate}) has expired. " \
-                 f"This vehicle cannot be used for rides until it passes a new inspection."
+        message = (
+            f"IMPORTANT: The inspection for your vehicle {vehicle.make} {vehicle.model} "
+            f"(license plate: {vehicle.license_plate}) has expired. "
+            f"This vehicle cannot be used for rides until it passes a new inspection."
+        )
 
         # Log notification to driver (in a real system, this would send an email/SMS)
         logger.info(f"Notification to driver {driver_user.email}: {message}")
 
         # Notify admins
-        admin_message = f"Vehicle inspection expired: Driver {driver_user.first_name} {driver_user.last_name} " \
-                        f"({driver_user.email}) has a vehicle with expired inspection: " \
-                        f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+        admin_message = (
+            f"Vehicle inspection expired: Driver {driver_user.first_name} {driver_user.last_name} "
+            f"({driver_user.email}) has a vehicle with expired inspection: "
+            f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+        )
 
         for admin in admins:
             logger.info(f"Notification to admin {admin.email}: {admin_message}")
 
     @staticmethod
-    def send_inspection_reminder_notification(db: Session, driver_vehicle: DriverVehicle, days_remaining: int):
+    def send_inspection_reminder_notification(
+        db: Session, driver_vehicle: DriverVehicle, days_remaining: int
+    ):
         """
         Send reminder notification that a vehicle's inspection is approaching expiration.
 
@@ -412,7 +483,11 @@ class NotificationService:
             days_remaining: Number of days until inspection expires
         """
         # Get the driver
-        driver = db.query(DriverProfile).filter(DriverProfile.id == driver_vehicle.driver_id).first()
+        driver = (
+            db.query(DriverProfile)
+            .filter(DriverProfile.id == driver_vehicle.driver_id)
+            .first()
+        )
         if not driver:
             logger.warning(f"Driver not found for vehicle {driver_vehicle.id}")
             return
@@ -424,7 +499,9 @@ class NotificationService:
             return
 
         # Get the vehicle
-        vehicle = db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        vehicle = (
+            db.query(Vehicle).filter(Vehicle.id == driver_vehicle.vehicle_id).first()
+        )
         if not vehicle:
             logger.warning(f"Vehicle not found with ID {driver_vehicle.vehicle_id}")
             return
@@ -433,17 +510,21 @@ class NotificationService:
         admins = db.query(User).filter(User.role == UserRole.ADMIN).all()
 
         # Prepare notification message
-        message = f"REMINDER: The inspection for your vehicle {vehicle.make} {vehicle.model} " \
-                 f"(license plate: {vehicle.license_plate}) will expire in {days_remaining} days. " \
-                 f"Please schedule an inspection soon to avoid interruption in your ability to provide rides."
+        message = (
+            f"REMINDER: The inspection for your vehicle {vehicle.make} {vehicle.model} "
+            f"(license plate: {vehicle.license_plate}) will expire in {days_remaining} days. "
+            f"Please schedule an inspection soon to avoid interruption in your ability to provide rides."
+        )
 
         # Log notification to driver (in a real system, this would send an email/SMS)
         logger.info(f"Notification to driver {driver_user.email}: {message}")
 
         # Notify admins
-        admin_message = f"Vehicle inspection reminder: Driver {driver_user.first_name} {driver_user.last_name} " \
-                        f"({driver_user.email}) has a vehicle with inspection expiring in {days_remaining} days: " \
-                        f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+        admin_message = (
+            f"Vehicle inspection reminder: Driver {driver_user.first_name} {driver_user.last_name} "
+            f"({driver_user.email}) has a vehicle with inspection expiring in {days_remaining} days: "
+            f"{vehicle.make} {vehicle.model} (license plate: {vehicle.license_plate})"
+        )
 
         for admin in admins:
             logger.info(f"Notification to admin {admin.email}: {admin_message}")

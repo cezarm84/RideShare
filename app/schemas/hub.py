@@ -1,6 +1,8 @@
-from typing import Optional, List, Any, Tuple
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from typing import Optional, Tuple
+
+from pydantic import BaseModel
+
 
 class AddressResponse(BaseModel):
     street: Optional[str] = None
@@ -9,6 +11,7 @@ class AddressResponse(BaseModel):
     city: Optional[str] = None
     country: Optional[str] = None
     coordinates: Optional[Tuple[float, float]] = None
+
 
 class AddressCreate(BaseModel):
     street: str
@@ -23,6 +26,7 @@ class AddressCreate(BaseModel):
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
 
+
 class HubBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -33,8 +37,10 @@ class HubBase(BaseModel):
     longitude: float
     is_active: bool = True
 
+
 class HubCreate(BaseModel):
     """Schema for creating a new hub"""
+
     name: str
     address: str
     postal_code: str
@@ -47,8 +53,10 @@ class HubCreate(BaseModel):
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
 
+
 class HubUpdate(BaseModel):
     """Schema for updating an existing hub"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     address: Optional[str] = None
@@ -62,8 +70,10 @@ class HubUpdate(BaseModel):
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
 
+
 class HubInDB(HubBase):
     """Schema for hub data in the database"""
+
     id: int
     created_at: datetime
     updated_at: datetime
@@ -71,8 +81,10 @@ class HubInDB(HubBase):
     class Config:
         from_attributes = True
 
+
 class HubResponse(BaseModel):
     """Schema for API responses"""
+
     id: int
     name: str
     description: Optional[str] = None
@@ -100,10 +112,18 @@ class HubResponse(BaseModel):
                 "post_code": self.postal_code,
                 "city": self.city,
                 "country": "Sweden",
-                "coordinates": (self.latitude, self.longitude) if self.latitude and self.longitude else None
+                "coordinates": (
+                    (self.latitude, self.longitude)
+                    if self.latitude and self.longitude
+                    else None
+                ),
             },
             "is_active": self.is_active,
-            "coordinates": (self.latitude, self.longitude) if self.latitude and self.longitude else None
+            "coordinates": (
+                (self.latitude, self.longitude)
+                if self.latitude and self.longitude
+                else None
+            ),
         }
 
     # Add compatibility method for both Pydantic v1 and v2
@@ -113,7 +133,7 @@ class HubResponse(BaseModel):
         Creates a model from an ORM object or dict.
         Compatible with Pydantic v1 and v2.
         """
-        if hasattr(cls, 'model_validate'):
+        if hasattr(cls, "model_validate"):
             # Pydantic v2
             return cls.model_validate(obj)
         else:
@@ -123,6 +143,7 @@ class HubResponse(BaseModel):
     class Config:
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
+
 
 class HubPairCreate(BaseModel):
     source_hub_id: int
@@ -134,6 +155,7 @@ class HubPairCreate(BaseModel):
     class Config:
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
+
 
 class HubPairResponse(BaseModel):
     id: int

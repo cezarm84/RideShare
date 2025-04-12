@@ -48,13 +48,13 @@ jest.mock('@/components/ui/button', () => ({
 
 describe('Rides Component', () => {
   const mockNavigate = jest.fn();
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock useNavigate
     (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
-    
+
     // Mock service responses
     (rideService.getAllRides as jest.Mock).mockResolvedValue([
       {
@@ -83,15 +83,15 @@ describe('Rides Component', () => {
   it('should render rides list', async () => {
     // Act
     render(<Rides />);
-    
+
     // Assert - initially should show loading state
     expect(screen.getByText('Rides')).toBeInTheDocument();
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(rideService.getAllRides).toHaveBeenCalled();
     });
-    
+
     // Check rides are displayed
     await waitFor(() => {
       expect(screen.getByText('New York')).toBeInTheDocument();
@@ -103,15 +103,15 @@ describe('Rides Component', () => {
   it('should navigate to create ride page when add button is clicked', async () => {
     // Act
     render(<Rides />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(rideService.getAllRides).toHaveBeenCalled();
     });
-    
+
     // Click the add button
     fireEvent.click(screen.getByText('Add Ride'));
-    
+
     // Assert
     expect(mockNavigate).toHaveBeenCalledWith('/rides/new');
   });
@@ -119,15 +119,15 @@ describe('Rides Component', () => {
   it('should navigate to edit ride page when edit button is clicked', async () => {
     // Act
     render(<Rides />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(rideService.getAllRides).toHaveBeenCalled();
     });
-    
+
     // Click the edit button for the first ride
     fireEvent.click(screen.getAllByText('Edit')[0]);
-    
+
     // Assert
     expect(mockNavigate).toHaveBeenCalledWith('/rides/1/edit');
   });
@@ -135,18 +135,18 @@ describe('Rides Component', () => {
   it('should delete ride when delete button is clicked', async () => {
     // Arrange
     (rideService.deleteRide as jest.Mock).mockResolvedValue({});
-    
+
     // Act
     render(<Rides />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(rideService.getAllRides).toHaveBeenCalled();
     });
-    
+
     // Click the delete button for the first ride
     fireEvent.click(screen.getAllByText('Delete')[0]);
-    
+
     // Assert
     await waitFor(() => {
       expect(rideService.deleteRide).toHaveBeenCalledWith('1');
@@ -158,18 +158,18 @@ describe('Rides Component', () => {
     // Arrange
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     (rideService.getAllRides as jest.Mock).mockRejectedValue(new Error('API error'));
-    
+
     // Act
     render(<Rides />);
-    
+
     // Assert
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching rides:', expect.any(Error));
     });
-    
+
     // Should still render the page structure
     expect(screen.getByText('Rides')).toBeInTheDocument();
-    
+
     // Cleanup
     consoleErrorSpy.mockRestore();
   });

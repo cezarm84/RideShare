@@ -1,10 +1,13 @@
 import logging
+from typing import Dict
+
 from fastapi import WebSocket
 from sqlalchemy.orm import Session
-from typing import Dict
+
 from app.models.ride import RideBooking
 
 logger = logging.getLogger(__name__)
+
 
 class RealTimeService:
     def __init__(self, db: Session):
@@ -21,14 +24,18 @@ class RealTimeService:
             del self.connections[user_id]
             logger.info(f"User {user_id} disconnected")
 
-    async def send_location_update(self, ride_id: int, latitude: float, longitude: float):
-        bookings = self.db.query(RideBooking).filter(RideBooking.ride_id == ride_id).all()
+    async def send_location_update(
+        self, ride_id: int, latitude: float, longitude: float
+    ):
+        bookings = (
+            self.db.query(RideBooking).filter(RideBooking.ride_id == ride_id).all()
+        )
         message = {
             "type": "location_update",
             "ride_id": ride_id,
             "latitude": latitude,
             "longitude": longitude,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
         for booking in bookings:
             if booking.user_id in self.connections:

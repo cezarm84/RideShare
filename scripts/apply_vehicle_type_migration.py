@@ -11,31 +11,34 @@ from pathlib import Path
 parent_dir = Path(__file__).parent.parent
 sys.path.append(str(parent_dir))
 
-from alembic import command
 from alembic.config import Config
+
+from alembic import command
+
 
 def apply_migration():
     """Apply the vehicle_type migration."""
     # Get the absolute path to the alembic.ini file
-    alembic_cfg_path = os.path.join(parent_dir, 'alembic.ini')
-    
+    alembic_cfg_path = os.path.join(parent_dir, "alembic.ini")
+
     if not os.path.exists(alembic_cfg_path):
         print(f"Error: Could not find alembic.ini at {alembic_cfg_path}")
         return False
-    
+
     try:
         # Create Alembic config
         alembic_cfg = Config(alembic_cfg_path)
-        
+
         # Run the migration
         command.upgrade(alembic_cfg, "head")
-        
+
         print("Migration successfully applied!")
         print("The 'vehicle_type_id' column has been added to the 'rides' table.")
         return True
     except Exception as e:
         print(f"Error applying migration: {e}")
         return False
+
 
 if __name__ == "__main__":
     apply_migration()

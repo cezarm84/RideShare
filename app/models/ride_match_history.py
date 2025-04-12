@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.db.base_class import Base
+
 
 class RideMatchHistory(Base):
     """Model for storing history of ride matches for learning and improvement"""
@@ -10,9 +11,15 @@ class RideMatchHistory(Base):
     __tablename__ = "ride_match_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    matched_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    ride_id = Column(Integer, ForeignKey("rides.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    matched_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    ride_id = Column(
+        Integer, ForeignKey("rides.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Match details
     match_score = Column(Float, nullable=False)
@@ -27,13 +34,15 @@ class RideMatchHistory(Base):
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
-    user = relationship("app.models.user.User", foreign_keys=[user_id], back_populates="match_history")
+    user = relationship(
+        "app.models.user.User", foreign_keys=[user_id], back_populates="match_history"
+    )
     matched_user = relationship("app.models.user.User", foreign_keys=[matched_user_id])
     ride = relationship("app.models.ride.Ride")
 
     __table_args__ = (
         # Ensure a user can only have one match history entry per ride and matched user
-        {'sqlite_autoincrement': True},
+        {"sqlite_autoincrement": True},
     )
 
     def __repr__(self):

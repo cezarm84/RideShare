@@ -1,16 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from app.db.session import get_db
-from app.api.dependencies import get_current_admin_user, get_current_superadmin_user
-from app.schemas.hub import HubCreate, HubUpdate, HubResponse, HubPairCreate, HubPairResponse
-from app.models.user import User
-from app.models.hub import Hub, HubPair
-from app.core.geocoding import get_coordinates_for_address
 import logging
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.api.dependencies import get_current_admin_user, get_current_superadmin_user
+from app.core.geocoding import get_coordinates_for_address
+from app.db.session import get_db
+from app.models.hub import Hub, HubPair
+from app.models.user import User
+from app.schemas.hub import (
+    HubCreate,
+    HubPairCreate,
+    HubPairResponse,
+    HubResponse,
+    HubUpdate,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 @router.get("", response_model=List[HubResponse])
 async def list_hubs(
@@ -18,7 +27,7 @@ async def list_hubs(
     limit: int = Query(50, gt=0, le=100),
     is_active: Optional[bool] = True,  # Default to showing only active hubs
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ):
     """
     List all hubs with optional filtering.
@@ -36,27 +45,31 @@ async def list_hubs(
     hubs = query.all()
 
     # Convert Hub objects to dictionaries for Pydantic validation
-    hub_dicts = [{
-        "id": hub.id,
-        "name": hub.name,
-        "description": getattr(hub, 'description', None),
-        "address": hub.address,
-        "city": hub.city,
-        "postal_code": getattr(hub, 'postal_code', None),
-        "latitude": getattr(hub, 'latitude', None),
-        "longitude": getattr(hub, 'longitude', None),
-        "is_active": getattr(hub, 'is_active', True),
-        "created_at": getattr(hub, 'created_at', None),
-        "updated_at": getattr(hub, 'updated_at', None)
-    } for hub in hubs]
+    hub_dicts = [
+        {
+            "id": hub.id,
+            "name": hub.name,
+            "description": getattr(hub, "description", None),
+            "address": hub.address,
+            "city": hub.city,
+            "postal_code": getattr(hub, "postal_code", None),
+            "latitude": getattr(hub, "latitude", None),
+            "longitude": getattr(hub, "longitude", None),
+            "is_active": getattr(hub, "is_active", True),
+            "created_at": getattr(hub, "created_at", None),
+            "updated_at": getattr(hub, "updated_at", None),
+        }
+        for hub in hubs
+    ]
 
     return hub_dicts
+
 
 @router.post("", response_model=HubResponse, status_code=status.HTTP_201_CREATED)
 async def create_hub(
     hub: HubCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Create a new hub.
@@ -81,7 +94,7 @@ async def create_hub(
             city=hub.city,
             latitude=hub.latitude,
             longitude=hub.longitude,
-            is_active=hub.is_active
+            is_active=hub.is_active,
         )
 
         db.add(new_hub)
@@ -92,15 +105,15 @@ async def create_hub(
         hub_dict = {
             "id": new_hub.id,
             "name": new_hub.name,
-            "description": getattr(new_hub, 'description', None),
+            "description": getattr(new_hub, "description", None),
             "address": new_hub.address,
             "city": new_hub.city,
-            "postal_code": getattr(new_hub, 'postal_code', None),
-            "latitude": getattr(new_hub, 'latitude', None),
-            "longitude": getattr(new_hub, 'longitude', None),
-            "is_active": getattr(new_hub, 'is_active', True),
-            "created_at": getattr(new_hub, 'created_at', None),
-            "updated_at": getattr(new_hub, 'updated_at', None)
+            "postal_code": getattr(new_hub, "postal_code", None),
+            "latitude": getattr(new_hub, "latitude", None),
+            "longitude": getattr(new_hub, "longitude", None),
+            "is_active": getattr(new_hub, "is_active", True),
+            "created_at": getattr(new_hub, "created_at", None),
+            "updated_at": getattr(new_hub, "updated_at", None),
         }
 
         return hub_dict
@@ -109,14 +122,15 @@ async def create_hub(
         logger.error(f"Error creating hub: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating hub: {str(e)}"
+            detail=f"Error creating hub: {str(e)}",
         )
+
 
 @router.get("/{hub_id}", response_model=HubResponse)
 async def get_hub(
     hub_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ):
     """
     Get a single hub by ID.
@@ -126,32 +140,33 @@ async def get_hub(
     if not hub:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Hub with ID {hub_id} not found"
+            detail=f"Hub with ID {hub_id} not found",
         )
 
     # Convert Hub object to dictionary for Pydantic validation
     hub_dict = {
         "id": hub.id,
         "name": hub.name,
-        "description": getattr(hub, 'description', None),
+        "description": getattr(hub, "description", None),
         "address": hub.address,
         "city": hub.city,
-        "postal_code": getattr(hub, 'postal_code', None),
-        "latitude": getattr(hub, 'latitude', None),
-        "longitude": getattr(hub, 'longitude', None),
-        "is_active": getattr(hub, 'is_active', True),
-        "created_at": getattr(hub, 'created_at', None),
-        "updated_at": getattr(hub, 'updated_at', None)
+        "postal_code": getattr(hub, "postal_code", None),
+        "latitude": getattr(hub, "latitude", None),
+        "longitude": getattr(hub, "longitude", None),
+        "is_active": getattr(hub, "is_active", True),
+        "created_at": getattr(hub, "created_at", None),
+        "updated_at": getattr(hub, "updated_at", None),
     }
 
     return hub_dict
+
 
 @router.put("/{hub_id}", response_model=HubResponse)
 async def update_hub(
     hub_id: int,
     hub_update: HubUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Update an existing hub.
@@ -161,7 +176,7 @@ async def update_hub(
     if not existing_hub:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Hub with ID {hub_id} not found"
+            detail=f"Hub with ID {hub_id} not found",
         )
 
     try:
@@ -169,8 +184,11 @@ async def update_hub(
         update_data = hub_update.dict(exclude_unset=True)
 
         # If address is updated but no coordinates, try to get new coordinates
-        if ("address" in update_data or "postal_code" in update_data or "city" in update_data) and \
-           not ("latitude" in update_data and "longitude" in update_data):
+        if (
+            "address" in update_data
+            or "postal_code" in update_data
+            or "city" in update_data
+        ) and not ("latitude" in update_data and "longitude" in update_data):
             # Get the latest address values (mix of existing and updates)
             address = update_data.get("address", existing_hub.address)
             postal_code = update_data.get("postal_code", existing_hub.postal_code)
@@ -183,7 +201,9 @@ async def update_hub(
                     if coords:
                         update_data["latitude"], update_data["longitude"] = coords
                 except Exception as e:
-                    logger.warning(f"Could not get coordinates for {address_str}: {str(e)}")
+                    logger.warning(
+                        f"Could not get coordinates for {address_str}: {str(e)}"
+                    )
 
         # Update hub
         for key, value in update_data.items():
@@ -197,15 +217,15 @@ async def update_hub(
         hub_dict = {
             "id": existing_hub.id,
             "name": existing_hub.name,
-            "description": getattr(existing_hub, 'description', None),
+            "description": getattr(existing_hub, "description", None),
             "address": existing_hub.address,
             "city": existing_hub.city,
-            "postal_code": getattr(existing_hub, 'postal_code', None),
-            "latitude": getattr(existing_hub, 'latitude', None),
-            "longitude": getattr(existing_hub, 'longitude', None),
-            "is_active": getattr(existing_hub, 'is_active', True),
-            "created_at": getattr(existing_hub, 'created_at', None),
-            "updated_at": getattr(existing_hub, 'updated_at', None)
+            "postal_code": getattr(existing_hub, "postal_code", None),
+            "latitude": getattr(existing_hub, "latitude", None),
+            "longitude": getattr(existing_hub, "longitude", None),
+            "is_active": getattr(existing_hub, "is_active", True),
+            "created_at": getattr(existing_hub, "created_at", None),
+            "updated_at": getattr(existing_hub, "updated_at", None),
         }
 
         return hub_dict
@@ -214,14 +234,15 @@ async def update_hub(
         logger.error(f"Error updating hub: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating hub: {str(e)}"
+            detail=f"Error updating hub: {str(e)}",
         )
+
 
 @router.delete("/{hub_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_hub(
     hub_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Delete a hub.
@@ -237,16 +258,21 @@ async def delete_hub(
     if not hub:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Hub with ID {hub_id} not found"
+            detail=f"Hub with ID {hub_id} not found",
         )
 
     try:
         # Check if the hub is being used in any rides
         from app.models.ride import Ride
-        rides_using_hub = db.query(Ride).filter(
-            ((Ride.starting_hub_id == hub_id) | (Ride.destination_hub_id == hub_id)) &
-            (Ride.status.in_(["scheduled", "in_progress"]))
-        ).count()
+
+        rides_using_hub = (
+            db.query(Ride)
+            .filter(
+                ((Ride.starting_hub_id == hub_id) | (Ride.destination_hub_id == hub_id))
+                & (Ride.status.in_(["scheduled", "in_progress"]))
+            )
+            .count()
+        )
 
         if rides_using_hub > 0:
             # If hub is being used, perform soft delete
@@ -264,14 +290,17 @@ async def delete_hub(
         logger.error(f"Error deleting hub: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error deleting hub: {str(e)}"
+            detail=f"Error deleting hub: {str(e)}",
         )
 
-@router.post("/pairs", response_model=HubPairResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/pairs", response_model=HubPairResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_hub_pair(
     hub_pair: HubPairCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Create a hub-to-hub connection pair.
@@ -282,26 +311,32 @@ async def create_hub_pair(
     if not source_hub:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Source hub with ID {hub_pair.source_hub_id} not found"
+            detail=f"Source hub with ID {hub_pair.source_hub_id} not found",
         )
 
-    destination_hub = db.query(Hub).filter(Hub.id == hub_pair.destination_hub_id).first()
+    destination_hub = (
+        db.query(Hub).filter(Hub.id == hub_pair.destination_hub_id).first()
+    )
     if not destination_hub:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Destination hub with ID {hub_pair.destination_hub_id} not found"
+            detail=f"Destination hub with ID {hub_pair.destination_hub_id} not found",
         )
 
     # Check if this pair already exists
-    existing_pair = db.query(HubPair).filter(
-        HubPair.source_hub_id == hub_pair.source_hub_id,
-        HubPair.destination_hub_id == hub_pair.destination_hub_id
-    ).first()
+    existing_pair = (
+        db.query(HubPair)
+        .filter(
+            HubPair.source_hub_id == hub_pair.source_hub_id,
+            HubPair.destination_hub_id == hub_pair.destination_hub_id,
+        )
+        .first()
+    )
 
     if existing_pair:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This hub pair already exists"
+            detail="This hub pair already exists",
         )
 
     try:
@@ -311,7 +346,7 @@ async def create_hub_pair(
             destination_hub_id=hub_pair.destination_hub_id,
             expected_travel_time=hub_pair.expected_travel_time,
             distance=hub_pair.distance,
-            is_active=hub_pair.is_active
+            is_active=hub_pair.is_active,
         )
 
         db.add(new_hub_pair)
@@ -329,8 +364,9 @@ async def create_hub_pair(
         logger.error(f"Error creating hub pair: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating hub pair: {str(e)}"
+            detail=f"Error creating hub pair: {str(e)}",
         )
+
 
 @router.get("/pairs", response_model=List[HubPairResponse])
 async def list_hub_pairs(
@@ -339,7 +375,7 @@ async def list_hub_pairs(
     skip: int = 0,
     limit: int = Query(50, gt=0, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ):
     """
     List all hub pairs with optional filtering.
@@ -366,11 +402,12 @@ async def list_hub_pairs(
 
     return pairs
 
+
 @router.delete("/pairs/{pair_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_hub_pair(
     pair_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Delete a hub pair.
@@ -380,7 +417,7 @@ async def delete_hub_pair(
     if not hub_pair:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Hub pair with ID {pair_id} not found"
+            detail=f"Hub pair with ID {pair_id} not found",
         )
 
     try:
@@ -393,5 +430,5 @@ async def delete_hub_pair(
         logger.error(f"Error deleting hub pair: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error deleting hub pair: {str(e)}"
+            detail=f"Error deleting hub pair: {str(e)}",
         )

@@ -1,20 +1,28 @@
+import logging
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
-from app.db.session import get_db
+
 from app.core.security import get_current_user
-from app.schemas.booking import BookingCreate, BookingResponse, PaymentCreate, PaymentResponse, BookingPassengerResponse
-from app.services.booking_service import BookingService
+from app.db.session import get_db
 from app.models.user import User
-import logging
+from app.schemas.booking import (
+    BookingCreate,
+    BookingPassengerResponse,
+    BookingResponse,
+    PaymentCreate,
+    PaymentResponse,
+)
+from app.services.booking_service import BookingService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 @router.get("", response_model=List[BookingResponse])
 async def get_bookings(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all bookings for the current user"""
     booking_service = BookingService(db)
@@ -25,7 +33,7 @@ async def get_bookings(
     for booking in db_bookings:
         # Convert passengers to response objects
         passengers = []
-        if hasattr(booking, 'passengers') and booking.passengers:
+        if hasattr(booking, "passengers") and booking.passengers:
             for passenger in booking.passengers:
                 # Get user details if available
                 user_details = None
@@ -34,39 +42,44 @@ async def get_bookings(
                         "id": passenger.user.id,
                         "email": passenger.user.email,
                         "name": f"{passenger.user.first_name} {passenger.user.last_name}".strip(),
-                        "phone": passenger.user.phone_number
+                        "phone": passenger.user.phone_number,
                     }
 
-                passengers.append(BookingPassengerResponse(
-                    id=passenger.id,
-                    booking_id=passenger.booking_id,
-                    user_id=passenger.user_id,
-                    email=passenger.email,
-                    name=passenger.name,
-                    phone=passenger.phone,
-                    is_primary=passenger.is_primary,
-                    created_at=passenger.created_at,
-                    user_details=user_details
-                ))
+                passengers.append(
+                    BookingPassengerResponse(
+                        id=passenger.id,
+                        booking_id=passenger.booking_id,
+                        user_id=passenger.user_id,
+                        email=passenger.email,
+                        name=passenger.name,
+                        phone=passenger.phone,
+                        is_primary=passenger.is_primary,
+                        created_at=passenger.created_at,
+                        user_details=user_details,
+                    )
+                )
 
         # Create booking response
-        result.append(BookingResponse(
-            id=booking.id,
-            passenger_id=booking.passenger_id,
-            ride_id=booking.ride_id,
-            seats_booked=booking.seats_booked,
-            booking_status=booking.booking_status,
-            created_at=booking.created_at,
-            passengers=passengers
-        ))
+        result.append(
+            BookingResponse(
+                id=booking.id,
+                passenger_id=booking.passenger_id,
+                ride_id=booking.ride_id,
+                seats_booked=booking.seats_booked,
+                booking_status=booking.booking_status,
+                created_at=booking.created_at,
+                passengers=passengers,
+            )
+        )
 
     return result
+
 
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(
     booking: BookingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new booking for the current user"""
     try:
@@ -75,7 +88,7 @@ async def create_booking(
 
         # Convert passengers to response objects
         passengers = []
-        if hasattr(db_booking, 'passengers') and db_booking.passengers:
+        if hasattr(db_booking, "passengers") and db_booking.passengers:
             for passenger in db_booking.passengers:
                 # Get user details if available
                 user_details = None
@@ -84,20 +97,22 @@ async def create_booking(
                         "id": passenger.user.id,
                         "email": passenger.user.email,
                         "name": f"{passenger.user.first_name} {passenger.user.last_name}".strip(),
-                        "phone": passenger.user.phone_number
+                        "phone": passenger.user.phone_number,
                     }
 
-                passengers.append(BookingPassengerResponse(
-                    id=passenger.id,
-                    booking_id=passenger.booking_id,
-                    user_id=passenger.user_id,
-                    email=passenger.email,
-                    name=passenger.name,
-                    phone=passenger.phone,
-                    is_primary=passenger.is_primary,
-                    created_at=passenger.created_at,
-                    user_details=user_details
-                ))
+                passengers.append(
+                    BookingPassengerResponse(
+                        id=passenger.id,
+                        booking_id=passenger.booking_id,
+                        user_id=passenger.user_id,
+                        email=passenger.email,
+                        name=passenger.name,
+                        phone=passenger.phone,
+                        is_primary=passenger.is_primary,
+                        created_at=passenger.created_at,
+                        user_details=user_details,
+                    )
+                )
 
         # Create booking response
         return BookingResponse(
@@ -107,7 +122,7 @@ async def create_booking(
             seats_booked=db_booking.seats_booked,
             booking_status=db_booking.booking_status,
             created_at=db_booking.created_at,
-            passengers=passengers
+            passengers=passengers,
         )
     except HTTPException as e:
         # Pass through HTTP exceptions
@@ -117,15 +132,20 @@ async def create_booking(
         logger.error(f"Error creating booking: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating booking: {str(e)}"
+            detail=f"Error creating booking: {str(e)}",
         )
 
-@router.post("/{booking_id}/payment", response_model=PaymentResponse, status_code=status.HTTP_200_OK)
+
+@router.post(
+    "/{booking_id}/payment",
+    response_model=PaymentResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def process_payment(
     booking_id: int,
     payment: PaymentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Process payment for a booking"""
     booking_service = BookingService(db)
@@ -137,7 +157,7 @@ async def process_payment(
     if booking.passenger_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to process payment for this booking"
+            detail="Not authorized to process payment for this booking",
         )
 
     try:
@@ -153,11 +173,13 @@ async def process_payment(
             payment_method=db_payment.payment_method,
             transaction_id=db_payment.transaction_id,
             status=db_payment.status,
-            payment_time=db_payment.created_at if hasattr(db_payment, 'created_at') else None
+            payment_time=(
+                db_payment.created_at if hasattr(db_payment, "created_at") else None
+            ),
         )
     except Exception as e:
         logger.error(f"Error processing payment: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing payment: {str(e)}"
+            detail=f"Error processing payment: {str(e)}",
         )

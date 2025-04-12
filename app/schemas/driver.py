@@ -1,7 +1,9 @@
-from typing import List, Optional, Dict, Any, Union
-from datetime import datetime, date, time
-from pydantic import BaseModel, Field, validator, EmailStr
+from datetime import date, datetime, time
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr, validator
+
 
 # Enums for driver status
 class DriverStatus(str, Enum):
@@ -11,11 +13,13 @@ class DriverStatus(str, Enum):
     SUSPENDED = "suspended"
     REJECTED = "rejected"
 
+
 class DriverVerificationStatus(str, Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     REJECTED = "rejected"
     EXPIRED = "expired"
+
 
 class VehicleInspectionStatus(str, Enum):
     PENDING = "pending"
@@ -23,11 +27,13 @@ class VehicleInspectionStatus(str, Enum):
     FAILED = "failed"
     EXPIRED = "expired"
 
+
 class RideTypePermission(str, Enum):
     HUB_TO_HUB = "hub_to_hub"
     HUB_TO_DESTINATION = "hub_to_destination"
     ENTERPRISE = "enterprise"
     ALL = "all"
+
 
 class DocumentType(str, Enum):
     LICENSE = "license"
@@ -38,13 +44,17 @@ class DocumentType(str, Enum):
     BACKGROUND_CHECK = "background_check"
     OTHER = "other"
 
+
 # Base schemas
 class DriverVehicleBase(BaseModel):
     vehicle_id: int
-    inspection_status: Optional[VehicleInspectionStatus] = VehicleInspectionStatus.PENDING
+    inspection_status: Optional[VehicleInspectionStatus] = (
+        VehicleInspectionStatus.PENDING
+    )
     last_inspection_date: Optional[date] = None
     next_inspection_date: Optional[date] = None
     is_primary: bool = False
+
 
 class DriverScheduleBase(BaseModel):
     is_recurring: bool = True
@@ -56,25 +66,26 @@ class DriverScheduleBase(BaseModel):
     preferred_area: Optional[str] = None
     is_active: bool = True
 
-    @validator('day_of_week')
+    @validator("day_of_week")
     def validate_day_of_week(cls, v, values):
-        if values.get('is_recurring') and v is None:
+        if values.get("is_recurring") and v is None:
             raise ValueError("day_of_week is required for recurring schedules")
         if v is not None and (v < 0 or v > 6):
             raise ValueError("day_of_week must be between 0 (Monday) and 6 (Sunday)")
         return v
 
-    @validator('specific_date')
+    @validator("specific_date")
     def validate_specific_date(cls, v, values):
-        if not values.get('is_recurring') and v is None:
+        if not values.get("is_recurring") and v is None:
             raise ValueError("specific_date is required for non-recurring schedules")
         return v
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_end_time(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
+        if "start_time" in values and v <= values["start_time"]:
             raise ValueError("end_time must be after start_time")
         return v
+
 
 class DriverTimeOffBase(BaseModel):
     start_date: date
@@ -82,11 +93,12 @@ class DriverTimeOffBase(BaseModel):
     reason: Optional[str] = None
     status: str = "approved"
 
-    @validator('end_date')
+    @validator("end_date")
     def validate_end_date(cls, v, values):
-        if 'start_date' in values and v < values['start_date']:
+        if "start_date" in values and v < values["start_date"]:
             raise ValueError("end_date must be on or after start_date")
         return v
+
 
 class DriverReviewBase(BaseModel):
     passenger_id: int
@@ -98,11 +110,12 @@ class DriverReviewBase(BaseModel):
     punctuality_rating: Optional[float] = None
     is_public: bool = True
 
-    @validator('rating', 'driving_rating', 'cleanliness_rating', 'punctuality_rating')
+    @validator("rating", "driving_rating", "cleanliness_rating", "punctuality_rating")
     def validate_rating(cls, v):
         if v is not None and (v < 1 or v > 5):
             raise ValueError("Rating must be between 1 and 5")
         return v
+
 
 class DriverDocumentBase(BaseModel):
     document_type: DocumentType
@@ -111,6 +124,7 @@ class DriverDocumentBase(BaseModel):
     verification_status: DriverVerificationStatus = DriverVerificationStatus.PENDING
     verification_notes: Optional[str] = None
     expiry_date: Optional[date] = None
+
 
 # Create schemas
 class DriverProfileCreate(BaseModel):
@@ -137,12 +151,15 @@ class DriverProfileCreate(BaseModel):
     languages: Optional[str] = None
     ride_type_permissions: Optional[List[RideTypePermission]] = None
 
-    @validator('user_id')
+    @validator("user_id")
     def validate_user_id_or_credentials(cls, v, values):
         # Either user_id or (email and password) must be provided
-        if v is None and (values.get('email') is None or values.get('password') is None):
+        if v is None and (
+            values.get("email") is None or values.get("password") is None
+        ):
             raise ValueError("Either user_id or (email and password) must be provided")
         return v
+
 
 # Combined schema for creating a user and driver profile in one step
 class DriverWithUserCreate(BaseModel):
@@ -166,20 +183,26 @@ class DriverWithUserCreate(BaseModel):
     languages: Optional[str] = None
     ride_type_permissions: Optional[List[RideTypePermission]] = None
 
+
 class DriverVehicleCreate(DriverVehicleBase):
     driver_id: int
+
 
 class DriverScheduleCreate(DriverScheduleBase):
     driver_id: int
 
+
 class DriverTimeOffCreate(DriverTimeOffBase):
     driver_id: int
+
 
 class DriverReviewCreate(DriverReviewBase):
     driver_id: int
 
+
 class DriverDocumentCreate(DriverDocumentBase):
     driver_id: int
+
 
 # Update schemas
 class DriverProfileUpdate(BaseModel):
@@ -199,12 +222,14 @@ class DriverProfileUpdate(BaseModel):
     languages: Optional[str] = None
     ride_type_permissions: Optional[List[RideTypePermission]] = None
 
+
 class DriverVehicleUpdate(BaseModel):
     vehicle_id: Optional[int] = None
     inspection_status: Optional[VehicleInspectionStatus] = None
     last_inspection_date: Optional[date] = None
     next_inspection_date: Optional[date] = None
     is_primary: Optional[bool] = None
+
 
 class DriverScheduleUpdate(BaseModel):
     is_recurring: Optional[bool] = None
@@ -216,11 +241,13 @@ class DriverScheduleUpdate(BaseModel):
     preferred_area: Optional[str] = None
     is_active: Optional[bool] = None
 
+
 class DriverTimeOffUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     reason: Optional[str] = None
     status: Optional[str] = None
+
 
 class DriverReviewUpdate(BaseModel):
     rating: Optional[float] = None
@@ -231,6 +258,7 @@ class DriverReviewUpdate(BaseModel):
     is_public: Optional[bool] = None
     is_flagged: Optional[bool] = None
 
+
 class DriverDocumentUpdate(BaseModel):
     document_type: Optional[DocumentType] = None
     document_url: Optional[str] = None
@@ -238,6 +266,7 @@ class DriverDocumentUpdate(BaseModel):
     verification_status: Optional[DriverVerificationStatus] = None
     verification_notes: Optional[str] = None
     expiry_date: Optional[date] = None
+
 
 # Response schemas
 class DriverVehicleResponse(DriverVehicleBase):
@@ -250,6 +279,7 @@ class DriverVehicleResponse(DriverVehicleBase):
         orm_mode = True
         from_attributes = True
 
+
 class DriverScheduleResponse(DriverScheduleBase):
     id: int
     driver_id: int
@@ -259,6 +289,7 @@ class DriverScheduleResponse(DriverScheduleBase):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class DriverTimeOffResponse(DriverTimeOffBase):
     id: int
@@ -270,6 +301,7 @@ class DriverTimeOffResponse(DriverTimeOffBase):
         orm_mode = True
         from_attributes = True
 
+
 class DriverReviewResponse(DriverReviewBase):
     id: int
     driver_id: int
@@ -280,6 +312,7 @@ class DriverReviewResponse(DriverReviewBase):
         orm_mode = True
         from_attributes = True
 
+
 class DriverDocumentResponse(DriverDocumentBase):
     id: int
     driver_id: int
@@ -289,6 +322,7 @@ class DriverDocumentResponse(DriverDocumentBase):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class DriverProfileResponse(BaseModel):
     id: int
@@ -318,6 +352,7 @@ class DriverProfileResponse(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class DriverProfileDetailedResponse(DriverProfileResponse):
     vehicles: List[DriverVehicleResponse] = []

@@ -1,15 +1,18 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.db.base_class import Base
+
 
 class UserMatchingPreference(Base):
     """Model for storing user preferences for ride matching"""
 
     __tablename__ = "user_matching_preferences"
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
 
     # Time and distance preferences
     max_detour_minutes = Column(Integer, default=15)

@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'; 
+import '@testing-library/jest-dom';
 
 // Mock scrollIntoView for Radix UI components
 if (typeof window !== 'undefined') {
@@ -31,4 +31,4 @@ global.PointerEvent = class PointerEvent extends Event {
   }
   pointerId: number;
   pointerType: string;
-}; 
+};

@@ -1,21 +1,34 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, Boolean, Enum, JSON, Date, Time, Table
-from sqlalchemy.orm import relationship
 import datetime
 import enum
 
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Time,
+)
+from sqlalchemy.orm import relationship
+
 from app.db.base_class import Base
-from app.models.vehicle import VehicleType
+
 
 class RideType(str, enum.Enum):
     ENTERPRISE = "enterprise"  # Rides for company employees
     HUB_TO_HUB = "hub_to_hub"  # Fixed routes between transportation hubs
     HUB_TO_DESTINATION = "hub_to_destination"  # Routes from hub to custom destination
 
+
 class RideStatus(str, enum.Enum):
     SCHEDULED = "scheduled"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+
 
 class RecurrencePattern(str, enum.Enum):
     DAILY = "daily"
@@ -24,13 +37,20 @@ class RecurrencePattern(str, enum.Enum):
     MONTHLY = "monthly"
     ONE_TIME = "one_time"  # Single occurrence
 
+
 # Association table for days of week
 ride_pattern_days = Table(
     "ride_pattern_days",
     Base.metadata,
-    Column("pattern_id", Integer, ForeignKey("recurring_ride_patterns.id"), primary_key=True),
-    Column("day_of_week", Integer, primary_key=True)  # 0=Monday, 6=Sunday
+    Column(
+        "pattern_id",
+        Integer,
+        ForeignKey("recurring_ride_patterns.id"),
+        primary_key=True,
+    ),
+    Column("day_of_week", Integer, primary_key=True),  # 0=Monday, 6=Sunday
 )
+
 
 class RecurringRidePattern(Base):
     """Model for recurring ride patterns"""
@@ -38,7 +58,9 @@ class RecurringRidePattern(Base):
     __tablename__ = "recurring_ride_patterns"
 
     id = Column(Integer, primary_key=True, index=True)
-    ride_id = Column(Integer, ForeignKey("rides.id", ondelete="CASCADE"), nullable=False)
+    ride_id = Column(
+        Integer, ForeignKey("rides.id", ondelete="CASCADE"), nullable=False
+    )
     recurrence_pattern = Column(String, nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
@@ -46,11 +68,16 @@ class RecurringRidePattern(Base):
 
     # Relationships
     ride = relationship("Ride", back_populates="recurrence_pattern")
-    departure_times = relationship("RideDepartureTime", back_populates="pattern", cascade="all, delete-orphan")
-    days_of_week = Column(String, nullable=True)  # Store as JSON string '[0,1,2,3,4]' for weekdays
+    departure_times = relationship(
+        "RideDepartureTime", back_populates="pattern", cascade="all, delete-orphan"
+    )
+    days_of_week = Column(
+        String, nullable=True
+    )  # Store as JSON string '[0,1,2,3,4]' for weekdays
 
     def __repr__(self):
         return f"<RecurringRidePattern(id={self.id}, pattern={self.recurrence_pattern}, start={self.start_date})>"
+
 
 class RideDepartureTime(Base):
     """Model for departure times within a recurring pattern"""
@@ -58,7 +85,11 @@ class RideDepartureTime(Base):
     __tablename__ = "ride_departure_times"
 
     id = Column(Integer, primary_key=True, index=True)
-    pattern_id = Column(Integer, ForeignKey("recurring_ride_patterns.id", ondelete="CASCADE"), nullable=False)
+    pattern_id = Column(
+        Integer,
+        ForeignKey("recurring_ride_patterns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     departure_time = Column(Time, nullable=False)
 
     # Relationships
@@ -66,6 +97,7 @@ class RideDepartureTime(Base):
 
     def __repr__(self):
         return f"<RideDepartureTime(id={self.id}, time={self.departure_time})>"
+
 
 class Ride(Base):
     """Model for rides offered by drivers or companies"""
@@ -82,7 +114,7 @@ class Ride(Base):
     def ride_type(self):
         if self._ride_type:
             return self._ride_type
-        elif hasattr(self, '_enterprise_id') and self._enterprise_id:
+        elif hasattr(self, "_enterprise_id") and self._enterprise_id:
             return RideType.ENTERPRISE
         elif self.destination_hub_id:
             return RideType.HUB_TO_HUB
@@ -92,6 +124,7 @@ class Ride(Base):
     @ride_type.setter
     def ride_type(self, value):
         self._ride_type = value
+
     driver_id = Column(Integer, ForeignKey("users.id"))
     # enterprise_id is not in the database schema, so we'll use a property
     _enterprise_id = None
@@ -117,7 +150,9 @@ class Ride(Base):
     # Custom destination details (for hub_to_destination rides)
     # For hub_to_destination rides, we'll store the destination ID
     destination_id = Column(Integer, ForeignKey("destinations.id"), nullable=True)
-    destination_obj = relationship("Destination", foreign_keys=[destination_id], backref="rides")
+    destination_obj = relationship(
+        "Destination", foreign_keys=[destination_id], backref="rides"
+    )
 
     # For backward compatibility, we'll keep the destination property
     _destination = None
@@ -132,7 +167,7 @@ class Ride(Base):
                 "address": self.destination_obj.address,
                 "city": self.destination_obj.city,
                 "latitude": self.destination_obj.latitude,
-                "longitude": self.destination_obj.longitude
+                "longitude": self.destination_obj.longitude,
             }
         # Otherwise return the stored destination property
         return self._destination
@@ -142,9 +177,7 @@ class Ride(Base):
         self._destination = value
 
     # Exclude properties that don't exist in the database schema
-    __mapper_args__ = {
-        'exclude_properties': ['destination', 'is_recurring']
-    }
+    __mapper_args__ = {"exclude_properties": ["destination", "is_recurring"]}
 
     # Ride details
     departure_time = Column(DateTime, nullable=False)
@@ -167,7 +200,7 @@ class Ride(Base):
     @property
     def is_recurring(self):
         # Check if this ride has a recurrence pattern
-        if hasattr(self, 'recurrence_pattern') and self.recurrence_pattern is not None:
+        if hasattr(self, "recurrence_pattern") and self.recurrence_pattern is not None:
             return True
         return self._is_recurring
 
@@ -177,20 +210,33 @@ class Ride(Base):
 
     # Relationships
     driver = relationship("User", foreign_keys=[driver_id])
-    bookings = relationship("RideBooking", back_populates="ride", cascade="all, delete-orphan")
+    bookings = relationship(
+        "RideBooking", back_populates="ride", cascade="all, delete-orphan"
+    )
 
     # Hub relationships - using foreign_keys to distinguish the relationships
-    starting_hub = relationship("Hub", foreign_keys=[starting_hub_id], back_populates="starting_rides")
-    destination_hub = relationship("Hub", foreign_keys=[destination_hub_id], back_populates="destination_rides")
+    starting_hub = relationship(
+        "Hub", foreign_keys=[starting_hub_id], back_populates="starting_rides"
+    )
+    destination_hub = relationship(
+        "Hub", foreign_keys=[destination_hub_id], back_populates="destination_rides"
+    )
 
     # Vehicle type relationship
     vehicle_type = relationship("VehicleType", back_populates="rides")
 
     # Recurrence pattern relationship - one-to-one
-    recurrence_pattern = relationship("RecurringRidePattern", back_populates="ride", uselist=False, cascade="all, delete-orphan")
+    recurrence_pattern = relationship(
+        "RecurringRidePattern",
+        back_populates="ride",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     # Parent-child ride relationships
-    parent_ride = relationship("Ride", remote_side=[id], backref="child_rides", foreign_keys=[parent_ride_id])
+    parent_ride = relationship(
+        "Ride", remote_side=[id], backref="child_rides", foreign_keys=[parent_ride_id]
+    )
 
     def __repr__(self):
         if self.destination_hub_id:
@@ -222,7 +268,9 @@ class RideBooking(Base):
     payment = relationship("Payment", back_populates="booking", uselist=False)
 
     # Relationship with passengers
-    passengers = relationship("BookingPassenger", back_populates="booking", cascade="all, delete-orphan")
+    passengers = relationship(
+        "BookingPassenger", back_populates="booking", cascade="all, delete-orphan"
+    )
 
     # Add a property for backward compatibility
     @property

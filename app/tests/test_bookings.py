@@ -1,14 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-from app.models.ride import RideBooking
+
+
 
 def test_create_booking_legacy(client, db_session):
     """Test creating a booking with the legacy API"""
-    booking_data = {
-        "ride_id": 1,
-        "passenger_count": 1
-    }
+    booking_data = {"ride_id": 1, "passenger_count": 1}
 
     # Login as a fake user
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
@@ -23,6 +18,7 @@ def test_create_booking_legacy(client, db_session):
     assert booking["ride_id"] == 1
     assert booking["seats_booked"] == 1
 
+
 def test_create_booking_with_passengers(client, db_session):
     """Test creating a booking with passenger information"""
     booking_data = {
@@ -32,13 +28,13 @@ def test_create_booking_with_passengers(client, db_session):
                 "user_id": None,
                 "email": "guest@example.com",
                 "name": "Guest User",
-                "phone": "+46701234567"
+                "phone": "+46701234567",
             }
         ],
         "matching_preferences": {
             "prefer_same_enterprise": True,
-            "prefer_same_starting_hub": True
-        }
+            "prefer_same_starting_hub": True,
+        },
     }
     # Login as a fake user
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
@@ -57,7 +53,8 @@ def test_create_booking_with_passengers(client, db_session):
     assert booking["passengers"][0]["email"] == "guest@example.com"
     assert booking["passengers"][0]["name"] == "Guest User"
     assert booking["passengers"][0]["phone"] == "+46701234567"
-    
+
+
 def test_get_user_bookings(client, db_session):
     """Test getting all bookings for the current user"""
     # Login as a fake user

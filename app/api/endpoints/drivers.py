@@ -1,36 +1,54 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
+import logging
 from datetime import date
+from typing import List, Optional
 
-from app.db.session import get_db
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
+from sqlalchemy.orm import Session
+
 from app.api.dependencies import (
-    get_current_user,
     get_current_admin_user,
     get_current_driver_user,
-    get_current_user_optional
+    get_current_user,
+    get_current_user_optional,
 )
 from app.core.security import get_password_hash
+from app.db.session import get_db
+from app.models.driver import (
+    DriverDocument,
+    DriverProfile,
+    DriverSchedule,
+    DriverStatus,
+    DriverVehicle,
+    DriverVerificationStatus,
+    driver_ride_type_permissions,
+)
 from app.models.user import User, UserRole, UserType
-from app.models.driver import DriverProfile, DriverVehicle, DriverDocument, DriverSchedule, DriverStatus, DriverVerificationStatus, driver_ride_type_permissions
 from app.schemas.driver import (
-    DriverProfileCreate,
-    DriverProfileUpdate,
-    DriverProfileResponse,
-    DriverVehicleCreate,
-    DriverVehicleResponse,
+    DocumentType,
     DriverDocumentResponse,
+    DriverProfileCreate,
+    DriverProfileResponse,
+    DriverProfileUpdate,
     DriverScheduleCreate,
     DriverScheduleResponse,
     DriverStatus,
-    DocumentType,
-    DriverWithUserCreate
+    DriverVehicleCreate,
+    DriverVehicleResponse,
+    DriverWithUserCreate,
 )
-from app.core.security import get_password_hash
-import logging
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 # Helper function to check if user can access driver data
 def check_driver_access(driver_id: int, current_user: User, db: Session):
@@ -43,61 +61,70 @@ def check_driver_access(driver_id: int, current_user: User, db: Session):
         return True
 
     # If user is a driver, check if they're accessing their own profile
-    driver_profile = db.query(DriverProfile).filter(
-        DriverProfile.id == driver_id
-    ).first()
+    driver_profile = (
+        db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
+    )
 
     if not driver_profile:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     if driver_profile.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this driver's data"
+            detail="Not authorized to access this driver's data",
         )
 
     return True
 
+
 @router.get("/me", response_model=DriverProfileResponse)
 async def get_current_driver_profile(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_driver_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_driver_user)
 ):
     """
     Get the current driver's profile.
     Only accessible to users with driver role.
     """
-    driver = db.query(DriverProfile).filter(DriverProfile.user_id == current_user.id).first()
+    driver = (
+        db.query(DriverProfile).filter(DriverProfile.user_id == current_user.id).first()
+    )
     if not driver:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver profile not found for current user"
+            detail="Driver profile not found for current user",
         )
 
     return driver
+
 
 @router.put("/me", response_model=DriverProfileResponse)
 async def update_current_driver_profile(
     driver_data: DriverProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_driver_user)
+    current_user: User = Depends(get_current_driver_user),
 ):
     """
     Update the current driver's profile.
     Only accessible to users with driver role.
     """
-    driver = db.query(DriverProfile).filter(DriverProfile.user_id == current_user.id).first()
+    driver = (
+        db.query(DriverProfile).filter(DriverProfile.user_id == current_user.id).first()
+    )
     if not driver:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver profile not found for current user"
+            detail="Driver profile not found for current user",
         )
 
     # Admin-only fields
-    admin_only_fields = ["status", "verification_status", "background_check_date", "background_check_status"]
+    admin_only_fields = [
+        "status",
+        "verification_status",
+        "background_check_date",
+        "background_check_status",
+    ]
 
     # Remove admin-only fields from update data
     update_data = driver_data.dict(exclude_unset=True)
@@ -114,13 +141,14 @@ async def update_current_driver_profile(
 
     return driver
 
+
 @router.get("", response_model=List[DriverProfileResponse])
 async def get_drivers(
     status: Optional[DriverStatus] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    _: User = Depends(get_current_admin_user),  # Admin only
 ):
     """
     Get all drivers with optional filtering by status.
@@ -137,11 +165,12 @@ async def get_drivers(
 
     return drivers
 
+
 @router.get("/{driver_id}", response_model=DriverProfileResponse)
 async def get_driver(
     driver_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get a specific driver's profile.
@@ -153,16 +182,20 @@ async def get_driver(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     return driver
 
-@router.post("/with-user", response_model=DriverProfileResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
+
+@router.post(
+    "/with-user",
+    response_model=DriverProfileResponse,
+    status_code=status.HTTP_201_CREATED,
+    deprecated=True,
+)
 async def create_driver_with_user(
-    driver_data: DriverWithUserCreate,
-    db: Session = Depends(get_db)
+    driver_data: DriverWithUserCreate, db: Session = Depends(get_db)
 ):
     """
     [DEPRECATED] Create a new user account and driver profile in one step.
@@ -174,8 +207,7 @@ async def create_driver_with_user(
     existing_user = db.query(User).filter(User.email == driver_data.email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     # Create new user with driver role
@@ -187,7 +219,7 @@ async def create_driver_with_user(
         phone_number=driver_data.phone_number,
         role=UserRole.DRIVER,
         user_type=UserType.DRIVER,
-        is_active=True
+        is_active=True,
     )
 
     db.add(new_user)
@@ -207,7 +239,7 @@ async def create_driver_with_user(
         bio=driver_data.bio,
         languages=driver_data.languages,
         status=DriverStatus.PENDING,  # New drivers start as pending
-        verification_status=DriverVerificationStatus.PENDING
+        verification_status=DriverVerificationStatus.PENDING,
     )
 
     db.add(new_driver)
@@ -219,19 +251,21 @@ async def create_driver_with_user(
         for permission in driver_data.ride_type_permissions:
             db.execute(
                 driver_ride_type_permissions.insert().values(
-                    driver_profile_id=new_driver.id,
-                    ride_type=permission
+                    driver_profile_id=new_driver.id, ride_type=permission
                 )
             )
         db.commit()  # Commit the permissions
 
     return new_driver
 
-@router.post("", response_model=DriverProfileResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=DriverProfileResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_driver(
     driver_data: DriverProfileCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """
     Create a new driver profile with or without a user account.
@@ -247,10 +281,12 @@ async def create_driver(
     is_admin_operation = driver_data.user_id is not None
 
     # For admin operations, ensure the current user has admin privileges
-    if is_admin_operation and (current_user is None or not current_user.has_admin_privileges()):
+    if is_admin_operation and (
+        current_user is None or not current_user.has_admin_privileges()
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create driver profiles for existing users"
+            detail="Only admins can create driver profiles for existing users",
         )
 
     # Handle user creation if needed (self-registration)
@@ -261,7 +297,7 @@ async def create_driver(
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                detail="Email already registered",
             )
 
         # Create new user with driver role
@@ -273,7 +309,7 @@ async def create_driver(
             phone_number=driver_data.phone_number,
             role=UserRole.DRIVER,
             user_type=UserType.DRIVER,
-            is_active=True
+            is_active=True,
         )
 
         db.add(new_user)
@@ -281,14 +317,16 @@ async def create_driver(
         user_id = new_user.id
     else:
         # Check if driver profile already exists for this user
-        existing_profile = db.query(DriverProfile).filter(
-            DriverProfile.user_id == driver_data.user_id
-        ).first()
+        existing_profile = (
+            db.query(DriverProfile)
+            .filter(DriverProfile.user_id == driver_data.user_id)
+            .first()
+        )
 
         if existing_profile:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Driver profile already exists for this user"
+                detail="Driver profile already exists for this user",
             )
         user_id = driver_data.user_id
 
@@ -306,7 +344,7 @@ async def create_driver(
         bio=driver_data.bio,
         languages=driver_data.languages,
         status=DriverStatus.PENDING,  # New drivers start as pending
-        verification_status=DriverVerificationStatus.PENDING
+        verification_status=DriverVerificationStatus.PENDING,
     )
 
     db.add(new_driver)
@@ -318,20 +356,20 @@ async def create_driver(
         for permission in driver_data.ride_type_permissions:
             db.execute(
                 driver_ride_type_permissions.insert().values(
-                    driver_profile_id=new_driver.id,
-                    ride_type=permission
+                    driver_profile_id=new_driver.id, ride_type=permission
                 )
             )
         db.commit()  # Commit the permissions
 
     return new_driver
 
+
 @router.put("/{driver_id}", response_model=DriverProfileResponse)
 async def update_driver(
     driver_id: int,
     driver_data: DriverProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update a driver's profile.
@@ -344,12 +382,16 @@ async def update_driver(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # Admin-only fields
-    admin_only_fields = ["status", "verification_status", "background_check_date", "background_check_status"]
+    admin_only_fields = [
+        "status",
+        "verification_status",
+        "background_check_date",
+        "background_check_status",
+    ]
 
     # Check if non-admin user is trying to update admin-only fields
     if not current_user.has_admin_privileges():
@@ -357,7 +399,7 @@ async def update_driver(
             if getattr(driver_data, field, None) is not None:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Field '{field}' can only be updated by admins"
+                    detail=f"Field '{field}' can only be updated by admins",
                 )
 
     # Update driver profile with provided data
@@ -365,8 +407,8 @@ async def update_driver(
 
     # Handle ride_type_permissions separately
     ride_type_permissions = None
-    if 'ride_type_permissions' in update_data:
-        ride_type_permissions = update_data.pop('ride_type_permissions')
+    if "ride_type_permissions" in update_data:
+        ride_type_permissions = update_data.pop("ride_type_permissions")
 
     # Update other fields
     for key, value in update_data.items():
@@ -385,8 +427,7 @@ async def update_driver(
         for permission in ride_type_permissions:
             db.execute(
                 driver_ride_type_permissions.insert().values(
-                    driver_profile_id=driver_id,
-                    ride_type=permission
+                    driver_profile_id=driver_id, ride_type=permission
                 )
             )
 
@@ -395,11 +436,12 @@ async def update_driver(
 
     return driver
 
+
 @router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_driver(
     driver_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    _: User = Depends(get_current_admin_user),  # Admin only
 ):
     """
     Delete a driver profile.
@@ -408,8 +450,7 @@ async def delete_driver(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     db.delete(driver)
@@ -417,12 +458,13 @@ async def delete_driver(
 
     return None
 
+
 @router.post("/{driver_id}/vehicles", response_model=DriverVehicleResponse)
 async def add_vehicle_to_driver(
     driver_id: int,
     vehicle_data: DriverVehicleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Add a vehicle to a driver's profile.
@@ -435,19 +477,19 @@ async def add_vehicle_to_driver(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # Validate inspection status
     if vehicle_data.inspection_status == "pending":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot add a vehicle with pending inspection status to a driver. Vehicle must pass inspection first."
+            detail="Cannot add a vehicle with pending inspection status to a driver. Vehicle must pass inspection first.",
         )
 
     # Check if the inspection date has passed
     from datetime import datetime
+
     today = datetime.now().date()
 
     if vehicle_data.next_inspection_date and vehicle_data.next_inspection_date < today:
@@ -455,7 +497,7 @@ async def add_vehicle_to_driver(
         vehicle_data.inspection_status = "pending"
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The vehicle's inspection date has expired. Please get a new inspection before adding this vehicle."
+            detail="The vehicle's inspection date has expired. Please get a new inspection before adding this vehicle.",
         )
 
     # Create new vehicle
@@ -465,15 +507,18 @@ async def add_vehicle_to_driver(
         inspection_status=vehicle_data.inspection_status,
         last_inspection_date=vehicle_data.last_inspection_date,
         next_inspection_date=vehicle_data.next_inspection_date,
-        is_primary=vehicle_data.is_primary
+        is_primary=vehicle_data.is_primary,
     )
 
     # If this is set as primary, unset any existing primary vehicles
     if new_vehicle.is_primary:
-        existing_primary = db.query(DriverVehicle).filter(
-            DriverVehicle.driver_id == driver_id,
-            DriverVehicle.is_primary == True
-        ).all()
+        existing_primary = (
+            db.query(DriverVehicle)
+            .filter(
+                DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+            )
+            .all()
+        )
 
         for vehicle in existing_primary:
             vehicle.is_primary = False
@@ -484,11 +529,12 @@ async def add_vehicle_to_driver(
 
     return new_vehicle
 
+
 @router.get("/{driver_id}/vehicles", response_model=List[DriverVehicleResponse])
 async def get_driver_vehicles(
     driver_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all vehicles associated with a driver.
@@ -497,34 +543,47 @@ async def get_driver_vehicles(
     # Check access permissions
     check_driver_access(driver_id, current_user, db)
 
-    vehicles = db.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id).all()
+    vehicles = (
+        db.query(DriverVehicle).filter(DriverVehicle.driver_id == driver_id).all()
+    )
 
     return vehicles
 
-@router.put("/{driver_id}/vehicles/{vehicle_id}/inspection", response_model=DriverVehicleResponse)
+
+@router.put(
+    "/{driver_id}/vehicles/{vehicle_id}/inspection",
+    response_model=DriverVehicleResponse,
+)
 async def update_driver_vehicle_inspection(
     driver_id: int,
     vehicle_id: int,
-    inspection_status: str = Query(..., description="New inspection status (passed, failed, expired)"),
-    last_inspection_date: Optional[date] = Query(None, description="Date of last inspection"),
-    next_inspection_date: Optional[date] = Query(None, description="Date of next inspection"),
+    inspection_status: str = Query(
+        ..., description="New inspection status (passed, failed, expired)"
+    ),
+    last_inspection_date: Optional[date] = Query(
+        None, description="Date of last inspection"
+    ),
+    next_inspection_date: Optional[date] = Query(
+        None, description="Date of next inspection"
+    ),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    _: User = Depends(get_current_admin_user),  # Admin only
 ):
     """
     Update the inspection status of a vehicle associated with a driver.
     Admin only endpoint.
     """
     # Check if driver-vehicle association exists
-    driver_vehicle = db.query(DriverVehicle).filter(
-        DriverVehicle.driver_id == driver_id,
-        DriverVehicle.id == vehicle_id
-    ).first()
+    driver_vehicle = (
+        db.query(DriverVehicle)
+        .filter(DriverVehicle.driver_id == driver_id, DriverVehicle.id == vehicle_id)
+        .first()
+    )
 
     if not driver_vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Vehicle not found for this driver"
+            detail="Vehicle not found for this driver",
         )
 
     # Validate inspection status
@@ -532,7 +591,7 @@ async def update_driver_vehicle_inspection(
     if inspection_status not in valid_statuses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid inspection status. Must be one of: {', '.join(valid_statuses)}"
+            detail=f"Invalid inspection status. Must be one of: {', '.join(valid_statuses)}",
         )
 
     # Update inspection status
@@ -549,6 +608,7 @@ async def update_driver_vehicle_inspection(
 
     return driver_vehicle
 
+
 @router.post("/{driver_id}/documents", response_model=DriverDocumentResponse)
 async def upload_driver_document(
     driver_id: int,
@@ -556,7 +616,7 @@ async def upload_driver_document(
     file: UploadFile = File(...),
     expiry_date: Optional[date] = Form(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a document for a driver.
@@ -569,8 +629,7 @@ async def upload_driver_document(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # TODO: Implement file upload to storage service
@@ -584,7 +643,7 @@ async def upload_driver_document(
         document_url=document_url,
         filename=file.filename,
         verification_status=DriverVerificationStatus.PENDING,
-        expiry_date=expiry_date
+        expiry_date=expiry_date,
     )
 
     db.add(new_document)
@@ -593,12 +652,13 @@ async def upload_driver_document(
 
     return new_document
 
+
 @router.get("/{driver_id}/documents", response_model=List[DriverDocumentResponse])
 async def get_driver_documents(
     driver_id: int,
     document_type: Optional[DocumentType] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all documents associated with a driver.
@@ -617,12 +677,13 @@ async def get_driver_documents(
 
     return documents
 
+
 @router.post("/{driver_id}/schedules", response_model=DriverScheduleResponse)
 async def add_driver_schedule(
     driver_id: int,
     schedule_data: DriverScheduleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Add a schedule for a driver.
@@ -635,8 +696,7 @@ async def add_driver_schedule(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # Create new schedule
@@ -649,7 +709,7 @@ async def add_driver_schedule(
         end_time=schedule_data.end_time,
         preferred_starting_hub_id=schedule_data.preferred_starting_hub_id,
         preferred_area=schedule_data.preferred_area,
-        is_active=schedule_data.is_active
+        is_active=schedule_data.is_active,
     )
 
     db.add(new_schedule)
@@ -658,12 +718,13 @@ async def add_driver_schedule(
 
     return new_schedule
 
+
 @router.get("/{driver_id}/schedules", response_model=List[DriverScheduleResponse])
 async def get_driver_schedules(
     driver_id: int,
     active_only: bool = Query(False, description="Only return active schedules"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all schedules associated with a driver.
@@ -682,12 +743,13 @@ async def get_driver_schedules(
 
     return schedules
 
+
 @router.get("/{driver_id}/statistics")
 async def get_driver_statistics(
     driver_id: int,
     period_days: int = Query(30, description="Statistics period in days"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get statistics for a driver.
@@ -700,8 +762,7 @@ async def get_driver_statistics(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # TODO: Implement statistics calculation
@@ -714,15 +775,16 @@ async def get_driver_statistics(
         "completed_rides": driver.completed_rides,
         "cancelled_rides": driver.cancelled_rides,
         "average_rating": driver.average_rating,
-        "status": driver.status
+        "status": driver.status,
     }
+
 
 @router.put("/{driver_id}/status")
 async def update_driver_status(
     driver_id: int,
     status: DriverStatus,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    _: User = Depends(get_current_admin_user),  # Admin only
 ):
     """
     Update a driver's status (PENDING, ACTIVE, INACTIVE, SUSPENDED, REJECTED).
@@ -731,8 +793,7 @@ async def update_driver_status(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     driver.status = status
@@ -740,13 +801,14 @@ async def update_driver_status(
 
     return {"driver_id": driver_id, "status": status}
 
+
 @router.put("/{driver_id}/location")
 async def update_driver_location(
     driver_id: int,
     latitude: float,
     longitude: float,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update a driver's current location.
@@ -759,8 +821,7 @@ async def update_driver_location(
     driver = db.query(DriverProfile).filter(DriverProfile.id == driver_id).first()
     if not driver:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found"
         )
 
     # TODO: Implement location update
@@ -771,5 +832,5 @@ async def update_driver_location(
         "driver_id": driver_id,
         "latitude": latitude,
         "longitude": longitude,
-        "updated_at": "2023-06-15T14:30:45.123456"  # Placeholder
+        "updated_at": "2023-06-15T14:30:45.123456",  # Placeholder
     }

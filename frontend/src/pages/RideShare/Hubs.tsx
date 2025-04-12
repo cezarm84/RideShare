@@ -131,4 +131,4 @@ const Hubs = () => {
   );
 };
 
-export default Hubs; 
+export default Hubs;

@@ -1,14 +1,16 @@
-from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+
 from fastapi import HTTPException
-from app.models.ride import Ride, RideBooking
-from app.models.payment import Payment
+from sqlalchemy.orm import Session
+
 from app.models.booking_passenger import BookingPassenger
+from app.models.payment import Payment
+from app.models.ride import Ride, RideBooking
 from app.models.user import User
-from app.schemas.booking import BookingCreate, PaymentCreate, PassengerInfo
+from app.schemas.booking import BookingCreate, PaymentCreate
 from app.services.notification_service import NotificationService
 from app.services.payment_service import PaymentService
-import json
+
 
 class BookingService:
     def __init__(self, db: Session):
@@ -17,15 +19,25 @@ class BookingService:
 
     def get_user_bookings(self, user_id: int) -> list[RideBooking]:
         # Get bookings where user is the main passenger
-        main_bookings = self.db.query(RideBooking).filter(RideBooking.passenger_id == user_id).all()
+        main_bookings = (
+            self.db.query(RideBooking).filter(RideBooking.passenger_id == user_id).all()
+        )
 
         # Get bookings where user is listed as a passenger
-        from sqlalchemy.orm import joinedload
-        passenger_booking_ids = self.db.query(BookingPassenger.booking_id).filter(BookingPassenger.user_id == user_id).all()
+
+        passenger_booking_ids = (
+            self.db.query(BookingPassenger.booking_id)
+            .filter(BookingPassenger.user_id == user_id)
+            .all()
+        )
         passenger_booking_ids = [id[0] for id in passenger_booking_ids]
 
         # Get those bookings with their passengers
-        other_bookings = self.db.query(RideBooking).filter(RideBooking.id.in_(passenger_booking_ids)).all()
+        other_bookings = (
+            self.db.query(RideBooking)
+            .filter(RideBooking.id.in_(passenger_booking_ids))
+            .all()
+        )
 
         # Combine and deduplicate
         all_bookings = {booking.id: booking for booking in main_bookings}
@@ -35,18 +47,30 @@ class BookingService:
 
         # Load passengers for all bookings
         for booking in all_bookings.values():
-            booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking.id).all()
+            booking.passengers = (
+                self.db.query(BookingPassenger)
+                .filter(BookingPassenger.booking_id == booking.id)
+                .all()
+            )
 
         return list(all_bookings.values())
 
     def get_booking_by_id(self, booking_id: int) -> RideBooking:
         """Get a booking by its ID with passenger information"""
-        booking = self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        booking = (
+            self.db.query(RideBooking).filter(RideBooking.id == booking_id).first()
+        )
         if not booking:
-            raise HTTPException(status_code=404, detail=f"Booking with ID {booking_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Booking with ID {booking_id} not found"
+            )
 
         # Load passengers
-        booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking_id).all()
+        booking.passengers = (
+            self.db.query(BookingPassenger)
+            .filter(BookingPassenger.booking_id == booking_id)
+            .all()
+        )
 
         return booking
 
@@ -67,7 +91,7 @@ class BookingService:
             ride_id=booking.ride_id,
             seats_booked=passenger_count,
             booking_status="confirmed",
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
 
         # Store matching preferences if provided
@@ -91,21 +115,41 @@ class BookingService:
             # If user_id is provided, verify it exists
             passenger_user = None
             if passenger_info.user_id:
-                passenger_user = self.db.query(User).filter(User.id == passenger_info.user_id).first()
+                passenger_user = (
+                    self.db.query(User)
+                    .filter(User.id == passenger_info.user_id)
+                    .first()
+                )
                 if not passenger_user:
                     # If user doesn't exist but we have email, use that instead
                     if passenger_info.email:
                         # Check if user exists with this email
-                        passenger_user = self.db.query(User).filter(User.email == passenger_info.email).first()
+                        passenger_user = (
+                            self.db.query(User)
+                            .filter(User.email == passenger_info.email)
+                            .first()
+                        )
 
             # Create passenger record
             db_passenger = BookingPassenger(
                 booking_id=db_booking.id,
                 user_id=passenger_user.id if passenger_user else None,
-                email=passenger_info.email if not passenger_user and passenger_info.email else None,
-                name=passenger_info.name if not passenger_user and passenger_info.name else None,
-                phone=passenger_info.phone if not passenger_user and passenger_info.phone else None,
-                is_primary=is_primary
+                email=(
+                    passenger_info.email
+                    if not passenger_user and passenger_info.email
+                    else None
+                ),
+                name=(
+                    passenger_info.name
+                    if not passenger_user and passenger_info.name
+                    else None
+                ),
+                phone=(
+                    passenger_info.phone
+                    if not passenger_user and passenger_info.phone
+                    else None
+                ),
+                is_primary=is_primary,
             )
 
             self.db.add(db_passenger)
@@ -136,15 +180,13 @@ class BookingService:
         # Use the PaymentService to process the payment
         payment_service = PaymentService(self.db)
         db_payment = payment_service.process_payment(
-            user_id=booking.passenger_id,
-            booking_id=booking_id,
-            payment_data=payment
+            user_id=booking.passenger_id, booking_id=booking_id, payment_data=payment
         )
 
         # Notify payment success
         await self.notification_service.notify_custom_message(
             booking.passenger_id,
             "Payment Successful",
-            f"Payment of {db_payment.amount} SEK for booking {booking_id} completed."
+            f"Payment of {db_payment.amount} SEK for booking {booking_id} completed.",
         )
         return db_payment

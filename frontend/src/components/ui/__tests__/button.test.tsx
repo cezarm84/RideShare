@@ -6,7 +6,7 @@ import { Button } from '../button';
 describe('Button Component', () => {
   it('renders correctly with default props', () => {
     render(<Button>Click me</Button>);
-    
+
     const button = screen.getByRole('button', { name: /click me/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute('data-slot', 'button');
@@ -15,7 +15,7 @@ describe('Button Component', () => {
 
   it('renders correctly when disabled', () => {
     render(<Button disabled>Disabled Button</Button>);
-    
+
     const button = screen.getByRole('button', { name: /disabled button/i });
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
@@ -32,14 +32,14 @@ describe('Button Component', () => {
         <Button variant="link">Link</Button>
       </>
     );
-    
+
     const defaultButton = screen.getByRole('button', { name: /default/i });
     const destructiveButton = screen.getByRole('button', { name: /destructive/i });
     const outlineButton = screen.getByRole('button', { name: /outline/i });
     const secondaryButton = screen.getByRole('button', { name: /secondary/i });
     const ghostButton = screen.getByRole('button', { name: /ghost/i });
     const linkButton = screen.getByRole('button', { name: /link/i });
-    
+
     // Check that each button has the appropriate class
     expect(defaultButton.className).toContain('bg-primary');
     expect(destructiveButton.className).toContain('bg-destructive');
@@ -58,12 +58,12 @@ describe('Button Component', () => {
         <Button size="icon">Icon</Button>
       </>
     );
-    
+
     const defaultSizeButton = screen.getByRole('button', { name: /default size/i });
     const smallButton = screen.getByRole('button', { name: /small/i });
     const largeButton = screen.getByRole('button', { name: /large/i });
     const iconButton = screen.getByRole('button', { name: /icon/i });
-    
+
     // Check that each button has the appropriate class
     expect(defaultSizeButton.className).toContain('h-9');
     expect(smallButton.className).toContain('h-8');
@@ -73,7 +73,7 @@ describe('Button Component', () => {
 
   it('applies custom className', () => {
     render(<Button className="custom-class">Custom Class</Button>);
-    
+
     const button = screen.getByRole('button', { name: /custom class/i });
     expect(button.className).toContain('custom-class');
   });
@@ -81,24 +81,24 @@ describe('Button Component', () => {
   it('handles click events', async () => {
     const handleClick = jest.fn();
     const user = userEvent.setup();
-    
+
     render(<Button onClick={handleClick}>Click me</Button>);
-    
+
     const button = screen.getByRole('button', { name: /click me/i });
     await user.click(button);
-    
+
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
   it('does not trigger click when disabled', async () => {
     const handleClick = jest.fn();
     const user = userEvent.setup();
-    
+
     render(<Button onClick={handleClick} disabled>Click me</Button>);
-    
+
     const button = screen.getByRole('button', { name: /click me/i });
     await user.click(button);
-    
+
     expect(handleClick).not.toHaveBeenCalled();
   });
 
@@ -108,7 +108,7 @@ describe('Button Component', () => {
         <a href="https://example.com">Link Button</a>
       </Button>
     );
-    
+
     const linkButton = screen.getByRole('link', { name: /link button/i });
     expect(linkButton).toBeInTheDocument();
     expect(linkButton).toHaveAttribute('href', 'https://example.com');
@@ -117,15 +117,15 @@ describe('Button Component', () => {
 
   it('forwards additional props to the button element', () => {
     render(
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
         aria-label="Submit Form"
         data-testid="submit-button"
       >
         Submit
       </Button>
     );
-    
+
     const button = screen.getByRole('button', { name: /submit/i });
     expect(button).toHaveAttribute('type', 'submit');
     expect(button).toHaveAttribute('aria-label', 'Submit Form');

@@ -1,10 +1,11 @@
 import logging
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
+
+
 from app.db.session import SessionLocal
 from app.services.travel_pattern_service import TravelPatternService
 
 logger = logging.getLogger(__name__)
+
 
 def update_all_travel_patterns():
     """Update travel patterns for all users"""
@@ -20,6 +21,7 @@ def update_all_travel_patterns():
         return 0
     finally:
         db.close()
+
 
 def update_travel_pattern_after_ride(user_id: int, ride_id: int):
     """Update travel pattern for a user after a ride is completed"""

@@ -110,4 +110,4 @@ export interface DriverDocument {
   expiry_date?: string;
   created_at: string;
   updated_at: string;
-} 
+}

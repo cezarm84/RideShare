@@ -1,7 +1,5 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-from app.models.ride import Ride
+
+
 
 def test_create_ride(client, db_session):
     # Simulate admin user (bypass auth for simplicity in this test)
@@ -12,12 +10,13 @@ def test_create_ride(client, db_session):
         "vehicle_type": "minivan",
         "capacity": 8,
         "available_seats": 8,
-        "status": "scheduled"
+        "status": "scheduled",
     }
     response = client.post("/api/rides", json=ride_data)
     assert response.status_code == 401  # Expect unauthorized without token
-    
+
     # Add a real test with auth later when admin token is available
+
 
 def test_get_rides(client, db_session):
     response = client.get("/api/rides")

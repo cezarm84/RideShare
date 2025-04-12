@@ -30,4 +30,4 @@ export const mockApiResponse = (data: any) => ({
   json: () => Promise.resolve(data),
 });
 
-export const mockApiError = new Error('Network Error'); 
+export const mockApiError = new Error('Network Error');

@@ -44,9 +44,9 @@ The `UserPreference` model represents user preferences in the application:
 ```python
 class UserPreference(Base):
     """Model for user preferences"""
-    
+
     __tablename__ = "user_preferences"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     theme = Column(String, nullable=True)
@@ -55,9 +55,9 @@ class UserPreference(Base):
     email_frequency = Column(String, default="daily")
     push_enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(timezone.utc), 
+    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(timezone.utc),
                         onupdate=lambda: datetime.datetime.now(timezone.utc))
-    
+
     # Relationship with user
     user = relationship("User")
 ```
@@ -250,15 +250,15 @@ if (preferences.theme === 'dark') {
 def send_notification(user_id, notification_type, message):
     # Get user preferences
     preferences = preference_service.get_user_preferences(user_id)
-    
+
     # Check if notifications are enabled
     if not preferences.notifications:
         return
-    
+
     # Check if push notifications are enabled for push type
     if notification_type == 'push' and not preferences.push_enabled:
         return
-    
+
     # Send the notification
     notification_service.send(user_id, notification_type, message)
 ```
@@ -269,7 +269,7 @@ def send_notification(user_id, notification_type, message):
 def get_localized_message(user_id, message_key):
     # Get user preferences
     preferences = preference_service.get_user_preferences(user_id)
-    
+
     # Get message in user's preferred language
     language = preferences.language or 'en'  # Default to English
     return translation_service.get_message(message_key, language)

@@ -50,10 +50,10 @@ def add_user_preferences_table():
     """Add the UserPreferences table to the database"""
     migration_id = uuid.uuid4().hex[:12]
     table_name = 'user_preferences'
-    
+
     try:
         conn = sqlite3.connect(DB_FILE)
-        
+
         # Create the table
         conn.execute('''
         CREATE TABLE IF NOT EXISTS user_preferences (
@@ -69,20 +69,20 @@ def add_user_preferences_table():
             FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
         )
         ''')
-        
+
         # Create indexes
         conn.execute('CREATE INDEX IF NOT EXISTS ix_user_preferences_user_id ON user_preferences (user_id)')
-        
+
         # Record the migration
         conn.execute(f"INSERT INTO alembic_version (version_num) VALUES ('{migration_id}')")
-        
+
         conn.commit()
         print(f"Created user_preferences table successfully")
         print(f"Migration ID: {migration_id}")
-        
+
         # Create the migration file
         create_migration_file(migration_id, table_name)
-        
+
     except Exception as e:
         print(f"Error creating table: {e}")
     finally:
@@ -104,29 +104,29 @@ Example from the payments table update:
 def update_payments_table():
     """Update the payments table to support the new payment methods"""
     migration_id = uuid.uuid4().hex[:12]
-    
+
     try:
         conn = sqlite3.connect(DB_FILE)
-        
+
         # Add new columns to the payments table
         conn.execute('ALTER TABLE payments ADD COLUMN payment_method_id INTEGER REFERENCES payment_methods(id)')
         conn.execute('ALTER TABLE payments ADD COLUMN payment_provider TEXT')
         conn.execute('ALTER TABLE payments ADD COLUMN payment_type TEXT')
         conn.execute('ALTER TABLE payments ADD COLUMN payment_details TEXT')
-        
+
         # Create index on payment_method_id
         conn.execute('CREATE INDEX IF NOT EXISTS ix_payments_payment_method_id ON payments (payment_method_id)')
-        
+
         # Record the migration
         conn.execute(f"INSERT INTO alembic_version (version_num) VALUES ('{migration_id}')")
-        
+
         conn.commit()
         print(f"Updated payments table successfully")
         print(f"Migration ID: {migration_id}")
-        
+
         # Create the migration file
         create_migration_file(migration_id)
-        
+
     except Exception as e:
         print(f"Error updating table: {e}")
     finally:
@@ -142,7 +142,7 @@ def create_migration_file(migration_id, table_name):
     """Create a migration file for the table"""
     # Get the latest revision
     latest_revision = get_latest_revision()
-    
+
     # Create the migration file content
     content = f'''"""
 add {table_name} table
@@ -174,17 +174,17 @@ def downgrade():
     op.drop_index('ix_{table_name}_user_id', table_name='{table_name}')
     op.drop_table('{table_name}')
 '''
-    
+
     # Create the migration file
     filename = f"{migration_id}_add_{table_name}_table.py"
     filepath = os.path.join(MIGRATIONS_DIR, filename)
-    
+
     # Ensure the directory exists
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    
+
     with open(filepath, 'w') as f:
         f.write(content)
-    
+
     print(f"Created migration file: {filepath}")
 ```
 
@@ -237,47 +237,47 @@ def verify_table_creation():
     """Verify that the table was created successfully"""
     try:
         conn = sqlite3.connect(DB_FILE)
-        
+
         # Check if the table exists
         cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_preferences'")
         table_exists = cursor.fetchone() is not None
-        
+
         if table_exists:
             print("✅ Table 'user_preferences' exists")
-            
+
             # Check if the columns exist
             cursor = conn.execute("PRAGMA table_info(user_preferences)")
             columns = {column[1]: column for column in cursor.fetchall()}
-            
-            expected_columns = ['id', 'user_id', 'theme', 'language', 'notifications', 
+
+            expected_columns = ['id', 'user_id', 'theme', 'language', 'notifications',
                                'email_frequency', 'push_enabled', 'created_at', 'updated_at']
-            
+
             for column in expected_columns:
                 if column in columns:
                     print(f"✅ Column '{column}' exists")
                 else:
                     print(f"❌ Column '{column}' does not exist")
-            
+
             # Check if the index exists
             cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='ix_user_preferences_user_id'")
             index_exists = cursor.fetchone() is not None
-            
+
             if index_exists:
                 print("✅ Index 'ix_user_preferences_user_id' exists")
             else:
                 print("❌ Index 'ix_user_preferences_user_id' does not exist")
-            
+
             # Check if the migration was recorded
             cursor = conn.execute("SELECT version_num FROM alembic_version ORDER BY version_num DESC LIMIT 1")
             latest_migration = cursor.fetchone()
-            
+
             if latest_migration:
                 print(f"✅ Migration recorded: {latest_migration[0]}")
             else:
                 print("❌ Migration not recorded")
         else:
             print("❌ Table 'user_preferences' does not exist")
-        
+
         conn.close()
     except Exception as e:
         print(f"Error verifying table creation: {e}")

@@ -49,13 +49,13 @@ jest.mock('@/components/ui/button', () => ({
 
 describe('Drivers Component', () => {
   const mockNavigate = jest.fn();
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock useNavigate
     (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
-    
+
     // Mock service responses
     (driverService.getDrivers as jest.Mock).mockResolvedValue([
       {
@@ -78,15 +78,15 @@ describe('Drivers Component', () => {
   it('should render drivers list', async () => {
     // Act
     render(<Drivers />);
-    
+
     // Assert - initially should show loading state
     expect(screen.getByText('Drivers')).toBeInTheDocument();
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(driverService.getDrivers).toHaveBeenCalled();
     });
-    
+
     // Check drivers are displayed
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -99,15 +99,15 @@ describe('Drivers Component', () => {
   it('should navigate to create driver page when add button is clicked', async () => {
     // Act
     render(<Drivers />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(driverService.getDrivers).toHaveBeenCalled();
     });
-    
+
     // Click the add button
     fireEvent.click(screen.getByText('Add Driver'));
-    
+
     // Assert
     expect(mockNavigate).toHaveBeenCalledWith('/drivers/new');
   });
@@ -115,15 +115,15 @@ describe('Drivers Component', () => {
   it('should navigate to edit driver page when edit button is clicked', async () => {
     // Act
     render(<Drivers />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(driverService.getDrivers).toHaveBeenCalled();
     });
-    
+
     // Click the edit button for the first driver
     fireEvent.click(screen.getAllByText('Edit')[0]);
-    
+
     // Assert
     expect(mockNavigate).toHaveBeenCalledWith('/drivers/1/edit');
   });
@@ -131,18 +131,18 @@ describe('Drivers Component', () => {
   it('should delete driver when delete button is clicked', async () => {
     // Arrange
     (driverService.deleteDriver as jest.Mock).mockResolvedValue({});
-    
+
     // Act
     render(<Drivers />);
-    
+
     // Wait for data to load
     await waitFor(() => {
       expect(driverService.getDrivers).toHaveBeenCalled();
     });
-    
+
     // Click the delete button for the first driver
     fireEvent.click(screen.getAllByText('Delete')[0]);
-    
+
     // Assert
     await waitFor(() => {
       expect(driverService.deleteDriver).toHaveBeenCalledWith('1');
@@ -154,18 +154,18 @@ describe('Drivers Component', () => {
     // Arrange
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     (driverService.getDrivers as jest.Mock).mockRejectedValue(new Error('API error'));
-    
+
     // Act
     render(<Drivers />);
-    
+
     // Assert
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching drivers:', expect.any(Error));
     });
-    
+
     // Should still render the page structure
     expect(screen.getByText('Drivers')).toBeInTheDocument();
-    
+
     // Cleanup
     consoleErrorSpy.mockRestore();
   });

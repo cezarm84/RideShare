@@ -1,6 +1,8 @@
-from typing import Optional, List
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 class VehicleTypeBase(BaseModel):
     name: str
@@ -9,6 +11,7 @@ class VehicleTypeBase(BaseModel):
     is_active: bool = True
     price_factor: float = Field(default=1.0, description="Multiplier for ride pricing")
 
+
 class VehicleTypeCreate(VehicleTypeBase):
     """Schema for creating a new vehicle type"""
 
@@ -16,8 +19,10 @@ class VehicleTypeCreate(VehicleTypeBase):
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
 
+
 class VehicleTypeUpdate(BaseModel):
     """Schema for updating an existing vehicle type"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     capacity: Optional[int] = None
@@ -28,8 +33,10 @@ class VehicleTypeUpdate(BaseModel):
         from_attributes = True  # For Pydantic v2
         orm_mode = True  # For Pydantic v1 compatibility
 
+
 class VehicleTypeInDB(VehicleTypeBase):
     """Schema for vehicle type data in the database"""
+
     id: int
     created_at: datetime
     updated_at: datetime
@@ -37,8 +44,10 @@ class VehicleTypeInDB(VehicleTypeBase):
     class Config:
         from_attributes = True
 
+
 class VehicleTypeResponse(BaseModel):
     """Schema for API responses"""
+
     id: int
     name: str
     description: Optional[str] = None
@@ -55,6 +64,7 @@ class VehicleTypeResponse(BaseModel):
 
 class VehicleBase(BaseModel):
     """Base schema for vehicle data"""
+
     make: str
     model: str
     year: int
@@ -67,6 +77,7 @@ class VehicleBase(BaseModel):
 
 class VehicleCreate(VehicleBase):
     """Schema for creating a new vehicle"""
+
     owner_id: int
 
     class Config:
@@ -75,6 +86,7 @@ class VehicleCreate(VehicleBase):
 
 class VehicleUpdate(BaseModel):
     """Schema for updating an existing vehicle"""
+
     make: Optional[str] = None
     model: Optional[str] = None
     year: Optional[int] = None
@@ -90,6 +102,7 @@ class VehicleUpdate(BaseModel):
 
 class VehicleResponse(BaseModel):
     """Schema for vehicle API responses"""
+
     id: int
     owner_id: int
     make: str

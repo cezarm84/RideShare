@@ -1,26 +1,32 @@
-from typing import List, Optional, Union, Any, Dict
-from datetime import datetime, timezone, time, timedelta, date
-from enum import Enum
-from pydantic import BaseModel, Field, validator, root_validator
 import re
+from datetime import date, datetime, time, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, root_validator, validator
+
 
 class RideType(str, Enum):
     """
     Defines the type of ride to create
     """
+
     ENTERPRISE = "enterprise"  # Rides for company employees (requires enterprise_id)
     HUB_TO_HUB = "hub_to_hub"  # Fixed routes between transportation hubs
     HUB_TO_DESTINATION = "hub_to_destination"  # Routes from hub to custom destination
+
 
 class RecurrencePattern(str, Enum):
     """
     Defines the recurrence pattern for scheduled rides
     """
+
     DAILY = "daily"
     WEEKDAYS = "weekdays"  # Monday to Friday
     WEEKLY = "weekly"
     MONTHLY = "monthly"
     ONE_TIME = "one_time"  # Single occurrence
+
 
 # Schema for hub information in response
 class HubBase(BaseModel):
@@ -33,11 +39,13 @@ class HubBase(BaseModel):
         orm_mode = True
         from_attributes = True  # For Pydantic v2
 
+
 # Add the missing HubResponse class that's being imported in rides.py
 class HubResponse(HubBase):
     """
     Full hub response model with all fields from the database.
     """
+
     description: Optional[str] = None
     postal_code: Optional[str] = None
     latitude: Optional[float] = None
@@ -47,6 +55,7 @@ class HubResponse(HubBase):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 # Schema for custom destination information
 class DestinationInfo(BaseModel):
@@ -58,27 +67,20 @@ class DestinationInfo(BaseModel):
     postal_code: Optional[str] = Field(None, description="Postal code")
     country: Optional[str] = Field(None, description="Country")
 
+
 # Base schema for ride creation with distinct ride types
 class RideCreate(BaseModel):
     # Basic ride information
     ride_type: RideType = Field(
-        ...,
-        description="Type of ride to create",
-        example="hub_to_hub"
+        ..., description="Type of ride to create", example="hub_to_hub"
     )
 
     # Hub and destination information
-    starting_hub_id: int = Field(
-        ...,
-        description="ID of the starting hub",
-        example=1
-    )
+    starting_hub_id: int = Field(..., description="ID of the starting hub", example=1)
 
     # One of the following destination types must be provided
     destination_hub_id: Optional[int] = Field(
-        None,
-        description="ID of the destination hub (for hub_to_hub)",
-        example=2
+        None, description="ID of the destination hub (for hub_to_hub)", example=2
     )
     destination: Optional[DestinationInfo] = Field(
         None,
@@ -90,69 +92,57 @@ class RideCreate(BaseModel):
             "latitude": 57.7089,
             "longitude": 11.9746,
             "postal_code": "411 03",
-            "country": "Sweden"
-        }
+            "country": "Sweden",
+        },
     )
 
     # Enterprise information (required for enterprise rides)
     enterprise_id: Optional[int] = Field(
         None,
         description="ID of the enterprise (required for enterprise rides)",
-        example=1
+        example=1,
     )
 
     # Schedule information
     recurrence_pattern: RecurrencePattern = Field(
         RecurrencePattern.ONE_TIME,
         description="How often the ride repeats",
-        example="one_time"
+        example="one_time",
     )
     start_date: Optional[str] = Field(
         None,
         description="Start date for the recurrence pattern (YYYY-MM-DD)",
-        example="2025-05-15"
+        example="2025-05-15",
     )
     end_date: Optional[str] = Field(
         None,
         description="End date for the recurrence pattern (YYYY-MM-DD)",
-        example="2025-05-15"
+        example="2025-05-15",
     )
 
     # For one-time rides or the first instance of recurring rides
     departure_time: Optional[str] = Field(
         None,
         description="Exact date and time for one-time rides or first instance of recurring rides (REQUIRED FORMAT: YYYY-MM-DDThh:mm:ss)",
-        example="2025-05-15T08:00:00"
+        example="2025-05-15T08:00:00",
     )
 
     # For recurring rides, specify times without dates
     departure_times: Optional[List[str]] = Field(
         None,
         description="Time(s) of day for all instances of recurring rides, can include multiple times per day (REQUIRED FORMAT: HH:MM:SS)",
-        example=["08:00:00", "17:00:00"]
+        example=["08:00:00", "17:00:00"],
     )
 
     # Ride details
-    vehicle_type_id: int = Field(
-        ...,
-        description="ID of the vehicle type",
-        example=1
-    )
+    vehicle_type_id: int = Field(..., description="ID of the vehicle type", example=1)
     price_per_seat: float = Field(
-        ...,
-        description="Price per seat in SEK",
-        example=50.0
+        ..., description="Price per seat in SEK", example=50.0
     )
     available_seats: int = Field(
-        ...,
-        description="Number of available seats (must be at least 1)",
-        example=4
+        ..., description="Number of available seats (must be at least 1)", example=4
     )
-    status: str = Field(
-        "scheduled",
-        description="Ride status",
-        example="scheduled"
-    )
+    status: str = Field("scheduled", description="Ride status", example="scheduled")
 
     # Validate ride type specific fields
     @root_validator(pre=True)
@@ -188,7 +178,7 @@ class RideCreate(BaseModel):
         return values
 
     # Parse and validate dates
-    @validator('start_date', 'end_date')
+    @validator("start_date", "end_date")
     def validate_date(cls, v):
         if v is None:
             return v
@@ -204,7 +194,7 @@ class RideCreate(BaseModel):
                     "%d-%m-%Y",
                     "%m-%d-%Y",
                     "%d %b %Y",  # 07 Apr 2025
-                    "%b %d %Y"   # Apr 07 2025
+                    "%b %d %Y",  # Apr 07 2025
                 ]
 
                 valid_format = False
@@ -223,14 +213,14 @@ class RideCreate(BaseModel):
                 return v
             elif isinstance(v, (datetime, date)):
                 # Convert to string in ISO format
-                return v.strftime('%Y-%m-%d')
+                return v.strftime("%Y-%m-%d")
             else:
                 raise ValueError(f"Date must be a string or date object: {v}")
         except Exception as e:
             raise ValueError(f"Date validation error: {str(e)}")
 
     # Parse and validate departure times
-    @validator('departure_times')
+    @validator("departure_times")
     def validate_departure_times(cls, v):
         if v is None:
             return v
@@ -259,19 +249,21 @@ class RideCreate(BaseModel):
                     validated_times.append(time_val)
                 elif isinstance(time_val, time):
                     # Convert time object to string
-                    validated_times.append(time_val.strftime('%H:%M:%S'))
+                    validated_times.append(time_val.strftime("%H:%M:%S"))
                 elif isinstance(time_val, datetime):
                     # Extract time from datetime and convert to string
-                    validated_times.append(time_val.strftime('%H:%M:%S'))
+                    validated_times.append(time_val.strftime("%H:%M:%S"))
                 else:
-                    raise ValueError(f"Time must be a string, time, or datetime object: {time_val}")
+                    raise ValueError(
+                        f"Time must be a string, time, or datetime object: {time_val}"
+                    )
             except Exception as e:
                 raise ValueError(f"Time validation error for {time_val}: {str(e)}")
 
         return validated_times
 
     # Enhanced validator for departure_time to handle multiple formats
-    @validator('departure_time')
+    @validator("departure_time")
     def validate_departure_time(cls, v, values):
         if v is None:
             return v
@@ -287,14 +279,12 @@ class RideCreate(BaseModel):
                 "%Y-%m-%dT%H:%M",
                 "%Y-%m-%d %H:%M:%S",
                 "%Y-%m-%d %H:%M",
-
                 # Common HTTP formats
                 "%a, %d %b %Y %H:%M:%S",  # Mon, 07 Apr 2025 22:12:17
-                "%a,%d %b %Y %H:%M:%S",   # Mon,07 Apr 2025 22:12:17
+                "%a,%d %b %Y %H:%M:%S",  # Mon,07 Apr 2025 22:12:17
                 "%a, %d %b %Y %H:%M",
-
                 # Other common formats
-                "%d %b %Y %H:%M:%S",      # 07 Apr 2025 22:12:17
+                "%d %b %Y %H:%M:%S",  # 07 Apr 2025 22:12:17
                 "%d %b %Y %H:%M",
                 "%d/%m/%Y %H:%M:%S",
                 "%d/%m/%Y %H:%M",
@@ -303,7 +293,7 @@ class RideCreate(BaseModel):
                 "%d-%m-%Y %H:%M:%S",
                 "%d-%m-%Y %H:%M",
                 "%m-%d-%Y %H:%M:%S",
-                "%m-%d-%Y %H:%M"
+                "%m-%d-%Y %H:%M",
             ]
 
             # Try to parse the string with each format
@@ -321,25 +311,31 @@ class RideCreate(BaseModel):
             if not valid_format:
                 try:
                     # Try to handle ISO format with timezone
-                    parsed_time = datetime.fromisoformat(v.replace('Z', '+00:00'))
+                    parsed_time = datetime.fromisoformat(v.replace("Z", "+00:00"))
                     valid_format = True
                 except ValueError:
                     # Last resort: try to extract date and time components
                     try:
                         # Match yyyy-mm-dd or yyyy/mm/dd
-                        date_match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', v)
+                        date_match = re.search(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", v)
                         # Match hh:mm:ss or hh:mm
-                        time_match = re.search(r'(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?', v)
+                        time_match = re.search(r"(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?", v)
 
                         if date_match and time_match:
                             year, month, day = map(int, date_match.groups())
                             hour, minute = map(int, time_match.groups()[:2])
-                            second = int(time_match.group(3)) if time_match.group(3) else 0
+                            second = (
+                                int(time_match.group(3)) if time_match.group(3) else 0
+                            )
 
-                            parsed_time = datetime(year, month, day, hour, minute, second)
+                            parsed_time = datetime(
+                                year, month, day, hour, minute, second
+                            )
                             valid_format = True
                         else:
-                            raise ValueError(f"Could not parse datetime components from: {v}")
+                            raise ValueError(
+                                f"Could not parse datetime components from: {v}"
+                            )
                     except Exception:
                         raise ValueError(f"Invalid datetime format: {v}")
 
@@ -355,7 +351,7 @@ class RideCreate(BaseModel):
                     parsed_time = parsed_time.replace(tzinfo=timezone.utc)
 
                 if parsed_time < now:
-                    raise ValueError('Departure time must be in the future')
+                    raise ValueError("Departure time must be in the future")
 
             # Return the original string
             return v
@@ -365,19 +361,20 @@ class RideCreate(BaseModel):
         else:
             raise ValueError(f"Departure time must be a string or datetime object: {v}")
 
-    @validator('available_seats')
+    @validator("available_seats")
     def check_available_seats(cls, v):
         if v < 1:
-            raise ValueError('Available seats must be at least 1')
+            raise ValueError("Available seats must be at least 1")
         if v > 50:  # Increased for enterprise use cases
-            raise ValueError('Available seats cannot exceed 50')
+            raise ValueError("Available seats cannot exceed 50")
         return v
 
-    @validator('price_per_seat')
+    @validator("price_per_seat")
     def check_price(cls, v):
         if v < 0:
-            raise ValueError('Price per seat cannot be negative')
+            raise ValueError("Price per seat cannot be negative")
         return v
+
 
 # Schema for recurring ride patterns
 class RecurringRidePattern(BaseModel):
@@ -391,6 +388,7 @@ class RecurringRidePattern(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 # Schema for expanded ride details in response
 class RideResponse(BaseModel):
@@ -420,6 +418,7 @@ class RideResponse(BaseModel):
         orm_mode = True
         from_attributes = True  # For Pydantic v2
 
+
 # For backward compatibility
 class RideDetailResponse(RideResponse):
     """
@@ -433,12 +432,13 @@ class RideDetailResponse(RideResponse):
         Creates a model from an ORM object or dict.
         Compatible with both Pydantic v1 and v2.
         """
-        if hasattr(cls, 'model_validate'):
+        if hasattr(cls, "model_validate"):
             # Pydantic v2
             return cls.model_validate(obj)
         else:
             # Pydantic v1
             return cls.parse_obj(obj)
+
 
 # Schema for passenger information in ride response
 class RidePassengerInfo(BaseModel):
@@ -455,6 +455,7 @@ class RidePassengerInfo(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True  # For Pydantic v2
+
 
 # Schema for booking information in ride response
 class RideBookingInfo(BaseModel):
@@ -477,27 +478,31 @@ class RideBookingInfo(BaseModel):
         orm_mode = True
         from_attributes = True  # For Pydantic v2
 
+
 # Add the missing RideDetailedResponse class
 class RideDetailedResponse(RideResponse):
     """
     Detailed response for rides, including additional information.
     This class is needed for backward compatibility with existing imports.
     """
+
     # Add bookings field for passenger information
     bookings: Optional[List[RideBookingInfo]] = None
+
 
 # Schema for ride booking
 class RideBookingCreate(BaseModel):
     ride_id: int
     seats_booked: int = Field(1, description="Number of seats to book")
 
-    @validator('seats_booked')
+    @validator("seats_booked")
     def check_seats_booked(cls, v):
         if v < 1:
-            raise ValueError('Must book at least 1 seat')
+            raise ValueError("Must book at least 1 seat")
         if v > 10:
-            raise ValueError('Cannot book more than 10 seats')
+            raise ValueError("Cannot book more than 10 seats")
         return v
+
 
 # Schema for ride booking response
 class RideBookingResponse(BaseModel):
@@ -514,33 +519,34 @@ class RideBookingResponse(BaseModel):
     status: Optional[str] = None
     booking_time: Optional[datetime] = None
 
-    @validator('user_id', pre=True, always=True)
+    @validator("user_id", pre=True, always=True)
     def set_user_id(cls, v, values):
-        if v is None and 'passenger_id' in values:
-            return values['passenger_id']
+        if v is None and "passenger_id" in values:
+            return values["passenger_id"]
         return v
 
-    @validator('passenger_count', pre=True, always=True)
+    @validator("passenger_count", pre=True, always=True)
     def set_passenger_count(cls, v, values):
-        if v is None and 'seats_booked' in values:
-            return values['seats_booked']
+        if v is None and "seats_booked" in values:
+            return values["seats_booked"]
         return v
 
-    @validator('status', pre=True, always=True)
+    @validator("status", pre=True, always=True)
     def set_status(cls, v, values):
-        if v is None and 'booking_status' in values:
-            return values['booking_status']
+        if v is None and "booking_status" in values:
+            return values["booking_status"]
         return v
 
-    @validator('booking_time', pre=True, always=True)
+    @validator("booking_time", pre=True, always=True)
     def set_booking_time(cls, v, values):
-        if v is None and 'created_at' in values:
-            return values['created_at']
+        if v is None and "created_at" in values:
+            return values["created_at"]
         return v
 
     class Config:
         orm_mode = True
         from_attributes = True  # For Pydantic v2
+
 
 # Update ride schema
 class RideUpdate(BaseModel):
@@ -555,23 +561,23 @@ class RideUpdate(BaseModel):
     driver_id: Optional[int] = None
     price_per_seat: Optional[float] = None
 
-    @validator('available_seats')
+    @validator("available_seats")
     def check_available_seats(cls, v):
         if v is not None:
             if v < 0:
-                raise ValueError('Available seats cannot be negative')
+                raise ValueError("Available seats cannot be negative")
             if v > 50:
-                raise ValueError('Available seats cannot exceed 50')
+                raise ValueError("Available seats cannot exceed 50")
         return v
 
-    @validator('price_per_seat')
+    @validator("price_per_seat")
     def check_price(cls, v):
         if v is not None and v < 0:
-            raise ValueError('Price per seat cannot be negative')
+            raise ValueError("Price per seat cannot be negative")
         return v
 
     # Use the same enhanced datetime validator
-    @validator('departure_time')
+    @validator("departure_time")
     def validate_departure_time(cls, v):
         if v is None:
             return v
@@ -600,7 +606,7 @@ class RideUpdate(BaseModel):
                 "%d-%m-%Y %H:%M:%S",
                 "%d-%m-%Y %H:%M",
                 "%m-%d-%Y %H:%M:%S",
-                "%m-%d-%Y %H:%M"
+                "%m-%d-%Y %H:%M",
             ]
 
             parsed_time = None
@@ -613,20 +619,26 @@ class RideUpdate(BaseModel):
 
             if parsed_time is None:
                 try:
-                    parsed_time = datetime.fromisoformat(v.replace('Z', '+00:00'))
+                    parsed_time = datetime.fromisoformat(v.replace("Z", "+00:00"))
                 except ValueError:
                     try:
-                        date_match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', v)
-                        time_match = re.search(r'(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?', v)
+                        date_match = re.search(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", v)
+                        time_match = re.search(r"(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?", v)
 
                         if date_match and time_match:
                             year, month, day = map(int, date_match.groups())
                             hour, minute = map(int, time_match.groups()[:2])
-                            second = int(time_match.group(3)) if time_match.group(3) else 0
+                            second = (
+                                int(time_match.group(3)) if time_match.group(3) else 0
+                            )
 
-                            parsed_time = datetime(year, month, day, hour, minute, second)
+                            parsed_time = datetime(
+                                year, month, day, hour, minute, second
+                            )
                         else:
-                            raise ValueError(f"Could not parse datetime components from: {v}")
+                            raise ValueError(
+                                f"Could not parse datetime components from: {v}"
+                            )
                     except Exception:
                         raise ValueError(f"Invalid datetime format: {v}")
 
@@ -638,7 +650,7 @@ class RideUpdate(BaseModel):
 
         now = datetime.now(timezone.utc)
         if parsed_time < now:
-            raise ValueError('Departure time must be in the future')
+            raise ValueError("Departure time must be in the future")
 
         return parsed_time
 

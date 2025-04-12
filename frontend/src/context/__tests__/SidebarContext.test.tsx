@@ -16,7 +16,7 @@ const TestComponent = () => {
     setActiveItem,
     toggleSubmenu,
   } = useSidebar();
-  
+
   return (
     <div>
       <div data-testid="isExpanded">{isExpanded.toString()}</div>
@@ -47,7 +47,7 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Assert
     expect(screen.getByTestId('isExpanded').textContent).toBe('true');
     expect(screen.getByTestId('isMobileOpen').textContent).toBe('false');
@@ -63,16 +63,16 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Act - toggle sidebar
     fireEvent.click(screen.getByText('Toggle Sidebar'));
-    
+
     // Assert
     expect(screen.getByTestId('isExpanded').textContent).toBe('false');
-    
+
     // Act - toggle again
     fireEvent.click(screen.getByText('Toggle Sidebar'));
-    
+
     // Assert
     expect(screen.getByTestId('isExpanded').textContent).toBe('true');
   });
@@ -84,16 +84,16 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Act - toggle mobile sidebar
     fireEvent.click(screen.getByText('Toggle Mobile Sidebar'));
-    
+
     // Assert
     expect(screen.getByTestId('isMobileOpen').textContent).toBe('true');
-    
+
     // Act - toggle again
     fireEvent.click(screen.getByText('Toggle Mobile Sidebar'));
-    
+
     // Assert
     expect(screen.getByTestId('isMobileOpen').textContent).toBe('false');
   });
@@ -105,10 +105,10 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Act
     fireEvent.click(screen.getByText('Set Hovered'));
-    
+
     // Assert
     expect(screen.getByTestId('isHovered').textContent).toBe('true');
   });
@@ -120,10 +120,10 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Act
     fireEvent.click(screen.getByText('Set Active Item'));
-    
+
     // Assert
     expect(screen.getByTestId('activeItem').textContent).toBe('dashboard');
   });
@@ -135,16 +135,16 @@ describe('SidebarContext', () => {
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Act - open submenu
     fireEvent.click(screen.getByText('Toggle Submenu'));
-    
+
     // Assert
     expect(screen.getByTestId('openSubmenu').textContent).toBe('settings');
-    
+
     // Act - close submenu
     fireEvent.click(screen.getByText('Toggle Submenu'));
-    
+
     // Assert
     expect(screen.getByTestId('openSubmenu').textContent).toBe('none');
   });
@@ -152,18 +152,18 @@ describe('SidebarContext', () => {
   it('should handle mobile view', () => {
     // Arrange - set window size to mobile
     global.innerWidth = 600;
-    
+
     // Act
     act(() => {
       global.dispatchEvent(new Event('resize'));
     });
-    
+
     render(
       <SidebarProvider>
         <TestComponent />
       </SidebarProvider>
     );
-    
+
     // Assert - in mobile view, isExpanded should be false regardless of state
     expect(screen.getByTestId('isExpanded').textContent).toBe('false');
   });

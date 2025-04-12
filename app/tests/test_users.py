@@ -1,5 +1,5 @@
-import pytest
-from app.schemas.user import UserCreate
+
+
 
 def test_create_user(client, db_session):
     user_data = {
@@ -9,7 +9,7 @@ def test_create_user(client, db_session):
         "last_name": "User",
         "phone_number": "0701234567",
         "latitude": 57.7089,
-        "longitude": 11.9750
+        "longitude": 11.9750,
     }
     response = client.post("/api/users", json=user_data)
     assert response.status_code == 201

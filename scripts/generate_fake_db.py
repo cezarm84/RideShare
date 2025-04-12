@@ -1,38 +1,43 @@
 import sys
 import uuid
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 # Add the parent directory to sys.path to find the 'app' module
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-# Import necessary modules
-from app.db.base import Base
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db import configure_relationships
 
-# Import models
-from app.models.user import User, Enterprise, EnterpriseUser, UserType, UserRole
-from app.models.hub import Hub
+# Import necessary modules
+from app.db.base import Base
 from app.models.address import Address
-from app.models.ride import Ride, RideBooking, RideStatus
-from app.models.payment import Payment
-from app.models.vehicle import VehicleType
 from app.models.destination import Destination
+from app.models.hub import Hub
+from app.models.payment import Payment
+from app.models.ride import Ride, RideBooking, RideStatus
+
+# Import models
+from app.models.user import Enterprise, EnterpriseUser, User, UserRole, UserType
+from app.models.vehicle import VehicleType
 
 # Database setup
 engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+
 
 def utc_now():
     """Return current UTC time as a datetime object."""
     return datetime.now()
 
+
 def generate_uuid():
     """Generate a UUID string for user identification."""
     return str(uuid.uuid4())
+
 
 def generate_fake_database():
     """Generate a fake database with test data."""
@@ -58,7 +63,7 @@ def generate_fake_database():
             "addresses",
             "enterprises",
             "vehicle_types",
-            "destinations"  
+            "destinations",
         ]
 
         for table in tables:
@@ -73,30 +78,46 @@ def generate_fake_database():
         print("Creating vehicle types...")
         vehicle_types = []
         for data in [
-            {"name": "Sedan", "description": "Standard 4-door car", "max_passengers": 4},
-            {"name": "SUV", "description": "Sport utility vehicle with extra space", "max_passengers": 6},
-            {"name": "Van", "description": "Larger vehicle for groups", "max_passengers": 8}
+            {
+                "name": "Sedan",
+                "description": "Standard 4-door car",
+                "max_passengers": 4,
+            },
+            {
+                "name": "SUV",
+                "description": "Sport utility vehicle with extra space",
+                "max_passengers": 6,
+            },
+            {
+                "name": "Van",
+                "description": "Larger vehicle for groups",
+                "max_passengers": 8,
+            },
         ]:
             # Use direct SQL to insert vehicle types with max_passengers
             db.execute(
-                text("INSERT INTO vehicle_types (name, description, max_passengers, created_at) VALUES (:name, :description, :max_passengers, :created_at)"),
+                text(
+                    "INSERT INTO vehicle_types (name, description, max_passengers, created_at) VALUES (:name, :description, :max_passengers, :created_at)"
+                ),
                 {
                     "name": data["name"],
                     "description": data["description"],
                     "max_passengers": data["max_passengers"],
-                    "created_at": utc_now()
-                }
+                    "created_at": utc_now(),
+                },
             )
             db.commit()
 
             # Get the created vehicle type ID
             result = db.execute(
                 text("SELECT id FROM vehicle_types WHERE name = :name"),
-                {"name": data["name"]}
+                {"name": data["name"]},
             ).fetchone()
             if result:
                 # Create a simple object to hold the ID
-                vehicle_type = type('VehicleType', (), {'id': result[0], 'name': data["name"]})
+                vehicle_type = type(
+                    "VehicleType", (), {"id": result[0], "name": data["name"]}
+                )
                 vehicle_types.append(vehicle_type)
         print(f"Created {len(vehicle_types)} vehicle types")
 
@@ -116,7 +137,7 @@ def generate_fake_database():
             postal_code="405 31",
             country="Sweden",
             latitude=57.7181,
-            longitude=11.8583
+            longitude=11.8583,
         )
         molnlycke_address = Address(
             street="Industrivägen",
@@ -125,7 +146,7 @@ def generate_fake_database():
             postal_code="435 33",
             country="Sweden",
             latitude=57.6589,
-            longitude=12.1167
+            longitude=12.1167,
         )
         gothenburg_address = Address(
             street="Drottningtorget",
@@ -134,7 +155,7 @@ def generate_fake_database():
             postal_code="411 03",
             country="Sweden",
             latitude=57.7089,
-            longitude=11.9750
+            longitude=11.9750,
         )
         db.add_all([volvo_address, molnlycke_address, gothenburg_address])
         db.commit()
@@ -150,7 +171,7 @@ def generate_fake_database():
                 "city": "Göteborg",
                 "postal_code": "41756",
                 "latitude": 57.7500,
-                "longitude": 11.8500
+                "longitude": 11.8500,
             },
             {
                 "name": "Hub South",
@@ -159,7 +180,7 @@ def generate_fake_database():
                 "city": "Göteborg",
                 "postal_code": "41468",
                 "latitude": 57.6900,
-                "longitude": 11.8700
+                "longitude": 11.8700,
             },
             {
                 "name": "Mölnlycke Hub",
@@ -168,8 +189,8 @@ def generate_fake_database():
                 "city": "Mölnlycke",
                 "postal_code": "43533",
                 "latitude": 57.6600,
-                "longitude": 12.1000
-            }
+                "longitude": 12.1000,
+            },
         ]
 
         for data in hub_data:
@@ -182,7 +203,7 @@ def generate_fake_database():
                 city=data["city"],
                 postal_code=data["postal_code"],
                 is_active=True,
-                created_at=utc_now()
+                created_at=utc_now(),
             )
             hubs.append(hub)
             db.add(hub)
@@ -202,7 +223,7 @@ def generate_fake_database():
             country="Sweden",
             latitude=57.7089,
             longitude=11.9750,
-            is_active=True
+            is_active=True,
         )
 
         # Create a destination for Volvo
@@ -215,7 +236,7 @@ def generate_fake_database():
             latitude=57.7181,
             longitude=11.8583,
             enterprise_id=volvo.id,
-            is_active=True
+            is_active=True,
         )
 
         destinations.append(gothenburg_central)
@@ -229,38 +250,44 @@ def generate_fake_database():
 
         # Use direct SQL to create locations
         db.execute(
-            text("INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"),
+            text(
+                "INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"
+            ),
             {
                 "name": "Volvo Torslanda",
                 "address": f"{volvo_address.street}, {volvo_address.city}",
                 "latitude": volvo_address.latitude,
                 "longitude": volvo_address.longitude,
-                "location_type": "enterprise"
-            }
+                "location_type": "enterprise",
+            },
         )
         db.commit()
 
         db.execute(
-            text("INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"),
+            text(
+                "INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"
+            ),
             {
                 "name": "Mölnlycke Industrial Park",
                 "address": f"{molnlycke_address.street}, {molnlycke_address.city}",
                 "latitude": molnlycke_address.latitude,
                 "longitude": molnlycke_address.longitude,
-                "location_type": "enterprise"
-            }
+                "location_type": "enterprise",
+            },
         )
         db.commit()
 
         db.execute(
-            text("INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"),
+            text(
+                "INSERT INTO locations (name, address, latitude, longitude, location_type, created_at) VALUES (:name, :address, :latitude, :longitude, :location_type, CURRENT_TIMESTAMP)"
+            ),
             {
                 "name": "Gothenburg Central",
                 "address": f"{gothenburg_address.street}, {gothenburg_address.city}",
                 "latitude": gothenburg_address.latitude,
                 "longitude": gothenburg_address.longitude,
-                "location_type": "public"
-            }
+                "location_type": "public",
+            },
         )
         db.commit()
 
@@ -282,7 +309,7 @@ def generate_fake_database():
             is_superadmin=True,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         manager = User(
@@ -297,7 +324,7 @@ def generate_fake_database():
             is_superadmin=False,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         # Test user
@@ -312,7 +339,7 @@ def generate_fake_database():
             role=UserRole.USER,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         # Enterprise users
@@ -327,7 +354,7 @@ def generate_fake_database():
             role=UserRole.USER,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         volvo_user2 = User(
@@ -341,7 +368,7 @@ def generate_fake_database():
             role=UserRole.USER,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         molnlycke_user = User(
@@ -355,7 +382,7 @@ def generate_fake_database():
             role=UserRole.USER,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         # Driver user
@@ -370,10 +397,20 @@ def generate_fake_database():
             role=UserRole.DRIVER,
             is_active=True,
             is_verified=True,
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
-        db.add_all([admin, manager, test_user, volvo_user1, volvo_user2, molnlycke_user, driver])
+        db.add_all(
+            [
+                admin,
+                manager,
+                test_user,
+                volvo_user1,
+                volvo_user2,
+                molnlycke_user,
+                driver,
+            ]
+        )
         db.commit()
 
         # 8. Link enterprise users
@@ -383,7 +420,7 @@ def generate_fake_database():
             enterprise_id=volvo.id,
             employee_id="V001",
             department="Engineering",
-            position="Engineer"
+            position="Engineer",
         )
 
         volvo_eu2 = EnterpriseUser(
@@ -391,7 +428,7 @@ def generate_fake_database():
             enterprise_id=volvo.id,
             employee_id="V002",
             department="Production",
-            position="Manager"
+            position="Manager",
         )
 
         molnlycke_eu = EnterpriseUser(
@@ -399,7 +436,7 @@ def generate_fake_database():
             enterprise_id=molnlycke.id,
             employee_id="M001",
             department="Sales",
-            position="Representative"
+            position="Representative",
         )
 
         db.add_all([volvo_eu1, volvo_eu2, molnlycke_eu])
@@ -422,7 +459,7 @@ def generate_fake_database():
             status=RideStatus.SCHEDULED,
             available_seats=4,
             price_per_seat=50.0,
-            vehicle_type_id=vehicle_types[0].id
+            vehicle_type_id=vehicle_types[0].id,
         )
 
         # Hub to destination ride
@@ -439,7 +476,7 @@ def generate_fake_database():
             status=RideStatus.SCHEDULED,
             available_seats=6,
             price_per_seat=60.0,
-            vehicle_type_id=vehicle_types[1].id
+            vehicle_type_id=vehicle_types[1].id,
         )
 
         # Enterprise ride
@@ -456,7 +493,7 @@ def generate_fake_database():
             status=RideStatus.SCHEDULED,
             available_seats=8,
             price_per_seat=45.0,
-            vehicle_type_id=vehicle_types[2].id
+            vehicle_type_id=vehicle_types[2].id,
         )
 
         db.add_all([hub_to_hub_ride, hub_to_dest_ride, enterprise_ride])
@@ -470,7 +507,7 @@ def generate_fake_database():
             passenger_id=test_user.id,
             ride_id=hub_to_hub_ride.id,
             seats_booked=1,
-            booking_status="confirmed"
+            booking_status="confirmed",
         )
 
         # Booking for enterprise ride
@@ -478,14 +515,14 @@ def generate_fake_database():
             passenger_id=volvo_user1.id,
             ride_id=enterprise_ride.id,
             seats_booked=1,
-            booking_status="confirmed"
+            booking_status="confirmed",
         )
 
         booking3 = RideBooking(
             passenger_id=volvo_user2.id,
             ride_id=enterprise_ride.id,
             seats_booked=1,
-            booking_status="confirmed"
+            booking_status="confirmed",
         )
 
         db.add_all([booking1, booking2, booking3])
@@ -505,7 +542,7 @@ def generate_fake_database():
             amount=50.0,
             payment_method="credit_card",
             transaction_id=f"txn_{booking1.id}",
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         payment2 = Payment(
@@ -514,7 +551,7 @@ def generate_fake_database():
             amount=45.0,
             payment_method="swish",
             transaction_id=f"txn_{booking2.id}",
-            created_at=utc_now()
+            created_at=utc_now(),
         )
 
         db.add_all([payment1, payment2])
@@ -542,10 +579,12 @@ def generate_fake_database():
         print("Available Rides: GET /api/v1/rides")
         print("Create Booking: POST /api/v1/bookings")
 
+
 if __name__ == "__main__":
     try:
         generate_fake_database()
     except Exception as e:
         print(f"Error generating database: {str(e)}")
         import traceback
+
         traceback.print_exc()

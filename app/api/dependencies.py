@@ -1,23 +1,27 @@
-from fastapi import Depends, HTTPException, status, WebSocket
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-from jose import JWTError, jwt
+import logging
 from datetime import datetime
 from typing import Optional
-from app.db.session import get_db
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
+from app.db.session import get_db
 from app.models.user import User
-import logging
 
 logger = logging.getLogger(__name__)
 
 # Configure OAuth2 password bearer for token extraction
 # Set auto_error=False to allow handling missing tokens in get_current_user
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/token", auto_error=False
+)
+
 
 def get_current_user_optional(
-    db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), token: Optional[str] = Depends(oauth2_scheme)
 ) -> Optional[User]:
     """
     Dependency to get the current authenticated user from JWT token, or None if no token.
@@ -50,9 +54,9 @@ def get_current_user_optional(
     except JWTError:
         return None
 
+
 def get_current_user(
-    db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), token: Optional[str] = Depends(oauth2_scheme)
 ) -> User:
     """
     Dependency to get the current authenticated user from JWT token.
@@ -110,6 +114,7 @@ def get_current_user(
 
     return user
 
+
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
@@ -127,14 +132,13 @@ def get_current_active_user(
     """
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
         )
     return current_user
 
+
 def get_optional_user(
-    db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), token: Optional[str] = Depends(oauth2_scheme)
 ) -> Optional[User]:
     """
     Dependency to get the current user if authenticated, but doesn't require authentication.
@@ -175,7 +179,10 @@ def get_optional_user(
         logger.warning(f"Error in optional authentication: {str(e)}")
         return None
 
-def get_current_admin_user(current_user: User = Depends(get_current_active_user)) -> User:
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """
     Checks if the current user is an admin or has admin privileges.
 
@@ -190,12 +197,14 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
     """
     if not current_user.has_admin_privileges():
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
     return current_user
 
-def get_current_superadmin_user(current_user: User = Depends(get_current_admin_user)) -> User:
+
+def get_current_superadmin_user(
+    current_user: User = Depends(get_current_admin_user),
+) -> User:
     """
     Checks if the current user is a superadmin.
     This requires either the is_superadmin flag to be True or the role to be SUPERADMIN.
@@ -211,14 +220,20 @@ def get_current_superadmin_user(current_user: User = Depends(get_current_admin_u
     """
     from app.models.user import UserRole
 
-    if not (getattr(current_user, 'is_superadmin', False) or current_user.role == UserRole.SUPERADMIN):
+    if not (
+        getattr(current_user, "is_superadmin", False)
+        or current_user.role == UserRole.SUPERADMIN
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin privileges required"
+            detail="Superadmin privileges required",
         )
     return current_user
 
-def get_current_manager_user(current_user: User = Depends(get_current_active_user)) -> User:
+
+def get_current_manager_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """
     Checks if the current user is a manager.
 
@@ -235,12 +250,14 @@ def get_current_manager_user(current_user: User = Depends(get_current_active_use
 
     if not current_user.is_manager and current_user.role != UserRole.MANAGER:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Manager privileges required"
         )
     return current_user
 
-def get_current_driver_user(current_user: User = Depends(get_current_active_user)) -> User:
+
+def get_current_driver_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """
     Checks if the current user is a driver.
 
@@ -255,16 +272,20 @@ def get_current_driver_user(current_user: User = Depends(get_current_active_user
     """
     from app.models.user import UserRole, UserType
 
-    if not (current_user.is_driver or
-            current_user.role == UserRole.DRIVER or
-            current_user.user_type == UserType.DRIVER):
+    if not (
+        current_user.is_driver
+        or current_user.role == UserRole.DRIVER
+        or current_user.user_type == UserType.DRIVER
+    ):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Driver privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Driver privileges required"
         )
     return current_user
 
-def get_admin_or_driver_user(current_user: User = Depends(get_current_active_user)) -> User:
+
+def get_admin_or_driver_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """
     Checks if the current user is either an admin/manager or a driver.
     This is useful for endpoints that should be accessible to both admins and drivers.
@@ -289,11 +310,13 @@ def get_admin_or_driver_user(current_user: User = Depends(get_current_active_use
             # If neither admin nor driver, raise exception
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin or driver privileges required"
+                detail="Admin or driver privileges required",
             )
+
 
 def get_db_session() -> Session:
     return Depends(get_db)
+
 
 async def websocket_auth(token: str, db: Session) -> Optional[User]:
     """
@@ -313,9 +336,7 @@ async def websocket_auth(token: str, db: Session) -> Optional[User]:
     try:
         # Decode JWT token
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
 
         # Extract user ID

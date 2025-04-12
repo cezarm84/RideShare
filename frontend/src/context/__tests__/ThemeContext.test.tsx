@@ -37,7 +37,7 @@ Object.defineProperty(document, 'documentElement', {
 // Test component that uses the ThemeContext
 const TestComponent = () => {
   const { theme, toggleTheme } = useTheme();
-  
+
   return (
     <div>
       <div data-testid="theme">{theme}</div>
@@ -59,12 +59,12 @@ describe('ThemeContext', () => {
         <TestComponent />
       </ThemeProvider>
     );
-    
+
     // Wait for initialization
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
+
     // Assert
     expect(screen.getByTestId('theme').textContent).toBe('light');
     expect(documentElementMock.classList.remove).toHaveBeenCalledWith('dark');
@@ -73,19 +73,19 @@ describe('ThemeContext', () => {
   it('should initialize with saved theme from localStorage', async () => {
     // Arrange
     localStorageMock.getItem.mockReturnValueOnce('dark');
-    
+
     // Act
     render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>
     );
-    
+
     // Wait for initialization
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
+
     // Assert
     expect(screen.getByTestId('theme').textContent).toBe('dark');
     expect(documentElementMock.classList.add).toHaveBeenCalledWith('dark');
@@ -98,15 +98,15 @@ describe('ThemeContext', () => {
         <TestComponent />
       </ThemeProvider>
     );
-    
+
     // Wait for initialization
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
+
     // Act - toggle theme
     fireEvent.click(screen.getByText('Toggle Theme'));
-    
+
     // Assert
     expect(screen.getByTestId('theme').textContent).toBe('dark');
     expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark');
@@ -116,21 +116,21 @@ describe('ThemeContext', () => {
   it('should toggle theme from dark to light', async () => {
     // Arrange
     localStorageMock.getItem.mockReturnValueOnce('dark');
-    
+
     render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>
     );
-    
+
     // Wait for initialization
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
-    
+
     // Act - toggle theme
     fireEvent.click(screen.getByText('Toggle Theme'));
-    
+
     // Assert
     expect(screen.getByTestId('theme').textContent).toBe('light');
     expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light');

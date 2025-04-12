@@ -2,16 +2,21 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.main import app
+
 from app.db.base import Base
 from app.db.session import get_db
+from app.main import app
+
 
 @pytest.fixture(scope="session")
 def db_engine():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db_session(db_engine):
@@ -19,6 +24,7 @@ def db_session(db_engine):
     db = SessionLocal()
     yield db
     db.close()
+
 
 @pytest.fixture(scope="function")
 def client(db_session):

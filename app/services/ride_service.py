@@ -1,31 +1,36 @@
-from typing import List, Optional, Dict, Any, Union, Tuple
-from datetime import datetime, timedelta, date, time
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
-from sqlalchemy.exc import SQLAlchemyError
 import logging
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Union
 
+from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.models.driver import DriverVehicle
+from app.models.hub import Hub
 from app.models.ride import (
+    RecurrencePattern,
+    RecurringRidePattern,
     Ride,
     RideBooking,
-    RecurringRidePattern,
     RideDepartureTime,
-    RideType,
     RideStatus,
-    RecurrencePattern
+    RideType,
 )
-from app.models.hub import Hub
+from app.models.user import Enterprise
 from app.models.vehicle import VehicleType
-from app.models.user import User, Enterprise
-from app.models.driver import DriverProfile, DriverVehicle
 
 logger = logging.getLogger(__name__)
+
 
 class RideService:
     def __init__(self, db: Session):
         self.db = db
+
     @staticmethod
-    def create_ride(db: Session, ride_data: dict, driver_id: int) -> Union[Ride, List[Ride]]:
+    def create_ride(
+        db: Session, ride_data: dict, driver_id: int
+    ) -> Union[Ride, List[Ride]]:
         """
         Create rides based on the specified pattern
 
@@ -33,10 +38,13 @@ class RideService:
         For recurring rides, creates the pattern and returns a list of generated Rides.
         """
         # Check if driver has a vehicle with passed inspection status
-        driver_vehicles = db.query(DriverVehicle).filter(
-            DriverVehicle.driver_id == driver_id,
-            DriverVehicle.is_primary == True
-        ).all()
+        driver_vehicles = (
+            db.query(DriverVehicle)
+            .filter(
+                DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+            )
+            .all()
+        )
 
         # Check if any of the driver's primary vehicles have passed inspection
         has_passed_vehicle = False
@@ -46,12 +54,18 @@ class RideService:
                 break
 
         if not has_passed_vehicle:
-            raise ValueError("Driver does not have any vehicles with passed inspection status. Cannot create rides.")
+            raise ValueError(
+                "Driver does not have any vehicles with passed inspection status. Cannot create rides."
+            )
 
         # Validate that starting hub exists
-        starting_hub = db.query(Hub).filter(Hub.id == ride_data.get("starting_hub_id")).first()
+        starting_hub = (
+            db.query(Hub).filter(Hub.id == ride_data.get("starting_hub_id")).first()
+        )
         if not starting_hub:
-            raise ValueError(f"Starting hub with ID {ride_data.get('starting_hub_id')} not found")
+            raise ValueError(
+                f"Starting hub with ID {ride_data.get('starting_hub_id')} not found"
+            )
 
         # Initialize destination variables
         destination_hub = None
@@ -67,9 +81,15 @@ class RideService:
             if not ride_data.get("destination_hub_id"):
                 raise ValueError("Hub-to-hub rides require a destination hub ID")
 
-            destination_hub = db.query(Hub).filter(Hub.id == ride_data.get("destination_hub_id")).first()
+            destination_hub = (
+                db.query(Hub)
+                .filter(Hub.id == ride_data.get("destination_hub_id"))
+                .first()
+            )
             if not destination_hub:
-                raise ValueError(f"Destination hub with ID {ride_data.get('destination_hub_id')} not found")
+                raise ValueError(
+                    f"Destination hub with ID {ride_data.get('destination_hub_id')} not found"
+                )
 
             destination_lat = destination_hub.latitude
             destination_lng = destination_hub.longitude
@@ -83,24 +103,40 @@ class RideService:
 
             # If destination has coordinates, extract them
             if isinstance(destination_json, dict):
-                destination_lat = destination_json.get('latitude') or destination_json.get('lat')
-                destination_lng = destination_json.get('longitude') or destination_json.get('lng')
+                destination_lat = destination_json.get(
+                    "latitude"
+                ) or destination_json.get("lat")
+                destination_lng = destination_json.get(
+                    "longitude"
+                ) or destination_json.get("lng")
 
         elif ride_type == RideType.ENTERPRISE:
             # Validate enterprise ID
             if not ride_data.get("enterprise_id"):
                 raise ValueError("Enterprise rides require an enterprise_id")
 
-            enterprise = db.query(Enterprise).filter(Enterprise.id == ride_data.get("enterprise_id")).first()
+            enterprise = (
+                db.query(Enterprise)
+                .filter(Enterprise.id == ride_data.get("enterprise_id"))
+                .first()
+            )
             if not enterprise:
-                raise ValueError(f"Enterprise with ID {ride_data.get('enterprise_id')} not found")
+                raise ValueError(
+                    f"Enterprise with ID {ride_data.get('enterprise_id')} not found"
+                )
 
             # For enterprise rides, check if it's hub-to-hub or hub-to-destination
             if ride_data.get("destination_hub_id"):
                 # Using a hub as destination
-                destination_hub = db.query(Hub).filter(Hub.id == ride_data.get("destination_hub_id")).first()
+                destination_hub = (
+                    db.query(Hub)
+                    .filter(Hub.id == ride_data.get("destination_hub_id"))
+                    .first()
+                )
                 if not destination_hub:
-                    raise ValueError(f"Destination hub with ID {ride_data.get('destination_hub_id')} not found")
+                    raise ValueError(
+                        f"Destination hub with ID {ride_data.get('destination_hub_id')} not found"
+                    )
 
                 destination_lat = destination_hub.latitude
                 destination_lng = destination_hub.longitude
@@ -110,8 +146,12 @@ class RideService:
 
                 # If destination has coordinates, extract them
                 if isinstance(destination_json, dict):
-                    destination_lat = destination_json.get('latitude') or destination_json.get('lat')
-                    destination_lng = destination_json.get('longitude') or destination_json.get('lng')
+                    destination_lat = destination_json.get(
+                        "latitude"
+                    ) or destination_json.get("lat")
+                    destination_lng = destination_json.get(
+                        "longitude"
+                    ) or destination_json.get("lng")
             else:
                 # Use the enterprise's address as the destination
                 if enterprise.latitude is not None and enterprise.longitude is not None:
@@ -126,18 +166,26 @@ class RideService:
                         "postal_code": enterprise.postal_code,
                         "country": enterprise.country,
                         "latitude": enterprise.latitude,
-                        "longitude": enterprise.longitude
+                        "longitude": enterprise.longitude,
                     }
 
                     # Add the destination to the ride data
                     ride_data["destination"] = destination_json
                 else:
-                    raise ValueError("Enterprise does not have location coordinates. Please specify a destination or update the enterprise with latitude/longitude.")
+                    raise ValueError(
+                        "Enterprise does not have location coordinates. Please specify a destination or update the enterprise with latitude/longitude."
+                    )
 
         # Validate vehicle type
-        vehicle_type = db.query(VehicleType).filter(VehicleType.id == ride_data.get("vehicle_type_id")).first()
+        vehicle_type = (
+            db.query(VehicleType)
+            .filter(VehicleType.id == ride_data.get("vehicle_type_id"))
+            .first()
+        )
         if not vehicle_type:
-            raise ValueError(f"Vehicle type with ID {ride_data.get('vehicle_type_id')} not found")
+            raise ValueError(
+                f"Vehicle type with ID {ride_data.get('vehicle_type_id')} not found"
+            )
 
         # Handle recurrence pattern
         recurrence_pattern = ride_data.get("recurrence_pattern")
@@ -149,7 +197,9 @@ class RideService:
                 raise ValueError("One-time rides require a departure_time")
 
             # Convert string departure_time to datetime object if needed
-            logger.info(f"Original departure_time: {departure_time}, type: {type(departure_time)}")
+            logger.info(
+                f"Original departure_time: {departure_time}, type: {type(departure_time)}"
+            )
             if isinstance(departure_time, str):
                 try:
                     # Try common formats
@@ -159,7 +209,7 @@ class RideService:
                         "%Y-%m-%dT%H:%M:%S",
                         "%Y-%m-%dT%H:%M",
                         "%Y-%m-%d %H:%M:%S",
-                        "%Y-%m-%d %H:%M"
+                        "%Y-%m-%d %H:%M",
                     ]
 
                     parsed = False
@@ -167,7 +217,9 @@ class RideService:
                         try:
                             departure_time = datetime.strptime(departure_time, fmt)
                             parsed = True
-                            logger.info(f"Parsed departure_time with format {fmt}: {departure_time}")
+                            logger.info(
+                                f"Parsed departure_time with format {fmt}: {departure_time}"
+                            )
                             break
                         except ValueError:
                             continue
@@ -175,16 +227,24 @@ class RideService:
                     # If none of the formats worked, try ISO format
                     if not parsed:
                         try:
-                            departure_time = datetime.fromisoformat(departure_time.replace('Z', '+00:00'))
-                            logger.info(f"Parsed departure_time with ISO format: {departure_time}")
+                            departure_time = datetime.fromisoformat(
+                                departure_time.replace("Z", "+00:00")
+                            )
+                            logger.info(
+                                f"Parsed departure_time with ISO format: {departure_time}"
+                            )
                         except ValueError as e:
                             logger.error(f"Failed to parse departure_time: {e}")
-                            raise ValueError(f"Invalid departure_time format: {departure_time}")
+                            raise ValueError(
+                                f"Invalid departure_time format: {departure_time}"
+                            )
                 except Exception as e:
                     logger.error(f"Error parsing departure_time: {e}")
                     raise ValueError(f"Invalid departure_time format: {e}")
 
-            logger.info(f"Final departure_time: {departure_time}, type: {type(departure_time)}")
+            logger.info(
+                f"Final departure_time: {departure_time}, type: {type(departure_time)}"
+            )
 
             new_ride = Ride(
                 ride_type=ride_type,
@@ -202,7 +262,7 @@ class RideService:
                 status=ride_data.get("status", RideStatus.SCHEDULED),
                 available_seats=ride_data.get("available_seats", 4),
                 price_per_seat=ride_data.get("price_per_seat"),
-                vehicle_type_id=ride_data.get("vehicle_type_id")
+                vehicle_type_id=ride_data.get("vehicle_type_id"),
                 # is_recurring is handled through a property
             )
 
@@ -235,10 +295,14 @@ class RideService:
             if isinstance(first_departure_time, str):
                 # Parse time string to time object
                 try:
-                    first_departure_time = datetime.strptime(first_departure_time, "%H:%M").time()
+                    first_departure_time = datetime.strptime(
+                        first_departure_time, "%H:%M"
+                    ).time()
                 except ValueError:
                     try:
-                        first_departure_time = datetime.strptime(first_departure_time, "%H:%M:%S").time()
+                        first_departure_time = datetime.strptime(
+                            first_departure_time, "%H:%M:%S"
+                        ).time()
                     except ValueError:
                         raise ValueError(f"Invalid time format: {first_departure_time}")
 
@@ -269,7 +333,7 @@ class RideService:
                 status=ride_data.get("status", RideStatus.SCHEDULED),
                 available_seats=ride_data.get("available_seats", 4),
                 price_per_seat=ride_data.get("price_per_seat"),
-                vehicle_type_id=ride_data.get("vehicle_type_id")
+                vehicle_type_id=ride_data.get("vehicle_type_id"),
                 # is_recurring is handled through a property
             )
 
@@ -290,16 +354,22 @@ class RideService:
                 try:
                     start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
                 except ValueError:
-                    raise ValueError(f"Invalid start_date format: {start_date}. Expected format: YYYY-MM-DD")
+                    raise ValueError(
+                        f"Invalid start_date format: {start_date}. Expected format: YYYY-MM-DD"
+                    )
 
             # Convert end_date to date object if it's a string
             end_date = None
             if ride_data.get("end_date"):
                 if isinstance(ride_data.get("end_date"), str):
                     try:
-                        end_date = datetime.strptime(ride_data.get("end_date"), "%Y-%m-%d").date()
+                        end_date = datetime.strptime(
+                            ride_data.get("end_date"), "%Y-%m-%d"
+                        ).date()
                     except ValueError:
-                        raise ValueError(f"Invalid end_date format: {ride_data.get('end_date')}. Expected format: YYYY-MM-DD")
+                        raise ValueError(
+                            f"Invalid end_date format: {ride_data.get('end_date')}. Expected format: YYYY-MM-DD"
+                        )
                 else:
                     end_date = ride_data.get("end_date")
 
@@ -329,15 +399,18 @@ class RideService:
                         time_obj = datetime.strptime(departure_time_str, "%H:%M").time()
                     except ValueError:
                         try:
-                            time_obj = datetime.strptime(departure_time_str, "%H:%M:%S").time()
+                            time_obj = datetime.strptime(
+                                departure_time_str, "%H:%M:%S"
+                            ).time()
                         except ValueError:
-                            raise ValueError(f"Invalid time format: {departure_time_str}")
+                            raise ValueError(
+                                f"Invalid time format: {departure_time_str}"
+                            )
                 else:
                     time_obj = departure_time_str
 
                 departure_time = RideDepartureTime(
-                    pattern_id=pattern.id,
-                    departure_time=time_obj
+                    pattern_id=pattern.id, departure_time=time_obj
                 )
                 db.add(departure_time)
 
@@ -347,15 +420,15 @@ class RideService:
             # Generate the initial set of rides based on the pattern
             # (for the next 30 days or until end_date, whichever comes first)
             generated_rides = RideService.generate_recurring_rides(
-                db,
-                parent_ride.id,
-                days=30
+                db, parent_ride.id, days=30
             )
 
             return [parent_ride] + generated_rides
 
     @staticmethod
-    def generate_recurring_rides(db: Session, parent_ride_id: int, days: int = 30) -> List[Ride]:
+    def generate_recurring_rides(
+        db: Session, parent_ride_id: int, days: int = 30
+    ) -> List[Ride]:
         """
         Generate individual rides from a recurring pattern
 
@@ -371,17 +444,23 @@ class RideService:
         if not parent_ride or not parent_ride.is_recurring:
             raise ValueError(f"Ride with ID {parent_ride_id} is not a recurring ride")
 
-        pattern = db.query(RecurringRidePattern).filter(
-            RecurringRidePattern.ride_id == parent_ride_id
-        ).first()
+        pattern = (
+            db.query(RecurringRidePattern)
+            .filter(RecurringRidePattern.ride_id == parent_ride_id)
+            .first()
+        )
 
         if not pattern:
-            raise ValueError(f"No recurrence pattern found for ride ID {parent_ride_id}")
+            raise ValueError(
+                f"No recurrence pattern found for ride ID {parent_ride_id}"
+            )
 
         # Get departure times
-        departure_times = db.query(RideDepartureTime).filter(
-            RideDepartureTime.pattern_id == pattern.id
-        ).all()
+        departure_times = (
+            db.query(RideDepartureTime)
+            .filter(RideDepartureTime.pattern_id == pattern.id)
+            .all()
+        )
 
         if not departure_times:
             raise ValueError(f"No departure times found for pattern ID {pattern.id}")
@@ -396,7 +475,10 @@ class RideService:
         # Get the days of week for this pattern
         try:
             import json
-            days_of_week = json.loads(pattern.days_of_week) if pattern.days_of_week else []
+
+            days_of_week = (
+                json.loads(pattern.days_of_week) if pattern.days_of_week else []
+            )
         except (json.JSONDecodeError, TypeError):
             days_of_week = []
 
@@ -409,11 +491,20 @@ class RideService:
             if current_date != start_date:
                 if pattern.recurrence_pattern == RecurrencePattern.DAILY:
                     dates_to_generate.append(current_date)
-                elif pattern.recurrence_pattern == RecurrencePattern.WEEKDAYS and current_date.weekday() < 5:
+                elif (
+                    pattern.recurrence_pattern == RecurrencePattern.WEEKDAYS
+                    and current_date.weekday() < 5
+                ):
                     dates_to_generate.append(current_date)
-                elif pattern.recurrence_pattern == RecurrencePattern.WEEKLY and current_date.weekday() in days_of_week:
+                elif (
+                    pattern.recurrence_pattern == RecurrencePattern.WEEKLY
+                    and current_date.weekday() in days_of_week
+                ):
                     dates_to_generate.append(current_date)
-                elif pattern.recurrence_pattern == RecurrencePattern.MONTHLY and current_date.day == start_date.day:
+                elif (
+                    pattern.recurrence_pattern == RecurrencePattern.MONTHLY
+                    and current_date.day == start_date.day
+                ):
                     dates_to_generate.append(current_date)
 
             current_date += timedelta(days=1)
@@ -423,7 +514,9 @@ class RideService:
 
         for ride_date in dates_to_generate:
             for departure_time_obj in departure_times:
-                departure_time = datetime.combine(ride_date, departure_time_obj.departure_time)
+                departure_time = datetime.combine(
+                    ride_date, departure_time_obj.departure_time
+                )
 
                 # Create a new ride based on the parent ride
                 new_ride = Ride(
@@ -443,7 +536,7 @@ class RideService:
                     price_per_seat=parent_ride.price_per_seat,
                     vehicle_type_id=parent_ride.vehicle_type_id,
                     parent_ride_id=parent_ride.id,  # Set the parent ride ID
-                    is_recurring=False  # Child rides are not themselves recurring
+                    is_recurring=False,  # Child rides are not themselves recurring
                 )
 
                 db.add(new_ride)
@@ -462,7 +555,9 @@ class RideService:
         """Get a ride by ID"""
         return db.query(Ride).filter(Ride.id == ride_id).first()
 
-    def get_ride_by_id(self, ride_id: int, include_passengers: bool = False) -> Optional[Ride]:
+    def get_ride_by_id(
+        self, ride_id: int, include_passengers: bool = False
+    ) -> Optional[Ride]:
         """Get a ride by ID with optional passenger details"""
         ride = self.db.query(Ride).filter(Ride.id == ride_id).first()
 
@@ -472,13 +567,20 @@ class RideService:
 
             # Load detailed passenger information for each booking
             from app.models.booking_passenger import BookingPassenger
+
             for booking in ride.bookings:
-                booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking.id).all()
+                booking.passengers = (
+                    self.db.query(BookingPassenger)
+                    .filter(BookingPassenger.booking_id == booking.id)
+                    .all()
+                )
 
         return ride
 
     @staticmethod
-    def get_rides_by_hub(db: Session, hub_id: int, is_destination: bool = False) -> List[Ride]:
+    def get_rides_by_hub(
+        db: Session, hub_id: int, is_destination: bool = False
+    ) -> List[Ride]:
         """Get rides starting or ending at a specific hub"""
         if is_destination:
             return db.query(Ride).filter(Ride.destination_hub_id == hub_id).all()
@@ -488,10 +590,14 @@ class RideService:
     @staticmethod
     def get_enterprise_rides(db: Session, enterprise_id: int) -> List[Ride]:
         """Get all rides for a specific enterprise"""
-        return db.query(Ride).filter(
-            Ride.enterprise_id == enterprise_id,
-            Ride.status != RideStatus.CANCELLED
-        ).order_by(Ride.departure_time).all()
+        return (
+            db.query(Ride)
+            .filter(
+                Ride.enterprise_id == enterprise_id, Ride.status != RideStatus.CANCELLED
+            )
+            .order_by(Ride.departure_time)
+            .all()
+        )
 
     def get_detailed_rides(
         self,
@@ -502,7 +608,7 @@ class RideService:
         future_only: bool = True,
         destination_id: Optional[int] = None,
         hub_id: Optional[int] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
     ) -> List[Ride]:
         """Get rides with detailed information including hub and destination details."""
         query = self.db.query(Ride)
@@ -524,9 +630,13 @@ class RideService:
 
         if user_id:
             # Filter rides where the user is either the driver or a passenger
-            query = query.outerjoin(RideBooking).filter(
-                (Ride.driver_id == user_id) | (RideBooking.passenger_id == user_id)
-            ).distinct()
+            query = (
+                query.outerjoin(RideBooking)
+                .filter(
+                    (Ride.driver_id == user_id) | (RideBooking.passenger_id == user_id)
+                )
+                .distinct()
+            )
 
         # Apply pagination
         query = query.order_by(Ride.departure_time).offset(skip).limit(limit)
@@ -537,13 +647,18 @@ class RideService:
         # Eager load relationships if needed
         if include_passengers:
             from app.models.booking_passenger import BookingPassenger
+
             for ride in rides:
                 # Force loading of passengers
                 _ = [booking.passenger for booking in ride.bookings]
 
                 # Load detailed passenger information for each booking
                 for booking in ride.bookings:
-                    booking.passengers = self.db.query(BookingPassenger).filter(BookingPassenger.booking_id == booking.id).all()
+                    booking.passengers = (
+                        self.db.query(BookingPassenger)
+                        .filter(BookingPassenger.booking_id == booking.id)
+                        .all()
+                    )
 
         return rides
 
@@ -554,12 +669,11 @@ class RideService:
         starting_hub_id: Optional[int] = None,
         destination_hub_id: Optional[int] = None,
         enterprise_id: Optional[int] = None,
-        ride_type: Optional[str] = None
+        ride_type: Optional[str] = None,
     ) -> List[Ride]:
         """Get available rides with optional filtering"""
         query = db.query(Ride).filter(
-            Ride.status == RideStatus.SCHEDULED,
-            Ride.available_seats > 0
+            Ride.status == RideStatus.SCHEDULED, Ride.available_seats > 0
         )
 
         if departure_after:
@@ -580,21 +694,25 @@ class RideService:
         return query.order_by(Ride.departure_time).all()
 
     @staticmethod
-    def book_ride(db: Session, ride_id: int, passenger_id: int, seats: int = 1) -> RideBooking:
+    def book_ride(
+        db: Session, ride_id: int, passenger_id: int, seats: int = 1
+    ) -> RideBooking:
         """Book a ride for a passenger"""
         ride = db.query(Ride).filter(Ride.id == ride_id).first()
         if not ride:
             raise ValueError(f"Ride with ID {ride_id} not found")
 
         if ride.available_seats < seats:
-            raise ValueError(f"Not enough available seats. Requested: {seats}, Available: {ride.available_seats}")
+            raise ValueError(
+                f"Not enough available seats. Requested: {seats}, Available: {ride.available_seats}"
+            )
 
         # Create booking
         booking = RideBooking(
             ride_id=ride_id,
             passenger_id=passenger_id,
             seats_booked=seats,
-            booking_status="confirmed"
+            booking_status="confirmed",
         )
 
         # Update available seats
@@ -619,13 +737,19 @@ class RideService:
 
         # If updating hub IDs, update coordinates too
         if "starting_hub_id" in update_data and update_data["starting_hub_id"]:
-            starting_hub = db.query(Hub).filter(Hub.id == update_data["starting_hub_id"]).first()
+            starting_hub = (
+                db.query(Hub).filter(Hub.id == update_data["starting_hub_id"]).first()
+            )
             if starting_hub:
                 ride.origin_lat = starting_hub.latitude
                 ride.origin_lng = starting_hub.longitude
 
         if "destination_hub_id" in update_data and update_data["destination_hub_id"]:
-            destination_hub = db.query(Hub).filter(Hub.id == update_data["destination_hub_id"]).first()
+            destination_hub = (
+                db.query(Hub)
+                .filter(Hub.id == update_data["destination_hub_id"])
+                .first()
+            )
             if destination_hub:
                 ride.destination_lat = destination_hub.latitude
                 ride.destination_lng = destination_hub.longitude
@@ -664,29 +788,47 @@ class RideService:
 
         try:
             # Check if this is a recurring ride pattern
-            recurring_pattern = db.query(RecurringRidePattern).filter(RecurringRidePattern.ride_id == ride_id).first()
+            recurring_pattern = (
+                db.query(RecurringRidePattern)
+                .filter(RecurringRidePattern.ride_id == ride_id)
+                .first()
+            )
 
             if recurring_pattern:
                 # Delete all departure times associated with this pattern
-                db.query(RideDepartureTime).filter(RideDepartureTime.pattern_id == recurring_pattern.id).delete()
+                db.query(RideDepartureTime).filter(
+                    RideDepartureTime.pattern_id == recurring_pattern.id
+                ).delete()
 
                 # Delete the pattern
-                db.query(RecurringRidePattern).filter(RecurringRidePattern.ride_id == ride_id).delete()
+                db.query(RecurringRidePattern).filter(
+                    RecurringRidePattern.ride_id == ride_id
+                ).delete()
 
                 # Find and delete all child rides
-                child_rides = db.query(Ride).filter(Ride.parent_ride_id == ride_id).all()
+                child_rides = (
+                    db.query(Ride).filter(Ride.parent_ride_id == ride_id).all()
+                )
 
                 # Delete bookings for all child rides
                 for child_ride in child_rides:
-                    db.query(RideBooking).filter(RideBooking.ride_id == child_ride.id).delete()
+                    db.query(RideBooking).filter(
+                        RideBooking.ride_id == child_ride.id
+                    ).delete()
 
                 # Delete all child rides
-                child_rides_deleted = db.query(Ride).filter(Ride.parent_ride_id == ride_id).delete()
+                child_rides_deleted = (
+                    db.query(Ride).filter(Ride.parent_ride_id == ride_id).delete()
+                )
 
-                logger.info(f"Deleted recurring ride pattern and {child_rides_deleted} child rides for ride ID {ride_id}")
+                logger.info(
+                    f"Deleted recurring ride pattern and {child_rides_deleted} child rides for ride ID {ride_id}"
+                )
 
             # Delete all bookings associated with this ride
-            bookings_deleted = db.query(RideBooking).filter(RideBooking.ride_id == ride_id).delete()
+            bookings_deleted = (
+                db.query(RideBooking).filter(RideBooking.ride_id == ride_id).delete()
+            )
 
             # Delete the ride
             db.query(Ride).filter(Ride.id == ride_id).delete()
@@ -694,84 +836,115 @@ class RideService:
             # Commit the changes
             db.commit()
 
-            logger.info(f"Ride with ID {ride_id} and {bookings_deleted} bookings have been deleted")
+            logger.info(
+                f"Ride with ID {ride_id} and {bookings_deleted} bookings have been deleted"
+            )
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(f"Error deleting ride: {str(e)}")
             raise ValueError(f"Error deleting ride: {str(e)}")
 
     @staticmethod
-    def get_enterprise_ride_statistics(db: Session, enterprise_id: int) -> Dict[str, Any]:
+    def get_enterprise_ride_statistics(
+        db: Session, enterprise_id: int
+    ) -> Dict[str, Any]:
         """Get statistics about rides for an enterprise"""
         # Total rides
-        total_rides = db.query(func.count(Ride.id)).filter(
-            Ride.enterprise_id == enterprise_id
-        ).scalar() or 0
+        total_rides = (
+            db.query(func.count(Ride.id))
+            .filter(Ride.enterprise_id == enterprise_id)
+            .scalar()
+            or 0
+        )
 
         # Completed rides
-        completed_rides = db.query(func.count(Ride.id)).filter(
-            Ride.enterprise_id == enterprise_id,
-            Ride.status == RideStatus.COMPLETED
-        ).scalar() or 0
+        completed_rides = (
+            db.query(func.count(Ride.id))
+            .filter(
+                Ride.enterprise_id == enterprise_id, Ride.status == RideStatus.COMPLETED
+            )
+            .scalar()
+            or 0
+        )
 
         # Total passengers
-        total_passengers = db.query(func.sum(RideBooking.seats_booked)).join(
-            Ride, Ride.id == RideBooking.ride_id
-        ).filter(
-            Ride.enterprise_id == enterprise_id
-        ).scalar() or 0
+        total_passengers = (
+            db.query(func.sum(RideBooking.seats_booked))
+            .join(Ride, Ride.id == RideBooking.ride_id)
+            .filter(Ride.enterprise_id == enterprise_id)
+            .scalar()
+            or 0
+        )
 
         # Average occupancy
-        avg_occupancy = db.query(
-            func.avg(
-                func.coalesce(func.sum(RideBooking.seats_booked), 0) /
-                func.nullif(Ride.available_seats + func.coalesce(func.sum(RideBooking.seats_booked), 0), 0)
+        avg_occupancy = (
+            db.query(
+                func.avg(
+                    func.coalesce(func.sum(RideBooking.seats_booked), 0)
+                    / func.nullif(
+                        Ride.available_seats
+                        + func.coalesce(func.sum(RideBooking.seats_booked), 0),
+                        0,
+                    )
+                )
             )
-        ).outerjoin(
-            RideBooking, Ride.id == RideBooking.ride_id
-        ).filter(
-            Ride.enterprise_id == enterprise_id,
-            Ride.status.in_([RideStatus.COMPLETED, RideStatus.IN_PROGRESS])
-        ).group_by(Ride.id).scalar() or 0
+            .outerjoin(RideBooking, Ride.id == RideBooking.ride_id)
+            .filter(
+                Ride.enterprise_id == enterprise_id,
+                Ride.status.in_([RideStatus.COMPLETED, RideStatus.IN_PROGRESS]),
+            )
+            .group_by(Ride.id)
+            .scalar()
+            or 0
+        )
 
         # Most popular routes
-        popular_routes = db.query(
-            Ride.starting_hub_id,
-            Ride.destination_hub_id,
-            func.count(Ride.id).label("ride_count"),
-            func.sum(RideBooking.seats_booked).label("passenger_count")
-        ).outerjoin(
-            RideBooking, Ride.id == RideBooking.ride_id
-        ).filter(
-            Ride.enterprise_id == enterprise_id,
-            Ride.destination_hub_id != None
-        ).group_by(
-            Ride.starting_hub_id, Ride.destination_hub_id
-        ).order_by(
-            func.sum(RideBooking.seats_booked).desc()
-        ).limit(5).all()
+        popular_routes = (
+            db.query(
+                Ride.starting_hub_id,
+                Ride.destination_hub_id,
+                func.count(Ride.id).label("ride_count"),
+                func.sum(RideBooking.seats_booked).label("passenger_count"),
+            )
+            .outerjoin(RideBooking, Ride.id == RideBooking.ride_id)
+            .filter(
+                Ride.enterprise_id == enterprise_id, Ride.destination_hub_id != None
+            )
+            .group_by(Ride.starting_hub_id, Ride.destination_hub_id)
+            .order_by(func.sum(RideBooking.seats_booked).desc())
+            .limit(5)
+            .all()
+        )
 
         # Format the popular routes with hub names
         formatted_routes = []
         for route in popular_routes:
             starting_hub = db.query(Hub).filter(Hub.id == route.starting_hub_id).first()
-            destination_hub = db.query(Hub).filter(Hub.id == route.destination_hub_id).first()
+            destination_hub = (
+                db.query(Hub).filter(Hub.id == route.destination_hub_id).first()
+            )
 
-            formatted_routes.append({
-                "starting_hub_id": route.starting_hub_id,
-                "destination_hub_id": route.destination_hub_id,
-                "starting_hub_name": starting_hub.name if starting_hub else "Unknown",
-                "destination_hub_name": destination_hub.name if destination_hub else "Unknown",
-                "ride_count": route.ride_count,
-                "passenger_count": route.passenger_count or 0
-            })
+            formatted_routes.append(
+                {
+                    "starting_hub_id": route.starting_hub_id,
+                    "destination_hub_id": route.destination_hub_id,
+                    "starting_hub_name": (
+                        starting_hub.name if starting_hub else "Unknown"
+                    ),
+                    "destination_hub_name": (
+                        destination_hub.name if destination_hub else "Unknown"
+                    ),
+                    "ride_count": route.ride_count,
+                    "passenger_count": route.passenger_count or 0,
+                }
+            )
 
         return {
             "total_rides": total_rides,
             "completed_rides": completed_rides,
             "total_passengers": total_passengers,
             "avg_occupancy": float(avg_occupancy),
-            "popular_routes": formatted_routes
+            "popular_routes": formatted_routes,
         }
 
     @staticmethod
@@ -798,7 +971,7 @@ class RideService:
             "starting_hub": ride.starting_hub,
             "destination_hub": ride.destination_hub,
             "total_passengers": total_passengers,
-            "is_recurring": ride.is_recurring
+            "is_recurring": ride.is_recurring,
         }
 
         # Add recurrence pattern info if available
@@ -808,15 +981,25 @@ class RideService:
                 "start_date": ride.recurrence_pattern.start_date,
                 "end_date": ride.recurrence_pattern.end_date,
                 "days_of_week": ride.recurrence_pattern.days_of_week,
-                "departure_times": [
-                    dt.departure_time.strftime("%H:%M")
-                    for dt in ride.recurrence_pattern.departure_times
-                ] if ride.recurrence_pattern.departure_times else []
+                "departure_times": (
+                    [
+                        dt.departure_time.strftime("%H:%M")
+                        for dt in ride.recurrence_pattern.departure_times
+                    ]
+                    if ride.recurrence_pattern.departure_times
+                    else []
+                ),
             }
 
         return response_data
 
-    def book_ride(self, ride_id: int, passenger_id: int, seats: int = 1, db: Optional[Session] = None) -> RideBooking:
+    def book_ride(
+        self,
+        ride_id: int,
+        passenger_id: int,
+        seats: int = 1,
+        db: Optional[Session] = None,
+    ) -> RideBooking:
         """
         Book a ride for a passenger.
 
@@ -844,14 +1027,16 @@ class RideService:
 
         # Check if enough seats are available
         if ride.available_seats < seats:
-            raise ValueError(f"Not enough available seats. Requested: {seats}, Available: {ride.available_seats}")
+            raise ValueError(
+                f"Not enough available seats. Requested: {seats}, Available: {ride.available_seats}"
+            )
 
         # Create booking
         booking = RideBooking(
             ride_id=ride_id,
             passenger_id=passenger_id,
             seats_booked=seats,
-            booking_status="confirmed"
+            booking_status="confirmed",
         )
 
         # Update available seats
@@ -867,6 +1052,7 @@ class RideService:
             db_session.rollback()
             logger.error(f"Error booking ride: {e}")
             raise
+
 
 # No longer using a singleton instance
 # Each endpoint should create its own instance with a database session

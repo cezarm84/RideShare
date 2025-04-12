@@ -84,4 +84,4 @@ export const passwordChangeSchema = z.object({
   path: ['confirmPassword'],
 });
 
-export type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>; 
+export type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;

@@ -1,13 +1,25 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime, Text
-from sqlalchemy.orm import relationship
-from app.db.base_class import Base
 from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship
+
+from app.db.base_class import Base
+
 
 class VehicleType(Base):
     """
     Model for different vehicle types supported by the application.
     Adjusted to match existing database schema.
     """
+
     __tablename__ = "vehicle_types"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -21,7 +33,9 @@ class VehicleType(Base):
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
 
     # Relationships
-    rides = relationship("Ride", back_populates="vehicle_type", foreign_keys="Ride.vehicle_type_id")
+    rides = relationship(
+        "Ride", back_populates="vehicle_type", foreign_keys="Ride.vehicle_type_id"
+    )
 
     def __repr__(self):
         return f"<VehicleType(name='{self.name}')>"
@@ -32,6 +46,7 @@ class Vehicle(Base):
     Model for actual vehicles registered in the system.
     Each vehicle has a specific type and owner.
     """
+
     __tablename__ = "vehicles"
 
     id = Column(Integer, primary_key=True, index=True)

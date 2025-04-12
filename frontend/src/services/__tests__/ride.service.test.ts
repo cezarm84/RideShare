@@ -32,13 +32,13 @@ describe('RideService', () => {
           driver: { id: '1', name: 'John Doe' },
         },
       ];
-      
+
       const mockResponse = { data: mockRides };
       (api.get as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       // Act
       const result = await rideService.getAllRides();
-      
+
       // Assert
       expect(api.get).toHaveBeenCalledWith('/rides', { params: undefined });
       expect(result).toEqual(mockRides);
@@ -50,7 +50,7 @@ describe('RideService', () => {
         start_hub_id: 1,
         min_available_seats: 2,
       };
-      
+
       const mockRides = [
         {
           id: '1',
@@ -63,13 +63,13 @@ describe('RideService', () => {
           driver: { id: '1', name: 'John Doe' },
         },
       ];
-      
+
       const mockResponse = { data: mockRides };
       (api.get as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       // Act
       const result = await rideService.getAllRides(filters);
-      
+
       // Assert
       expect(api.get).toHaveBeenCalledWith('/rides', { params: filters });
       expect(result).toEqual(mockRides);
@@ -90,13 +90,13 @@ describe('RideService', () => {
         status: 'active',
         driver: { id: '1', name: 'John Doe' },
       };
-      
+
       const mockResponse = { data: mockRide };
       (api.get as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       // Act
       const result = await rideService.getRideById(rideId);
-      
+
       // Assert
       expect(api.get).toHaveBeenCalledWith(`/rides/${rideId}`);
       expect(result).toEqual(mockRide);
@@ -115,7 +115,7 @@ describe('RideService', () => {
         price: 50,
         vehicle_type_id: 1,
       };
-      
+
       const mockRide = {
         id: '1',
         ...rideData,
@@ -123,13 +123,13 @@ describe('RideService', () => {
         created_at: '2023-01-01T00:00:00Z',
         updated_at: '2023-01-01T00:00:00Z',
       };
-      
+
       const mockResponse = { data: mockRide };
       (api.post as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       // Act
       const result = await rideService.createRide(rideData);
-      
+
       // Assert
       expect(api.post).toHaveBeenCalledWith('/rides', rideData);
       expect(result).toEqual(mockRide);
@@ -144,7 +144,7 @@ describe('RideService', () => {
         available_seats: 3,
         price: 60,
       };
-      
+
       const mockRide = {
         id: '1',
         origin: 'New York',
@@ -155,13 +155,13 @@ describe('RideService', () => {
         status: 'active',
         driver: { id: '1', name: 'John Doe' },
       };
-      
+
       const mockResponse = { data: mockRide };
       (api.put as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       // Act
       const result = await rideService.updateRide(rideId, rideData);
-      
+
       // Assert
       expect(api.put).toHaveBeenCalledWith(`/rides/${rideId}`, rideData);
       expect(result).toEqual(mockRide);
@@ -173,10 +173,10 @@ describe('RideService', () => {
       // Arrange
       const rideId = 1;
       (api.delete as jest.Mock).mockResolvedValue({});
-      
+
       // Act
       await rideService.deleteRide(rideId);
-      
+
       // Assert
       expect(api.delete).toHaveBeenCalledWith(`/rides/${rideId}`);
     });

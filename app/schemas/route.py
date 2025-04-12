@@ -1,6 +1,8 @@
-from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class RouteBase(BaseModel):
     name: str
@@ -11,12 +13,16 @@ class RouteBase(BaseModel):
     duration: Optional[int] = None
     is_active: bool = True
 
+
 class RouteCreate(RouteBase):
     """Schema for creating a new route"""
+
     pass
+
 
 class RouteUpdate(BaseModel):
     """Schema for updating an existing route"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     starting_hub_id: Optional[int] = None
@@ -25,17 +31,21 @@ class RouteUpdate(BaseModel):
     duration: Optional[int] = None
     is_active: Optional[bool] = None
 
+
 class RouteInDB(RouteBase):
     """Schema for route data in the database"""
+
     id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
+
 class RouteResponse(BaseModel):
     """Schema for API responses"""
+
     id: int
     name: str
     description: Optional[str] = None
@@ -46,6 +56,6 @@ class RouteResponse(BaseModel):
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True

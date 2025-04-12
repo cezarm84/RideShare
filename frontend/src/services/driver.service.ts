@@ -78,4 +78,4 @@ class DriverService {
   }
 }
 
-export const driverService = new DriverService(); 
+export const driverService = new DriverService();

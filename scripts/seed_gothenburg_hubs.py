@@ -1,5 +1,4 @@
 import sys
-import os
 from pathlib import Path
 
 # Add the parent directory to sys.path
@@ -8,6 +7,7 @@ project_root = script_dir.parent
 sys.path.append(str(project_root))
 
 from sqlalchemy.orm import Session
+
 from app.db.session import SessionLocal
 from app.models.hub import Hub
 
@@ -20,7 +20,7 @@ GOTHENBURG_HUBS = [
         "city": "Gothenburg",
         "postal_code": "417 05",
         "latitude": 57.7322,
-        "longitude": 11.9513
+        "longitude": 11.9513,
     },
     {
         "name": "Hub East",
@@ -29,7 +29,7 @@ GOTHENBURG_HUBS = [
         "city": "Gothenburg",
         "postal_code": "433 38",
         "latitude": 57.7405,
-        "longitude": 12.1073
+        "longitude": 12.1073,
     },
     {
         "name": "Hub South",
@@ -38,7 +38,7 @@ GOTHENBURG_HUBS = [
         "city": "Gothenburg",
         "postal_code": "412 85",
         "latitude": 57.6561,
-        "longitude": 12.0128
+        "longitude": 12.0128,
     },
     {
         "name": "Hub West",
@@ -47,8 +47,8 @@ GOTHENBURG_HUBS = [
         "city": "Gothenburg",
         "postal_code": "417 56",
         "latitude": 57.7068,
-        "longitude": 11.9174
-    }
+        "longitude": 11.9174,
+    },
 ]
 
 # Major company destinations around Gothenburg
@@ -60,7 +60,7 @@ COMPANY_DESTINATIONS = [
         "city": "Gothenburg",
         "postal_code": "405 31",
         "latitude": 57.7241,
-        "longitude": 11.8214
+        "longitude": 11.8214,
     },
     {
         "name": "IKEA Bäckebol",
@@ -69,7 +69,7 @@ COMPANY_DESTINATIONS = [
         "city": "Gothenburg",
         "postal_code": "422 46",
         "latitude": 57.7685,
-        "longitude": 11.9935
+        "longitude": 11.9935,
     },
     {
         "name": "IKEA Kållered",
@@ -78,7 +78,7 @@ COMPANY_DESTINATIONS = [
         "city": "Kållered",
         "postal_code": "428 36",
         "latitude": 57.6090,
-        "longitude": 12.0577
+        "longitude": 12.0577,
     },
     {
         "name": "Mölnlycke Företagspark",
@@ -87,7 +87,7 @@ COMPANY_DESTINATIONS = [
         "city": "Mölnlycke",
         "postal_code": "435 31",
         "latitude": 57.6611,
-        "longitude": 12.1210
+        "longitude": 12.1210,
     },
     {
         "name": "AstraZeneca Mölndal",
@@ -96,7 +96,7 @@ COMPANY_DESTINATIONS = [
         "city": "Mölndal",
         "postal_code": "431 83",
         "latitude": 57.6609,
-        "longitude": 12.0122
+        "longitude": 12.0122,
     },
     {
         "name": "Lindholmen Science Park",
@@ -105,7 +105,7 @@ COMPANY_DESTINATIONS = [
         "city": "Gothenburg",
         "postal_code": "417 56",
         "latitude": 57.7068,
-        "longitude": 11.9411
+        "longitude": 11.9411,
     },
     {
         "name": "SKF Sverige AB",
@@ -114,7 +114,7 @@ COMPANY_DESTINATIONS = [
         "city": "Gothenburg",
         "postal_code": "415 50",
         "latitude": 57.7219,
-        "longitude": 12.0230
+        "longitude": 12.0230,
     },
     {
         "name": "Ericsson Lindholmen",
@@ -123,16 +123,17 @@ COMPANY_DESTINATIONS = [
         "city": "Gothenburg",
         "postal_code": "417 56",
         "latitude": 57.7071,
-        "longitude": 11.9394
-    }
+        "longitude": 11.9394,
+    },
 ]
+
 
 def seed_hubs(db: Session):
     # First, clear existing hubs if needed
     existing_count = db.query(Hub).count()
     if existing_count > 0:
         print(f"Found {existing_count} existing hubs. Keeping them.")
-    
+
     # Add city hubs
     for hub_data in GOTHENBURG_HUBS:
         # Check if hub with same name already exists
@@ -140,11 +141,11 @@ def seed_hubs(db: Session):
         if existing_hub:
             print(f"Hub '{hub_data['name']}' already exists. Skipping.")
             continue
-            
+
         hub = Hub(**hub_data)
         db.add(hub)
         print(f"Added hub: {hub_data['name']}")
-    
+
     # Add company destinations
     for company_data in COMPANY_DESTINATIONS:
         # Check if company destination already exists
@@ -152,11 +153,11 @@ def seed_hubs(db: Session):
         if existing_dest:
             print(f"Destination '{company_data['name']}' already exists. Skipping.")
             continue
-            
+
         destination = Hub(**company_data)
         db.add(destination)
         print(f"Added destination: {company_data['name']}")
-    
+
     db.commit()
     print("Gothenburg hubs and destinations seeded successfully!")
 

@@ -1,8 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-from app.models.driver import DriverProfile, DriverStatus, DriverVerificationStatus
 from datetime import date, timedelta
+
+import pytest
+
+from app.models.driver import DriverStatus, DriverVerificationStatus
+
 
 def test_create_driver(client, db_session):
     # Login as a user
@@ -23,7 +24,7 @@ def test_create_driver(client, db_session):
         "preferred_radius_km": 15.0,
         "max_passengers": 4,
         "bio": "Experienced driver with 5 years of driving history",
-        "languages": "Swedish, English"
+        "languages": "Swedish, English",
     }
 
     headers = {"Authorization": f"Bearer {token}"}
@@ -39,6 +40,7 @@ def test_create_driver(client, db_session):
     else:
         # If it fails, check if it's because the driver profile already exists
         assert response.status_code in [400, 403]
+
 
 def test_get_drivers(client, db_session):
     # Login as admin (this test assumes there's an admin user)
@@ -57,6 +59,7 @@ def test_get_drivers(client, db_session):
     assert response.status_code == 200
     drivers = response.json()
     assert isinstance(drivers, list)
+
 
 def test_driver_me_endpoints(client, db_session):
     # This test assumes there's a user with a driver profile
@@ -84,10 +87,12 @@ def test_driver_me_endpoints(client, db_session):
         # Update current driver profile
         update_data = {
             "bio": "Updated driver bio",
-            "languages": "Swedish, English, German"
+            "languages": "Swedish, English, German",
         }
 
-        update_response = client.put("/api/v1/drivers/me", json=update_data, headers=headers)
+        update_response = client.put(
+            "/api/v1/drivers/me", json=update_data, headers=headers
+        )
         assert update_response.status_code == 200
         updated_data = update_response.json()
         assert updated_data["bio"] == "Updated driver bio"

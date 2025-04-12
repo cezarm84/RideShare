@@ -6,8 +6,8 @@ interface ComponentCardProps {
   className?: string;
 }
 
-const ComponentCard: React.FC<ComponentCardProps> = ({ 
-  title, 
+const ComponentCard: React.FC<ComponentCardProps> = ({
+  title,
   children,
   className = ''
 }) => {

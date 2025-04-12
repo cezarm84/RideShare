@@ -98,4 +98,4 @@ class HubService {
   }
 }
 
-export const hubService = new HubService(); 
+export const hubService = new HubService();

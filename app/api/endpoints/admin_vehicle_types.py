@@ -1,18 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from app.db.session import get_db
-from app.api.dependencies import get_current_admin_user, get_current_superadmin_user
-from app.schemas.vehicle import VehicleTypeCreate, VehicleTypeUpdate, VehicleTypeResponse
-from app.models.user import User
-from app.models.vehicle import VehicleType
-from app.models.driver import DriverVehicle, DriverProfile
-from app.tasks.scheduler_new import scheduler
 import logging
 from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.api.dependencies import get_current_admin_user, get_current_superadmin_user
+from app.db.session import get_db
+from app.models.driver import DriverVehicle
+from app.models.user import User
+from app.models.vehicle import VehicleType
+from app.schemas.vehicle import (
+    VehicleTypeCreate,
+    VehicleTypeResponse,
+    VehicleTypeUpdate,
+)
+from app.tasks.scheduler_new import scheduler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 @router.get("", response_model=List[VehicleTypeResponse])
 async def list_vehicle_types(
@@ -20,7 +27,7 @@ async def list_vehicle_types(
     limit: int = Query(50, gt=0, le=100),
     is_active: Optional[bool] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ):
     """
     List all vehicle types with optional filtering.
@@ -38,11 +45,14 @@ async def list_vehicle_types(
     vehicle_types = query.all()
     return vehicle_types
 
-@router.post("", response_model=VehicleTypeResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=VehicleTypeResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_vehicle_type(
     vehicle_type: VehicleTypeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Create a new vehicle type.
@@ -50,11 +60,13 @@ async def create_vehicle_type(
     """
     try:
         # Check if a vehicle type with this name already exists
-        existing = db.query(VehicleType).filter(VehicleType.name == vehicle_type.name).first()
+        existing = (
+            db.query(VehicleType).filter(VehicleType.name == vehicle_type.name).first()
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Vehicle type with name '{vehicle_type.name}' already exists"
+                detail=f"Vehicle type with name '{vehicle_type.name}' already exists",
             )
 
         # Create new vehicle type
@@ -63,7 +75,7 @@ async def create_vehicle_type(
             description=vehicle_type.description,
             capacity=vehicle_type.capacity,
             is_active=vehicle_type.is_active,
-            price_factor=vehicle_type.price_factor
+            price_factor=vehicle_type.price_factor,
         )
 
         db.add(new_vehicle_type)
@@ -78,56 +90,69 @@ async def create_vehicle_type(
         logger.error(f"Error creating vehicle type: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating vehicle type: {str(e)}"
+            detail=f"Error creating vehicle type: {str(e)}",
         )
+
 
 @router.get("/{vehicle_type_id}", response_model=VehicleTypeResponse)
 async def get_vehicle_type(
     vehicle_type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ):
     """
     Get a single vehicle type by ID.
     Available to all admin users.
     """
-    vehicle_type = db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    vehicle_type = (
+        db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    )
     if not vehicle_type:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_type_id} not found"
+            detail=f"Vehicle type with ID {vehicle_type_id} not found",
         )
     return vehicle_type
+
 
 @router.put("/{vehicle_type_id}", response_model=VehicleTypeResponse)
 async def update_vehicle_type(
     vehicle_type_id: int,
     vehicle_type_update: VehicleTypeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Update an existing vehicle type.
     Only available to super admin users.
     """
-    existing_vehicle_type = db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    existing_vehicle_type = (
+        db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    )
     if not existing_vehicle_type:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_type_id} not found"
+            detail=f"Vehicle type with ID {vehicle_type_id} not found",
         )
 
     try:
         # Check if we're updating to a name that already exists
-        if vehicle_type_update.name and vehicle_type_update.name != existing_vehicle_type.name:
-            name_exists = db.query(VehicleType).filter(
-                VehicleType.name == vehicle_type_update.name,
-                VehicleType.id != vehicle_type_id
-            ).first()
+        if (
+            vehicle_type_update.name
+            and vehicle_type_update.name != existing_vehicle_type.name
+        ):
+            name_exists = (
+                db.query(VehicleType)
+                .filter(
+                    VehicleType.name == vehicle_type_update.name,
+                    VehicleType.id != vehicle_type_id,
+                )
+                .first()
+            )
             if name_exists:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Vehicle type with name '{vehicle_type_update.name}' already exists"
+                    detail=f"Vehicle type with name '{vehicle_type_update.name}' already exists",
                 )
 
         # Update vehicle type attributes if provided
@@ -147,14 +172,15 @@ async def update_vehicle_type(
         logger.error(f"Error updating vehicle type: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating vehicle type: {str(e)}"
+            detail=f"Error updating vehicle type: {str(e)}",
         )
+
 
 @router.delete("/{vehicle_type_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vehicle_type(
     vehicle_type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin_user)
+    current_user: User = Depends(get_current_superadmin_user),
 ):
     """
     Delete a vehicle type (or set as inactive).
@@ -163,11 +189,13 @@ async def delete_vehicle_type(
     Note: This function actually sets the vehicle type to inactive rather than deleting it
     to preserve existing relationships and historical data.
     """
-    vehicle_type = db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    vehicle_type = (
+        db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+    )
     if not vehicle_type:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_type_id} not found"
+            detail=f"Vehicle type with ID {vehicle_type_id} not found",
         )
 
     try:
@@ -182,17 +210,24 @@ async def delete_vehicle_type(
         logger.error(f"Error deleting vehicle type: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error deleting vehicle type: {str(e)}"
+            detail=f"Error deleting vehicle type: {str(e)}",
         )
+
 
 @router.put("/{vehicle_type_id}/inspection-status", status_code=status.HTTP_200_OK)
 async def update_vehicle_type_inspection_status(
     vehicle_type_id: int,
-    inspection_status: str = Query(..., description="New inspection status (passed, failed, pending, expired)"),
-    last_inspection_date: Optional[str] = Query(None, description="Date of last inspection (YYYY-MM-DD)"),
-    next_inspection_date: Optional[str] = Query(None, description="Date of next inspection (YYYY-MM-DD)"),
+    inspection_status: str = Query(
+        ..., description="New inspection status (passed, failed, pending, expired)"
+    ),
+    last_inspection_date: Optional[str] = Query(
+        None, description="Date of last inspection (YYYY-MM-DD)"
+    ),
+    next_inspection_date: Optional[str] = Query(
+        None, description="Date of next inspection (YYYY-MM-DD)"
+    ),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)  # Admin only
+    _: User = Depends(get_current_admin_user),  # Admin only
 ):
     """
     Update the inspection status of all vehicles of a specific type.
@@ -204,11 +239,13 @@ async def update_vehicle_type_inspection_status(
     """
     try:
         # Find the vehicle type
-        vehicle_type = db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+        vehicle_type = (
+            db.query(VehicleType).filter(VehicleType.id == vehicle_type_id).first()
+        )
         if not vehicle_type:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Vehicle type with ID {vehicle_type_id} not found"
+                detail=f"Vehicle type with ID {vehicle_type_id} not found",
             )
 
         # Validate inspection status
@@ -216,7 +253,7 @@ async def update_vehicle_type_inspection_status(
         if inspection_status not in valid_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid inspection status. Must be one of: {', '.join(valid_statuses)}"
+                detail=f"Invalid inspection status. Must be one of: {', '.join(valid_statuses)}",
             )
 
         # Convert date strings to date objects if provided
@@ -229,7 +266,7 @@ async def update_vehicle_type_inspection_status(
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid last_inspection_date format. Use YYYY-MM-DD."
+                    detail="Invalid last_inspection_date format. Use YYYY-MM-DD.",
                 )
 
         if next_inspection_date:
@@ -238,17 +275,21 @@ async def update_vehicle_type_inspection_status(
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid next_inspection_date format. Use YYYY-MM-DD."
+                    detail="Invalid next_inspection_date format. Use YYYY-MM-DD.",
                 )
 
         # Find all driver vehicles with this vehicle type
-        driver_vehicles = db.query(DriverVehicle)\
-            .join(VehicleType, DriverVehicle.vehicle_id == VehicleType.id)\
-            .filter(VehicleType.id == vehicle_type_id)\
+        driver_vehicles = (
+            db.query(DriverVehicle)
+            .join(VehicleType, DriverVehicle.vehicle_id == VehicleType.id)
+            .filter(VehicleType.id == vehicle_type_id)
             .all()
+        )
 
         if not driver_vehicles:
-            return {"message": "No driver vehicles found for this vehicle type. No updates made."}
+            return {
+                "message": "No driver vehicles found for this vehicle type. No updates made."
+            }
 
         # Update each driver vehicle
         for driver_vehicle in driver_vehicles:
@@ -271,7 +312,7 @@ async def update_vehicle_type_inspection_status(
             "inspection_status": inspection_status,
             "last_inspection_date": last_inspection_date,
             "next_inspection_date": next_inspection_date,
-            "vehicles_updated": len(driver_vehicles)
+            "vehicles_updated": len(driver_vehicles),
         }
     except HTTPException:
         raise
@@ -279,13 +320,12 @@ async def update_vehicle_type_inspection_status(
         logger.error(f"Error updating vehicle type inspection status: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating vehicle type inspection status: {str(e)}"
+            detail=f"Error updating vehicle type inspection status: {str(e)}",
         )
 
+
 @router.post("/check-inspections", status_code=status.HTTP_200_OK)
-async def run_inspection_check(
-    _: User = Depends(get_current_admin_user)  # Admin only
-):
+async def run_inspection_check(_: User = Depends(get_current_admin_user)):  # Admin only
     """
     Manually trigger the inspection date check process.
     This will update vehicle inspection statuses based on dates and send notifications.
@@ -299,11 +339,11 @@ async def run_inspection_check(
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error running inspection check"
+                detail="Error running inspection check",
             )
     except Exception as e:
         logger.error(f"Error running inspection check: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error running inspection check: {str(e)}"
+            detail=f"Error running inspection check: {str(e)}",
         )

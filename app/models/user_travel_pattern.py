@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Time, Date
+from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.db.base_class import Base
+
 
 class UserTravelPattern(Base):
     """Model for storing user travel patterns for intelligent matching"""
@@ -10,17 +11,23 @@ class UserTravelPattern(Base):
     __tablename__ = "user_travel_patterns"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Origin information
     origin_type = Column(String, nullable=False)  # 'home', 'work', 'hub', 'custom'
-    origin_id = Column(Integer, nullable=True)  # Reference to location or hub ID if applicable
+    origin_id = Column(
+        Integer, nullable=True
+    )  # Reference to location or hub ID if applicable
     origin_latitude = Column(Float, nullable=False)
     origin_longitude = Column(Float, nullable=False)
 
     # Destination information
     destination_type = Column(String, nullable=False)  # 'home', 'work', 'hub', 'custom'
-    destination_id = Column(Integer, nullable=True)  # Reference to location or hub ID if applicable
+    destination_id = Column(
+        Integer, nullable=True
+    )  # Reference to location or hub ID if applicable
     destination_latitude = Column(Float, nullable=False)
     destination_longitude = Column(Float, nullable=False)
 

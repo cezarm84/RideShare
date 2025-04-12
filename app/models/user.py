@@ -1,11 +1,21 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Float, DateTime, Enum
-from sqlalchemy.orm import relationship
 import datetime
 import enum
 import uuid
 
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import relationship
+
 from app.db.base_class import Base
 from app.models.enterprise import Enterprise
+
 
 class UserType(str, enum.Enum):
     ADMIN = "admin"
@@ -15,6 +25,7 @@ class UserType(str, enum.Enum):
     BUSINESS = "business"
     ENTERPRISE = "enterprise"
 
+
 class UserRole(str, enum.Enum):
     SUPERADMIN = "superadmin"
     ADMIN = "admin"
@@ -22,9 +33,10 @@ class UserRole(str, enum.Enum):
     DRIVER = "driver"
     USER = "user"
 
+
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, unique=True, index=True, default=lambda: str(uuid.uuid4()))
@@ -39,7 +51,9 @@ class User(Base):
     user_type = Column(String, default=UserType.PRIVATE)
     role = Column(String, default=UserRole.USER)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
 
     # Simple address strings
     home_address = Column(String, nullable=True)
@@ -69,7 +83,9 @@ class User(Base):
 
     # Enhanced matching fields
     preferred_starting_hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=True)
-    preferred_vehicle_type_id = Column(Integer, ForeignKey("vehicle_types.id"), nullable=True)
+    preferred_vehicle_type_id = Column(
+        Integer, ForeignKey("vehicle_types.id"), nullable=True
+    )
     max_walking_distance_meters = Column(Integer, default=1000)
     max_detour_minutes = Column(Integer, default=15)
     max_wait_minutes = Column(Integer, default=10)
@@ -79,20 +95,46 @@ class User(Base):
     payments = relationship("app.models.payment.Payment", back_populates="user")
 
     # Payment methods relationship
-    payment_methods = relationship("app.models.payment_method.PaymentMethod", back_populates="user")
+    payment_methods = relationship(
+        "app.models.payment_method.PaymentMethod", back_populates="user"
+    )
 
     # Use a single relationship for locations to avoid overlap warnings
-    saved_locations = relationship("app.models.location.Location", back_populates="user", overlaps="locations")
+    saved_locations = relationship(
+        "app.models.location.Location", back_populates="user", overlaps="locations"
+    )
 
     # Vehicle relationship - single relationship to avoid overlaps
-    vehicles = relationship("app.models.vehicle.Vehicle", back_populates="owner", foreign_keys="app.models.vehicle.Vehicle.owner_id")
+    vehicles = relationship(
+        "app.models.vehicle.Vehicle",
+        back_populates="owner",
+        foreign_keys="app.models.vehicle.Vehicle.owner_id",
+    )
 
     # New relationships for matching
-    travel_patterns = relationship("app.models.user_travel_pattern.UserTravelPattern", back_populates="user", cascade="all, delete-orphan")
-    matching_preferences = relationship("app.models.user_matching_preference.UserMatchingPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    match_history = relationship("app.models.ride_match_history.RideMatchHistory", back_populates="user", foreign_keys="app.models.ride_match_history.RideMatchHistory.user_id", cascade="all, delete-orphan")
-    preferred_starting_hub = relationship("app.models.hub.Hub", foreign_keys=[preferred_starting_hub_id])
-    preferred_vehicle_type = relationship("app.models.vehicle_type.VehicleType", foreign_keys=[preferred_vehicle_type_id])
+    travel_patterns = relationship(
+        "app.models.user_travel_pattern.UserTravelPattern",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    matching_preferences = relationship(
+        "app.models.user_matching_preference.UserMatchingPreference",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    match_history = relationship(
+        "app.models.ride_match_history.RideMatchHistory",
+        back_populates="user",
+        foreign_keys="app.models.ride_match_history.RideMatchHistory.user_id",
+        cascade="all, delete-orphan",
+    )
+    preferred_starting_hub = relationship(
+        "app.models.hub.Hub", foreign_keys=[preferred_starting_hub_id]
+    )
+    preferred_vehicle_type = relationship(
+        "app.models.vehicle_type.VehicleType", foreign_keys=[preferred_vehicle_type_id]
+    )
 
     @property
     def full_name(self):
@@ -122,14 +164,18 @@ class User(Base):
 
     def has_admin_privileges(self):
         """Check if user has any administrative privileges (superadmin, admin, or manager)"""
-        return (self.is_superadmin or
-                self.role in [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER] or
-                self.user_type == UserType.ADMIN)
+        return (
+            self.is_superadmin
+            or self.role in [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER]
+            or self.user_type == UserType.ADMIN
+        )
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.full_name})>"
 
+
 # Enterprise model moved to app/models/enterprise.py
+
 
 class EnterpriseUser(Base):
     __tablename__ = "enterprise_users"

@@ -1,8 +1,8 @@
 """
 Task scheduler for background tasks.
 """
+
 import logging
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -10,22 +10,29 @@ logger = logging.getLogger(__name__)
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
+
     SCHEDULER_AVAILABLE = True
 except ImportError:
-    logger.warning("APScheduler not installed. Scheduled tasks will not run automatically.")
+    logger.warning(
+        "APScheduler not installed. Scheduled tasks will not run automatically."
+    )
     SCHEDULER_AVAILABLE = False
 
 from app.tasks.inspection_tasks import check_inspection_dates
 from app.tasks.travel_pattern_updater import update_all_travel_patterns
 
+
 class TaskScheduler:
     """
     Scheduler for background tasks.
     """
+
     def __init__(self):
         if not SCHEDULER_AVAILABLE:
             self.scheduler = None
-            logger.warning("Scheduler not available. Install APScheduler package to enable scheduled tasks.")
+            logger.warning(
+                "Scheduler not available. Install APScheduler package to enable scheduled tasks."
+            )
             return
 
         self.scheduler = AsyncIOScheduler()
@@ -41,7 +48,7 @@ class TaskScheduler:
             check_inspection_dates,
             CronTrigger(hour=1, minute=0),
             id="check_inspection_dates",
-            replace_existing=True
+            replace_existing=True,
         )
 
         # Run travel pattern update weekly on Sunday at 2:00 AM
@@ -49,7 +56,7 @@ class TaskScheduler:
             update_all_travel_patterns,
             CronTrigger(day_of_week=6, hour=2, minute=0),
             id="update_travel_patterns",
-            replace_existing=True
+            replace_existing=True,
         )
 
         logger.info("Scheduled tasks have been set up")
@@ -88,11 +95,14 @@ class TaskScheduler:
         try:
             logger.info("Manually running travel pattern update")
             patterns_updated = update_all_travel_patterns()
-            logger.info(f"Manual travel pattern update completed: {patterns_updated} patterns updated")
+            logger.info(
+                f"Manual travel pattern update completed: {patterns_updated} patterns updated"
+            )
             return True
         except Exception as e:
             logger.error(f"Error running manual travel pattern update: {str(e)}")
             return False
+
 
 # Singleton instance
 scheduler = TaskScheduler()

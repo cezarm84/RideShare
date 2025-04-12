@@ -1,14 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float
-from sqlalchemy.orm import relationship
-import datetime
+
+from sqlalchemy import Boolean, Column, Float, Integer, String
 
 from app.db.base_class import Base
+
 
 class Enterprise(Base):
     """Model for enterprises (companies) that use the ride-sharing service"""
 
     __tablename__ = "enterprises"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)

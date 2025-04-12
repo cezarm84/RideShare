@@ -5,46 +5,52 @@ ensuring the rides table has the vehicle_type_id column that was missing.
 
 This bypasses Alembic migrations completely to create a working database.
 """
-import os
-import sys
-import sqlite3
-from pathlib import Path
 import datetime
+import os
+import sqlite3
+import sys
+from pathlib import Path
 
 # Add the parent directory to the path
 parent_dir = Path(__file__).parent.parent
 sys.path.append(str(parent_dir))
 
+
 def direct_db_init():
     """Directly initialize the database with all necessary tables."""
     try:
         # Delete the existing database if it exists
-        db_path = os.path.join(parent_dir, 'rideshare.db')
+        db_path = os.path.join(parent_dir, "rideshare.db")
         if os.path.exists(db_path):
             print(f"Removing existing database: {db_path}")
             os.remove(db_path)
-        
+
         # Create a new empty database
         print("Creating new database...")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Create alembic_version table and stamp with a valid revision
         print("Creating alembic_version table...")
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE alembic_version (
             version_num VARCHAR(32) NOT NULL,
             PRIMARY KEY (version_num)
         )
-        ''')
-        
+        """
+        )
+
         # Insert a valid revision ID that exists in your migration history
         # Using the one that was reported by the check script
-        cursor.execute("INSERT INTO alembic_version (version_num) VALUES (?)", ('2f8c936ae712',))
-        
+        cursor.execute(
+            "INSERT INTO alembic_version (version_num) VALUES (?)", ("2f8c936ae712",)
+        )
+
         # Create the rides table with vehicle_type_id column
         print("Creating rides table with vehicle_type_id column...")
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE rides (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             driver_id INTEGER NOT NULL,
@@ -64,13 +70,15 @@ def direct_db_init():
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             vehicle_type_id INTEGER
         )
-        ''')
-        
+        """
+        )
+
         # Create other necessary tables (simplified versions)
         print("Creating other necessary tables...")
-        
+
         # Users table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id VARCHAR(36) UNIQUE,
@@ -104,10 +112,12 @@ def direct_db_init():
             work_post_code VARCHAR(20),
             work_city VARCHAR(100)
         )
-        ''')
-        
+        """
+        )
+
         # Ride bookings table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS ride_bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ride_id INTEGER NOT NULL,
@@ -122,10 +132,12 @@ def direct_db_init():
             FOREIGN KEY (ride_id) REFERENCES rides(id),
             FOREIGN KEY (passenger_id) REFERENCES users(id)
         )
-        ''')
-        
+        """
+        )
+
         # Hubs table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS hubs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name VARCHAR(100) NOT NULL,
@@ -139,10 +151,12 @@ def direct_db_init():
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP
         )
-        ''')
-        
+        """
+        )
+
         # Locations table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS locations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
@@ -160,12 +174,14 @@ def direct_db_init():
             updated_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
-        ''')
-        
+        """
+        )
+
         # Additional tables based on the errors in migration scripts
-        
+
         # Messages table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
@@ -177,10 +193,12 @@ def direct_db_init():
             FOREIGN KEY (sender_id) REFERENCES users(id),
             FOREIGN KEY (recipient_id) REFERENCES users(id)
         )
-        ''')
-        
+        """
+        )
+
         # Message attachments table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS message_attachments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_id INTEGER NOT NULL,
@@ -191,10 +209,12 @@ def direct_db_init():
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (message_id) REFERENCES messages(id)
         )
-        ''')
-        
+        """
+        )
+
         # Vehicle types table
-        cursor.execute('''
+        cursor.execute(
+            """
         CREATE TABLE IF NOT EXISTS vehicle_types (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name VARCHAR(100) NOT NULL,
@@ -204,83 +224,98 @@ def direct_db_init():
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP
         )
-        ''')
-        
+        """
+        )
+
         # Insert some sample data
         print("Inserting sample data...")
-        
+
         # Sample vehicle types
         vehicle_types = [
             ("Sedan", "Standard 4-door car", 4, None),
             ("SUV", "Sport utility vehicle with extra space", 6, None),
-            ("Van", "Larger vehicle for groups", 8, None)
+            ("Van", "Larger vehicle for groups", 8, None),
         ]
-        
+
         cursor.executemany(
             "INSERT INTO vehicle_types (name, description, max_passengers, icon_url) VALUES (?, ?, ?, ?)",
-            vehicle_types
+            vehicle_types,
         )
-        
+
         # Sample user
         current_time = datetime.datetime.now().isoformat()
-        password_hash = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"  # "password"
-        
+        password_hash = (
+            "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"  # "password"
+        )
+
         cursor.execute(
             "INSERT INTO users (email, first_name, last_name, password_hash, is_active, is_verified, created_at, is_superadmin) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            ("admin@example.com", "Admin", "User", password_hash, 1, 1, current_time, 1)
+            (
+                "admin@example.com",
+                "Admin",
+                "User",
+                password_hash,
+                1,
+                1,
+                current_time,
+                1,
+            ),
         )
-        
+
         # Commit and close
         conn.commit()
         conn.close()
-        
+
         print(f"Database successfully initialized at: {db_path}")
         print("The rides table has been created with the vehicle_type_id column.")
         print("\nVerification:")
         verify_database(db_path)
-        
+
         return True
     except Exception as e:
         print(f"Error initializing database: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def verify_database(db_path):
     """Verify that the database was created correctly with all the necessary tables."""
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Get list of all tables
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [table[0] for table in cursor.fetchall()]
-        
+
         print(f"Created tables: {', '.join(tables)}")
-        
+
         # Verify the rides table has vehicle_type_id
         cursor.execute("PRAGMA table_info(rides)")
         columns = cursor.fetchall()
         column_names = [col[1] for col in columns]
-        
+
         print("\nRides table columns:")
         for col in columns:
             print(f"  - {col[1]} ({col[2]})")
-        
+
         if "vehicle_type_id" in column_names:
             print("\n✅ vehicle_type_id column exists in the rides table!")
         else:
             print("\n❌ vehicle_type_id column is MISSING from the rides table!")
-        
+
         # Check alembic version
         cursor.execute("SELECT version_num FROM alembic_version")
         version = cursor.fetchone()
         print(f"\nAlembic version: {version[0]}")
-        
+
         conn.close()
     except Exception as e:
         print(f"Error verifying database: {e}")
+
 
 if __name__ == "__main__":
     print("=== Direct Database Initialization ===")

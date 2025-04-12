@@ -140,4 +140,4 @@ const Enterprises = () => {
   );
 };
 
-export default Enterprises; 
+export default Enterprises;

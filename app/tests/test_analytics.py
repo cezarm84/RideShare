@@ -1,19 +1,19 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-from datetime import datetime
+
+
+
 
 def test_ride_usage_summary(client, db_session):
     # Create an admin user manually for this test
-    from app.models.user import User
     from app.core.security import get_password_hash
+    from app.models.user import User
+
     admin = User(
         email="admin@example.com",
         password_hash=get_password_hash("admin123"),
         first_name="Admin",
         last_name="User",
         phone_number="0700000000",
-        user_type="admin"
+        user_type="admin",
     )
     db_session.add(admin)
     db_session.commit()

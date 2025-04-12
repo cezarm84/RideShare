@@ -1,15 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
 import logging
+from typing import List, Optional
 
-from app.api.dependencies import get_db, get_current_admin_user
-from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.api.dependencies import get_current_admin_user, get_db
 from app.models.destination import Destination
-from app.schemas.destination import DestinationCreate, DestinationUpdate, DestinationResponse
+from app.models.user import User
+from app.schemas.destination import (
+    DestinationCreate,
+    DestinationResponse,
+    DestinationUpdate,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 @router.get("", response_model=List[DestinationResponse])
 async def list_destinations(
@@ -19,7 +25,7 @@ async def list_destinations(
     enterprise_id: Optional[int] = None,
     city: Optional[str] = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)
+    _: User = Depends(get_current_admin_user),
 ):
     """
     List all destinations with optional filtering.
@@ -42,28 +48,34 @@ async def list_destinations(
     destinations = query.all()
 
     # Convert Destination objects to dictionaries for Pydantic validation
-    destination_dicts = [{
-        "id": dest.id,
-        "name": dest.name,
-        "address": dest.address,
-        "city": dest.city,
-        "postal_code": getattr(dest, 'postal_code', None),
-        "country": getattr(dest, 'country', None),
-        "latitude": dest.latitude,
-        "longitude": dest.longitude,
-        "enterprise_id": getattr(dest, 'enterprise_id', None),
-        "is_active": getattr(dest, 'is_active', True),
-        "created_at": getattr(dest, 'created_at', None),
-        "updated_at": getattr(dest, 'updated_at', None)
-    } for dest in destinations]
+    destination_dicts = [
+        {
+            "id": dest.id,
+            "name": dest.name,
+            "address": dest.address,
+            "city": dest.city,
+            "postal_code": getattr(dest, "postal_code", None),
+            "country": getattr(dest, "country", None),
+            "latitude": dest.latitude,
+            "longitude": dest.longitude,
+            "enterprise_id": getattr(dest, "enterprise_id", None),
+            "is_active": getattr(dest, "is_active", True),
+            "created_at": getattr(dest, "created_at", None),
+            "updated_at": getattr(dest, "updated_at", None),
+        }
+        for dest in destinations
+    ]
 
     return destination_dicts
 
-@router.post("", response_model=DestinationResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=DestinationResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_destination(
     destination: DestinationCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)
+    _: User = Depends(get_current_admin_user),
 ):
     """
     Create a new destination.
@@ -80,7 +92,7 @@ async def create_destination(
             latitude=destination.latitude,
             longitude=destination.longitude,
             enterprise_id=destination.enterprise_id,
-            is_active=destination.is_active
+            is_active=destination.is_active,
         )
 
         db.add(new_destination)
@@ -93,14 +105,14 @@ async def create_destination(
             "name": new_destination.name,
             "address": new_destination.address,
             "city": new_destination.city,
-            "postal_code": getattr(new_destination, 'postal_code', None),
-            "country": getattr(new_destination, 'country', None),
+            "postal_code": getattr(new_destination, "postal_code", None),
+            "country": getattr(new_destination, "country", None),
             "latitude": new_destination.latitude,
             "longitude": new_destination.longitude,
-            "enterprise_id": getattr(new_destination, 'enterprise_id', None),
-            "is_active": getattr(new_destination, 'is_active', True),
-            "created_at": getattr(new_destination, 'created_at', None),
-            "updated_at": getattr(new_destination, 'updated_at', None)
+            "enterprise_id": getattr(new_destination, "enterprise_id", None),
+            "is_active": getattr(new_destination, "is_active", True),
+            "created_at": getattr(new_destination, "created_at", None),
+            "updated_at": getattr(new_destination, "updated_at", None),
         }
 
         return destination_dict
@@ -109,14 +121,15 @@ async def create_destination(
         logger.error(f"Error creating destination: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating destination: {str(e)}"
+            detail=f"Error creating destination: {str(e)}",
         )
+
 
 @router.get("/{destination_id}", response_model=DestinationResponse)
 async def get_destination(
     destination_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)
+    _: User = Depends(get_current_admin_user),
 ):
     """
     Get a single destination by ID.
@@ -125,7 +138,7 @@ async def get_destination(
     if not destination:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Destination with ID {destination_id} not found"
+            detail=f"Destination with ID {destination_id} not found",
         )
 
     # Convert Destination object to dictionary for Pydantic validation
@@ -134,24 +147,25 @@ async def get_destination(
         "name": destination.name,
         "address": destination.address,
         "city": destination.city,
-        "postal_code": getattr(destination, 'postal_code', None),
-        "country": getattr(destination, 'country', None),
+        "postal_code": getattr(destination, "postal_code", None),
+        "country": getattr(destination, "country", None),
         "latitude": destination.latitude,
         "longitude": destination.longitude,
-        "enterprise_id": getattr(destination, 'enterprise_id', None),
-        "is_active": getattr(destination, 'is_active', True),
-        "created_at": getattr(destination, 'created_at', None),
-        "updated_at": getattr(destination, 'updated_at', None)
+        "enterprise_id": getattr(destination, "enterprise_id", None),
+        "is_active": getattr(destination, "is_active", True),
+        "created_at": getattr(destination, "created_at", None),
+        "updated_at": getattr(destination, "updated_at", None),
     }
 
     return destination_dict
+
 
 @router.put("/{destination_id}", response_model=DestinationResponse)
 async def update_destination(
     destination_id: int,
     destination_update: DestinationUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)
+    _: User = Depends(get_current_admin_user),
 ):
     """
     Update an existing destination.
@@ -159,11 +173,13 @@ async def update_destination(
     """
     try:
         # Check if destination exists
-        existing_destination = db.query(Destination).filter(Destination.id == destination_id).first()
+        existing_destination = (
+            db.query(Destination).filter(Destination.id == destination_id).first()
+        )
         if not existing_destination:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Destination with ID {destination_id} not found"
+                detail=f"Destination with ID {destination_id} not found",
             )
 
         # Update destination fields
@@ -174,6 +190,7 @@ async def update_destination(
 
         # Update the updated_at timestamp
         from datetime import datetime
+
         existing_destination.updated_at = datetime.now()
 
         db.add(existing_destination)
@@ -186,14 +203,14 @@ async def update_destination(
             "name": existing_destination.name,
             "address": existing_destination.address,
             "city": existing_destination.city,
-            "postal_code": getattr(existing_destination, 'postal_code', None),
-            "country": getattr(existing_destination, 'country', None),
+            "postal_code": getattr(existing_destination, "postal_code", None),
+            "country": getattr(existing_destination, "country", None),
             "latitude": existing_destination.latitude,
             "longitude": existing_destination.longitude,
-            "enterprise_id": getattr(existing_destination, 'enterprise_id', None),
-            "is_active": getattr(existing_destination, 'is_active', True),
-            "created_at": getattr(existing_destination, 'created_at', None),
-            "updated_at": getattr(existing_destination, 'updated_at', None)
+            "enterprise_id": getattr(existing_destination, "enterprise_id", None),
+            "is_active": getattr(existing_destination, "is_active", True),
+            "created_at": getattr(existing_destination, "created_at", None),
+            "updated_at": getattr(existing_destination, "updated_at", None),
         }
 
         return destination_dict
@@ -204,14 +221,15 @@ async def update_destination(
         logger.error(f"Error updating destination: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating destination: {str(e)}"
+            detail=f"Error updating destination: {str(e)}",
         )
+
 
 @router.delete("/{destination_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_destination(
     destination_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_user)
+    _: User = Depends(get_current_admin_user),
 ):
     """
     Delete a destination.
@@ -226,7 +244,7 @@ async def delete_destination(
     if not destination:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Destination with ID {destination_id} not found"
+            detail=f"Destination with ID {destination_id} not found",
         )
 
     try:
@@ -241,5 +259,5 @@ async def delete_destination(
         logger.error(f"Error deleting destination: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error deleting destination: {str(e)}"
+            detail=f"Error deleting destination: {str(e)}",
         )
