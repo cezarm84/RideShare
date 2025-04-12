@@ -1,6 +1,6 @@
 import { render, screen, waitFor, act } from '@testing-library/react'; // eslint-disable-line @typescript-eslint/no-unused-vars
 // import { fireEvent } from '@testing-library/react'; // Unused import
-// import { useState } from 'react'; // Unused import
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import RideForm from '../RideForm';
 import { driverService } from '../../../services/driver.service';

@@ -48,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
     } catch (err) {
       setError('Invalid credentials. Please try again.');
-      throw err;
     } finally {
       setLoading(false);
     }

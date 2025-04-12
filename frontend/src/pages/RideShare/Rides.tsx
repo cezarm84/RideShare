@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import RideService from '@/services/ride.service';
@@ -20,6 +21,7 @@ interface Ride {
 
 const Rides = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,7 @@ const Rides = () => {
   };
 
   const handleCreateRide = () => {
-    // TODO: Implement ride creation modal/form
+    navigate('/rides/new');
   };
 
   if (loading) {
@@ -80,6 +82,20 @@ const Rides = () => {
                 }`}>
                   {ride.status}
                 </span>
+                <div className="mt-4 flex space-x-2">
+                  <Button
+                    onClick={() => navigate(`/rides/${ride.id}/edit`)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => console.log(`Delete ride ${ride.id}`)}
+                    className="bg-red-500 hover:bg-red-600 text-white"
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +20,7 @@ interface Driver {
 
 const Drivers = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +72,7 @@ const Drivers = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Drivers</h1>
-        <Button>Add New Driver</Button>
+        <Button onClick={() => navigate('/drivers/new')}>Add New Driver</Button>
       </div>
 
       <div className="grid gap-6">
@@ -98,6 +100,20 @@ const Drivers = () => {
                 }`}>
                   {driver.status}
                 </span>
+                <div className="mt-4 flex space-x-2">
+                  <Button
+                    onClick={() => navigate(`/drivers/${driver.id}/edit`)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => console.log(`Delete driver ${driver.id}`)}
+                    className="bg-red-500 hover:bg-red-600 text-white"
+                  >
+                    Delete
+                  </Button>
+                </div>
                 {driver.status === 'inactive' && (
                   <Button
                     className="mt-2"
