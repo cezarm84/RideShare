@@ -1,6 +1,3 @@
-
-
-
 def test_create_ride(client, db_session):
     # Simulate admin user (bypass auth for simplicity in this test)
     ride_data = {

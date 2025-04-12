@@ -1,6 +1,3 @@
-
-
-
 def test_find_rides(client, db_session):
     match_data = {
         "destination_id": 1,

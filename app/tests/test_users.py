@@ -1,6 +1,3 @@
-
-
-
 def test_create_user(client, db_session):
     user_data = {
         "email": "test@example.com",

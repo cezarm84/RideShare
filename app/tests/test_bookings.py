@@ -1,6 +1,3 @@
-
-
-
 def test_create_booking_legacy(client, db_session):
     """Test creating a booking with the legacy API"""
     booking_data = {"ride_id": 1, "passenger_count": 1}

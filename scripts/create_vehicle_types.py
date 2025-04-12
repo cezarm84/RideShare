@@ -11,7 +11,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 import logging
 
-
 from app.db.session import SessionLocal
 from app.models.vehicle import VehicleType
 

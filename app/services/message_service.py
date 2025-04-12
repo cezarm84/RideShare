@@ -11,11 +11,7 @@ from app.models.message import (
     conversation_participants,
 )
 from app.models.user import User
-from app.schemas.message import (
-    ConversationCreate,
-    ConversationUpdate,
-    MessageCreate,
-)
+from app.schemas.message import ConversationCreate, ConversationUpdate, MessageCreate
 
 
 class MessageService:

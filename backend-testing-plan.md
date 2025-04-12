@@ -61,10 +61,10 @@ def test_create_ride_success(db_session, test_user, test_hub):
         "available_seats": 4,
         "price": 100.0
     }
-    
+
     # Act
     ride = create_ride(db_session, ride_data, test_user.id)
-    
+
     # Assert
     assert ride.id is not None
     assert ride.start_hub_id == test_hub.id

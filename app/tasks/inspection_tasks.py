@@ -5,7 +5,6 @@ Background tasks for vehicle inspection management.
 import logging
 from datetime import datetime, timedelta
 
-
 from app.db.session import SessionLocal
 from app.models.driver import DriverVehicle
 from app.services.notification_service import NotificationService

@@ -56,25 +56,25 @@ describe('RideCard', () => {
     availableSeats: 3,
     price: 250,
   };
-  
+
   const mockOnBook = jest.fn();
-  
+
   it('renders ride details correctly', () => {
     render(<RideCard ride={mockRide} onBook={mockOnBook} />);
-    
+
     expect(screen.getByText('Stockholm')).toBeInTheDocument();
     expect(screen.getByText('Gothenburg')).toBeInTheDocument();
     expect(screen.getByText('10:00 AM')).toBeInTheDocument();
     expect(screen.getByText('3 seats available')).toBeInTheDocument();
     expect(screen.getByText('250 kr')).toBeInTheDocument();
   });
-  
+
   it('calls onBook when book button is clicked', () => {
     render(<RideCard ride={mockRide} onBook={mockOnBook} />);
-    
+
     const bookButton = screen.getByRole('button', { name: /book/i });
     fireEvent.click(bookButton);
-    
+
     expect(mockOnBook).toHaveBeenCalledWith('1');
   });
 });
@@ -87,29 +87,29 @@ describe('Booking Flow', () => {
   beforeEach(() => {
     cy.login('user@example.com', 'password');
   });
-  
+
   it('allows a user to search and book a ride', () => {
     // Visit the search page
     cy.visit('/rides');
-    
+
     // Fill in search criteria
     cy.get('[data-testid=origin-input]').type('Stockholm');
     cy.get('[data-testid=destination-input]').type('Gothenburg');
     cy.get('[data-testid=date-input]').type('2023-06-01');
-    
+
     // Submit search
     cy.get('[data-testid=search-button]').click();
-    
+
     // Verify results appear
     cy.get('[data-testid=ride-card]').should('have.length.at.least', 1);
-    
+
     // Select first ride
     cy.get('[data-testid=book-button]').first().click();
-    
+
     // Complete booking form
     cy.get('[data-testid=passengers-input]').type('2');
     cy.get('[data-testid=confirm-button]').click();
-    
+
     // Verify booking confirmation
     cy.get('[data-testid=booking-confirmation]').should('be.visible');
     cy.get('[data-testid=booking-reference]').should('be.visible');

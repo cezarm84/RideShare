@@ -1,6 +1,5 @@
 import logging
 
-
 from app.db.session import SessionLocal
 from app.services.travel_pattern_service import TravelPatternService
 

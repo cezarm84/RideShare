@@ -1,7 +1,3 @@
-
-
-
-
 def test_ride_usage_summary(client, db_session):
     # Create an admin user manually for this test
     from app.core.security import get_password_hash

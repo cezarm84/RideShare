@@ -1,4 +1,3 @@
-
 from sqlalchemy import Boolean, Column, Float, Integer, String
 
 from app.db.base_class import Base

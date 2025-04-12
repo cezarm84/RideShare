@@ -1,6 +1,3 @@
-
-
-
 def test_create_hub_to_hub_ride(client, db_session):
     """Test creating a hub-to-hub ride"""
     # Create a hub-to-hub ride

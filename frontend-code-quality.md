@@ -67,15 +67,15 @@ module.exports = {
     'react/display-name': 'off',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
-    
+
     // TypeScript
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': ['error', { 
+    '@typescript-eslint/no-unused-vars': ['error', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',
     }],
-    
+
     // Import
     'import/order': [
       'error',
@@ -95,7 +95,7 @@ module.exports = {
         },
       },
     ],
-    
+
     // General
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'prettier/prettier': 'error',

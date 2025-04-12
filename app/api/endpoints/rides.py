@@ -15,11 +15,7 @@ from app.models.hub import Hub
 from app.models.ride import Ride, RideBooking
 from app.models.user import User
 from app.schemas.hub import HubResponse
-from app.schemas.ride import (
-    RideBookingResponse,
-    RideCreate,
-    RideDetailedResponse,
-)
+from app.schemas.ride import RideBookingResponse, RideCreate, RideDetailedResponse
 from app.services.ride_service import RideService
 
 router = APIRouter()
