@@ -90,10 +90,6 @@ playwright-report/
 coverage/
 .nyc_output/
 cypress/
-cypress/videos/
-cypress/screenshots/
-cypress/downloads/
-cypress/results/
 
 # Generated files
 generated/

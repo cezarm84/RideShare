@@ -1,0 +1,14 @@
+# These owners will be the default owners for everything in the repo
+* @your-username
+
+# Frontend code owners
+/frontend/ @frontend-team-lead
+
+# Backend code owners
+/backend/ @backend-team-lead
+
+# CI/CD workflow owners
+/.github/workflows/ @devops-team-lead
+
+# Documentation owners
+/docs/ @documentation-team-lead
