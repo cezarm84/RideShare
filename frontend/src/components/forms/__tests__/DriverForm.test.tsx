@@ -1,9 +1,10 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils/test-setup';
-import { mockErrorResponse, mockApiResponse, mockApiError } from '@/test-utils/api-mocks';
+import { mockErrorResponse, mockApiError } from '@/test-utils/api-mocks';
+// import { mockApiResponse } from '@/test-utils/api-mocks'; // Unused import
 import DriverForm from '../DriverForm';
 import { useToast } from '@/components/ui/use-toast';
-import { DriverProfileCreate } from '@/types/driver';
+// import { DriverProfileCreate } from '@/types/driver'; // Unused import
 
 // Mock the toast hook
 jest.mock('@/components/ui/use-toast', () => ({

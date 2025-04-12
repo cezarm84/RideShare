@@ -1,5 +1,6 @@
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
-import { useState } from 'react';
+import { render, screen, waitFor, act } from '@testing-library/react'; // eslint-disable-line @typescript-eslint/no-unused-vars
+// import { fireEvent } from '@testing-library/react'; // Unused import
+// import { useState } from 'react'; // Unused import
 import userEvent from '@testing-library/user-event';
 import RideForm from '../RideForm';
 import { driverService } from '../../../services/driver.service';
@@ -84,7 +85,7 @@ describe('RideForm', () => {
     const user = userEvent.setup();
 
     // Mock the onSubmit function to resolve immediately
-    mockOnSubmit.mockImplementation(async (data) => {
+    mockOnSubmit.mockImplementation(async (_data) => {
       return Promise.resolve();
     });
 
@@ -123,9 +124,11 @@ describe('RideForm', () => {
   it('handles loading state during submission', async () => {
     // Mock implementation with a component that has loading state
     const LoadingTestComponent = () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [loading, setLoading] = useState(false);
 
-      const handleSubmit = async (data: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+      const handleSubmit = async (_data: any) => {
         setLoading(true);
         await new Promise(resolve => setTimeout(resolve, 100));
         setLoading(false);

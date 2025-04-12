@@ -38,28 +38,28 @@ const BookingService = {
     const response = await api.get<Booking[]>('/bookings');
     return response.data;
   },
-  
+
   getBookingById: async (id: number): Promise<Booking> => {
     const response = await api.get<Booking>(`/bookings/${id}`);
     return response.data;
   },
-  
+
   createBooking: async (bookingData: CreateBookingData): Promise<Booking> => {
     const response = await api.post<Booking>('/bookings', bookingData);
     return response.data;
   },
-  
+
   cancelBooking: async (id: number): Promise<Booking> => {
     const response = await api.put<Booking>(`/bookings/${id}/cancel`);
     return response.data;
   },
-  
+
   // Get bookings for the current user
   getMyBookings: async (): Promise<BookingWithRideDetails[]> => {
     const response = await api.get<BookingWithRideDetails[]>('/bookings/me');
     return response.data;
   },
-  
+
   // Process payment for a booking
   processPayment: async (bookingId: number, paymentMethodId: number): Promise<Booking> => {
     const response = await api.post<Booking>(`/bookings/${bookingId}/payment`, {
@@ -70,3 +70,6 @@ const BookingService = {
 };
 
 export default BookingService;
+
+// For backward compatibility
+export const bookingService = BookingService;

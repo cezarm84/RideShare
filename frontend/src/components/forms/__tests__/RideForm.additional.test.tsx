@@ -1,5 +1,6 @@
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
-import { useState } from 'react';
+import { render, screen, waitFor, act } from '@testing-library/react';
+// import { fireEvent } from '@testing-library/react'; // Unused import
+// import { useState } from 'react'; // Unused import
 import userEvent from '@testing-library/user-event';
 import RideForm from '../RideForm';
 import { driverService } from '../../../services/driver.service';
