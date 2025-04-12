@@ -17,7 +17,7 @@ updates:
 
   # Backend dependencies
   - package-ecosystem: "pip"
-    directory: "/backend"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

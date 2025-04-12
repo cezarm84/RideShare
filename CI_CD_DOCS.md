@@ -18,11 +18,13 @@ We follow a GitFlow-inspired branching strategy:
 #### Frontend CI/CD
 
 The frontend CI/CD pipeline is triggered on:
+
 - Pushes to `main` and `develop` branches
 - Pull requests to `main` and `develop` branches
 - Manual triggers
 
 Pipeline steps:
+
 1. Build and test
    - Install dependencies
    - Lint code
@@ -34,11 +36,13 @@ Pipeline steps:
 #### Backend CI/CD
 
 The backend CI/CD pipeline is triggered on:
+
 - Pushes to `main` and `develop` branches
 - Pull requests to `main` and `develop` branches
 - Manual triggers
 
 Pipeline steps:
+
 1. Test
    - Set up Python and dependencies
    - Run database migrations
@@ -50,6 +54,7 @@ Pipeline steps:
 ### Pull Request Validation
 
 All pull requests are validated for:
+
 - Conventional commit message format
 - Semantic PR title
 - No large files
@@ -59,6 +64,7 @@ All pull requests are validated for:
 ### Starting a New Feature
 
 1. Create a new branch from `develop`:
+
    ```bash
    git checkout develop
    git pull
@@ -66,6 +72,7 @@ All pull requests are validated for:
    ```
 
 2. Make your changes and commit using conventional commit format:
+
    ```bash
    git commit -m "feat(component): add new feature"
    ```
@@ -78,6 +85,7 @@ All pull requests are validated for:
 ### Hotfix Workflow
 
 1. Create a hotfix branch from `main`:
+
    ```bash
    git checkout main
    git pull
@@ -85,11 +93,13 @@ All pull requests are validated for:
    ```
 
 2. Fix the issue and commit:
+
    ```bash
    git commit -m "fix(component): fix critical issue"
    ```
 
 3. Push your branch and create a pull request to `main`:
+
    ```bash
    git push -u origin hotfix/issue-description
    ```
@@ -104,6 +114,7 @@ All pull requests are validated for:
 ### Creating a Release
 
 1. Create a release branch from `develop`:
+
    ```bash
    git checkout develop
    git pull
@@ -122,14 +133,22 @@ All pull requests are validated for:
    git push --tags
    ```
 
-## Environment Variables
+## Environment Variables and Secrets
 
-### Frontend
+### GitHub Secrets
+
+The following secrets need to be set up in your GitHub repository settings:
+
+- `DOCKER_HUB_USERNAME`: Your Docker Hub username
+- `DOCKER_HUB_TOKEN`: Your Docker Hub access token (not your password)
+- `CODECOV_TOKEN`: Your Codecov token for uploading coverage reports
+
+### Frontend Environment Variables
 
 - `VITE_API_URL`: Backend API URL
 - `VITE_ENVIRONMENT`: Environment name (development, staging, production)
 
-### Backend
+### Backend Environment Variables
 
 - `DATABASE_URL`: PostgreSQL connection string
 - `SECRET_KEY`: JWT secret key
