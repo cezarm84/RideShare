@@ -9,6 +9,7 @@ from app.api.dependencies import (
     get_current_admin_user,
     get_optional_user,
 )
+from app.core.geocoding import get_coordinates_for_address
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.hub import Hub
@@ -474,6 +475,24 @@ async def create_ride(
                     status_code=400,
                     detail="Hub-to-destination rides require a destination object",
                 )
+
+            # Geocode the destination address if coordinates are not provided
+            if hasattr(ride.destination, "address") and ride.destination.address:
+                if not ride.destination.latitude or not ride.destination.longitude:
+                    address_str = f"{ride.destination.address}, {ride.destination.postal_code or ''}, {ride.destination.city or ''}"
+                    try:
+                        coords = await get_coordinates_for_address(address_str)
+                        if coords:
+                            ride.destination.latitude, ride.destination.longitude = (
+                                coords
+                            )
+                            logger.info(
+                                f"Successfully geocoded destination address: {address_str} to {coords}"
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not get coordinates for destination address {address_str}: {str(e)}"
+                        )
 
             logger.info(
                 f"Creating hub_to_destination ride from hub {ride.starting_hub_id} to custom destination"

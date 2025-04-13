@@ -73,43 +73,59 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### Create User
 
-**Endpoint:** `POST /api/users`
+**Endpoint:** `POST /api/v1/users`
 
 **Request Body:**
 
 ```json
 {
   "email": "user@example.com",
-  "password": "password123",
+  "password": "SecurePassword123!",
   "first_name": "John",
   "last_name": "Doe",
-  "phone_number": "0701234567",
-  "home_address": "123 Main St, Gothenburg",
-  "work_address": "456 Work St, Gothenburg",
+  "phone_number": "+46701234567",
   "user_type": "private",
-  "latitude": 57.7089,
-  "longitude": 11.9746
+  "home_address": "Avenyn 1, 41136 Göteborg",
+  "work_address": "Lindholmspiren 5, 41756 Göteborg",
+  "home_street": "Avenyn",
+  "home_house_number": "1",
+  "home_post_code": "41136",
+  "home_city": "Göteborg",
+  "work_street": "Lindholmspiren",
+  "work_house_number": "5",
+  "work_post_code": "41756",
+  "work_city": "Göteborg"
 }
 ```
+
+**Note:** Latitude and longitude coordinates are automatically calculated from the provided addresses using geocoding.
 
 **Response Body:**
 
 ```json
 {
-  "id": 1,
-  "user_id": "UID-A1B2C3D4",
   "email": "user@example.com",
   "first_name": "John",
   "last_name": "Doe",
-  "full_name": "John Doe",
-  "phone_number": "0701234567",
+  "phone_number": "+46701234567",
+  "home_address": "Avenyn 1, 41136 Göteborg",
+  "work_address": "Lindholmspiren 5, 41756 Göteborg",
   "user_type": "private",
+  "latitude": 57.701706,
+  "longitude": 11.9726,
+  "work_latitude": 57.7069472,
+  "work_longitude": 11.9396881,
+  "id": 163,
+  "user_id": "UID-1C51A2BC",
+  "created_at": "2025-04-13T15:35:09.274700",
   "is_active": true,
-  "created_at": "2023-06-15T14:30:45.123456",
-  "home_coordinates": [57.7089, 11.9746],
-  "work_coordinates": null
+  "home_coordinates": null,
+  "work_coordinates": null,
+  "full_name": "John Doe"
 }
 ```
+
+**Note:** The `latitude`, `longitude`, `work_latitude`, and `work_longitude` fields in the response are automatically calculated from the provided addresses using geocoding.
 
 ### Update User
 

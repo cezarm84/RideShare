@@ -43,16 +43,25 @@ POST /api/v1/users
 ```json
 {
   "email": "user@example.com",
-  "password": "password123",
+  "password": "SecurePassword123!",
   "first_name": "John",
   "last_name": "Doe",
-  "phone_number": "0701234567",
-  "home_address": "123 Main St, Gothenburg",
-  "work_address": "456 Work St, Gothenburg",
-  "latitude": 57.7089,
-  "longitude": 11.9746
+  "phone_number": "+46701234567",
+  "user_type": "private",
+  "home_address": "Avenyn 1, 41136 Göteborg",
+  "work_address": "Lindholmspiren 5, 41756 Göteborg",
+  "home_street": "Avenyn",
+  "home_house_number": "1",
+  "home_post_code": "41136",
+  "home_city": "Göteborg",
+  "work_street": "Lindholmspiren",
+  "work_house_number": "5",
+  "work_post_code": "41756",
+  "work_city": "Göteborg"
 }
 ```
+
+**Note:** Latitude and longitude coordinates are automatically calculated from the provided addresses using geocoding.
 
 ### Get Current User
 

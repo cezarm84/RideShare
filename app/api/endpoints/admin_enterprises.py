@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_admin_user, get_db
+from app.core.geocoding import get_coordinates_for_address
 from app.models.enterprise import Enterprise
 from app.models.user import User
 from app.schemas.enterprise import (
@@ -64,10 +65,28 @@ async def create_enterprise(
     Only available to super admin users.
     """
     try:
+        # Try to get coordinates for the enterprise address
+        if enterprise.address:
+            address_str = enterprise.address
+            try:
+                coords = await get_coordinates_for_address(address_str)
+                if coords:
+                    enterprise.latitude, enterprise.longitude = coords
+                    logger.info(
+                        f"Successfully geocoded enterprise address: {address_str} to {coords}"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not get coordinates for {address_str}: {str(e)}")
+
         # Create new enterprise
         new_enterprise = Enterprise(
             name=enterprise.name,
             address=enterprise.address,
+            city=getattr(enterprise, "city", None),
+            postal_code=getattr(enterprise, "postal_code", None),
+            country=getattr(enterprise, "country", None),
+            latitude=getattr(enterprise, "latitude", None),
+            longitude=getattr(enterprise, "longitude", None),
             is_active=enterprise.is_active,
         )
 
@@ -142,6 +161,29 @@ async def update_enterprise(
                 detail=f"Enterprise with ID {enterprise_id} not found",
             )
 
+        # Check if address was updated and needs geocoding
+        address_updated = False
+        if (
+            hasattr(enterprise_update, "address")
+            and enterprise_update.address is not None
+        ):
+            address_updated = True
+
+        # If address was updated, try to geocode it
+        if address_updated:
+            address_str = enterprise_update.address
+            try:
+                coords = await get_coordinates_for_address(address_str)
+                if coords:
+                    enterprise_update.latitude, enterprise_update.longitude = coords
+                    logger.info(
+                        f"Successfully geocoded updated enterprise address: {address_str} to {coords}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Could not get coordinates for updated address {address_str}: {str(e)}"
+                )
+
         # Update enterprise fields
         update_data = enterprise_update.dict(exclude_unset=True)
 
@@ -149,9 +191,9 @@ async def update_enterprise(
             setattr(existing_enterprise, key, value)
 
         # Update the updated_at timestamp
-        from datetime import datetime
+        from datetime import datetime, timezone
 
-        existing_enterprise.updated_at = datetime.now()
+        existing_enterprise.updated_at = datetime.now(timezone.utc)
 
         db.add(existing_enterprise)
         db.commit()

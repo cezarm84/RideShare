@@ -176,6 +176,12 @@ class UserResponse(UserInDBBase):
         default_factory=datetime.utcnow
     )  # Ensure created_at has a default
 
+    # Ensure coordinates are included in the response
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    work_latitude: Optional[float] = None
+    work_longitude: Optional[float] = None
+
     @validator("full_name", pre=True, always=True)
     def set_full_name(cls, v, values):
         """Compute full name from first and last name"""

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_admin_user, get_db
+from app.core.geocoding import get_coordinates_for_address
 from app.models.destination import Destination
 from app.models.user import User
 from app.schemas.destination import (
@@ -82,6 +83,19 @@ async def create_destination(
     Available to admin users.
     """
     try:
+        # Try to get coordinates if not provided
+        if not destination.latitude or not destination.longitude:
+            address_str = f"{destination.address}, {destination.postal_code or ''}, {destination.city}"
+            try:
+                coords = await get_coordinates_for_address(address_str)
+                if coords:
+                    destination.latitude, destination.longitude = coords
+                    logger.info(
+                        f"Successfully geocoded destination address: {address_str} to {coords}"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not get coordinates for {address_str}: {str(e)}")
+
         # Create new destination
         new_destination = Destination(
             name=destination.name,
@@ -182,6 +196,57 @@ async def update_destination(
                 detail=f"Destination with ID {destination_id} not found",
             )
 
+        # Check if address was updated and needs geocoding
+        address_updated = False
+        if (
+            hasattr(destination_update, "address")
+            and destination_update.address is not None
+        ):
+            address_updated = True
+        if hasattr(destination_update, "city") and destination_update.city is not None:
+            address_updated = True
+        if (
+            hasattr(destination_update, "postal_code")
+            and destination_update.postal_code is not None
+        ):
+            address_updated = True
+
+        # If address was updated, try to geocode it
+        if address_updated:
+            # Get the updated address components or use existing ones
+            address = (
+                destination_update.address
+                if hasattr(destination_update, "address")
+                and destination_update.address is not None
+                else existing_destination.address
+            )
+            city = (
+                destination_update.city
+                if hasattr(destination_update, "city")
+                and destination_update.city is not None
+                else existing_destination.city
+            )
+            postal_code = (
+                destination_update.postal_code
+                if hasattr(destination_update, "postal_code")
+                and destination_update.postal_code is not None
+                else existing_destination.postal_code
+            )
+
+            # Geocode the address
+            address_str = f"{address}, {postal_code or ''}, {city}"
+            try:
+                coords = await get_coordinates_for_address(address_str)
+                if coords:
+                    destination_update.latitude, destination_update.longitude = coords
+                    logger.info(
+                        f"Successfully geocoded updated destination address: {address_str} to {coords}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Could not get coordinates for updated address {address_str}: {str(e)}"
+                )
+
         # Update destination fields
         update_data = destination_update.dict(exclude_unset=True)
 
@@ -189,9 +254,9 @@ async def update_destination(
             setattr(existing_destination, key, value)
 
         # Update the updated_at timestamp
-        from datetime import datetime
+        from datetime import datetime, timezone
 
-        existing_destination.updated_at = datetime.now()
+        existing_destination.updated_at = datetime.now(timezone.utc)
 
         db.add(existing_destination)
         db.commit()

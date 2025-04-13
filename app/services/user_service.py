@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import HTTPException
@@ -22,7 +22,16 @@ async def get_coordinates_safely(address: str) -> tuple:
     """
     try:
         # Directly await the coroutine since we're already in an async context
-        return await geocode_address(address)
+        lat, lon = await geocode_address(address)
+        if lat and lon:
+            logger.info(
+                f"Successfully geocoded address: {address} to coordinates: {lat}, {lon}"
+            )
+            return lat, lon
+        else:
+            logger.warning(f"Geocoding returned null coordinates for: {address}")
+            # Return default coordinates
+            return 59.3293, 18.0686  # Default coordinates
     except Exception as e:
         logger.error(f"Error during geocoding: {str(e)}")
         # Return default coordinates
@@ -50,7 +59,7 @@ class UserService:
 
             # Ensure created_at is set
             if not user.created_at:
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(timezone.utc)
                 self.db.commit()
 
             # Load any related enterprise data if applicable
@@ -69,7 +78,7 @@ class UserService:
         if user:
             # Ensure created_at is set
             if not user.created_at:
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(timezone.utc)
                 self.db.commit()
 
             # Load any related enterprise data if applicable
@@ -93,7 +102,7 @@ class UserService:
 
             # Ensure created_at is set
             if not user.created_at:
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(timezone.utc)
                 self.db.commit()
         return user
 
@@ -107,16 +116,14 @@ class UserService:
                 user.user_id = f"UID-{uuid.uuid4().hex[:8].upper()}"
 
             if not user.created_at:
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(timezone.utc)
 
         # If any changes were made, commit them
         self.db.commit()
 
         return users
 
-    def create_user(
-        self, user_in: UserCreate, user_id=None, home_location=None, work_location=None
-    ) -> User:
+    def create_user(self, user_in: UserCreate, user_id=None) -> User:
         """
         Create a new user with automatic geocoding for addresses.
 
@@ -140,45 +147,54 @@ class UserService:
             unique_user_id = user_id if user_id else generate_unique_user_id()
 
             # Set created_at to current time if not provided
-            current_time = datetime.utcnow()
+            current_time = datetime.now(timezone.utc)
 
             # Extract latitude and longitude from addresses if needed
             latitude = getattr(user_in, "latitude", None)
             longitude = getattr(user_in, "longitude", None)
 
-            # For synchronous function, we can't use asyncio.run() or await directly
-            # We'll store addresses without coordinates for now
+            # Use geocoding service to get coordinates for home address
             if user_in.home_address and not latitude and not longitude:
-                # Set default coordinates - these can be updated later by a background task
-                latitude = 59.3293
-                longitude = 18.0686
-                logger.info(
-                    f"Using default coordinates for home address: {latitude}, {longitude}"
-                )
+                from app.services.opencage_geocoding import get_coordinates_sync
+
+                coords = get_coordinates_sync(user_in.home_address)
+                if coords:
+                    latitude, longitude = coords
+                    logger.info(
+                        f"Successfully geocoded home address: {user_in.home_address} to coordinates: {latitude}, {longitude}"
+                    )
+                else:
+                    # Set default coordinates if geocoding fails
+                    latitude = 59.3293
+                    longitude = 18.0686
+                    logger.info(
+                        f"Using default coordinates for home address: {latitude}, {longitude}"
+                    )
 
             # Extract work latitude and longitude if needed
             work_latitude = getattr(user_in, "work_latitude", None)
             work_longitude = getattr(user_in, "work_longitude", None)
 
+            # Use geocoding service to get coordinates for work address
             if user_in.work_address and not work_latitude and not work_longitude:
-                # Set default coordinates - these can be updated later by a background task
-                work_latitude = 59.3293
-                work_longitude = 18.0686
-                logger.info(
-                    f"Using default coordinates for work address: {work_latitude}, {work_longitude}"
-                )
+                from app.services.opencage_geocoding import get_coordinates_sync
 
-            # Parse address components
-            home_address_components = (
-                self._parse_address(user_in.home_address)
-                if user_in.home_address
-                else {}
-            )
-            work_address_components = (
-                self._parse_address(user_in.work_address)
-                if user_in.work_address
-                else {}
-            )
+                coords = get_coordinates_sync(user_in.work_address)
+                if coords:
+                    work_latitude, work_longitude = coords
+                    logger.info(
+                        f"Successfully geocoded work address: {user_in.work_address} to coordinates: {work_latitude}, {work_longitude}"
+                    )
+                else:
+                    # Set default coordinates if geocoding fails
+                    work_latitude = 59.3293
+                    work_longitude = 18.0686
+                    logger.info(
+                        f"Using default coordinates for work address: {work_latitude}, {work_longitude}"
+                    )
+
+            # Parse address components if needed in the future
+            # Currently not used, but keeping the method for future use
 
             # Create user data dictionary
             user_data = {
@@ -261,24 +277,41 @@ class UserService:
                 update_data.pop("password")
             )
 
-        # For synchronous function, we can't use asyncio.run() or await directly
-        # We'll use default coordinates for now
+        # Use geocoding service to get coordinates for home address
         if "home_address" in update_data and update_data["home_address"]:
-            # Set default coordinates - these can be updated later by a background task
-            update_data["latitude"] = 59.3293
-            update_data["longitude"] = 18.0686
-            logger.info(
-                f"Using default coordinates for updated home address: {update_data['latitude']}, {update_data['longitude']}"
-            )
+            from app.services.opencage_geocoding import get_coordinates_sync
+
+            coords = get_coordinates_sync(update_data["home_address"])
+            if coords:
+                update_data["latitude"], update_data["longitude"] = coords
+                logger.info(
+                    f"Successfully geocoded updated home address: {update_data['home_address']} to coordinates: {update_data['latitude']}, {update_data['longitude']}"
+                )
+            else:
+                # Set default coordinates if geocoding fails
+                update_data["latitude"] = 59.3293
+                update_data["longitude"] = 18.0686
+                logger.info(
+                    f"Using default coordinates for updated home address: {update_data['latitude']}, {update_data['longitude']}"
+                )
 
         # Update work coordinates if work address provided
         if "work_address" in update_data and update_data["work_address"]:
-            # Set default coordinates - these can be updated later by a background task
-            update_data["work_latitude"] = 59.3293
-            update_data["work_longitude"] = 18.0686
-            logger.info(
-                f"Using default coordinates for updated work address: {update_data['work_latitude']}, {update_data['work_longitude']}"
-            )
+            from app.services.opencage_geocoding import get_coordinates_sync
+
+            coords = get_coordinates_sync(update_data["work_address"])
+            if coords:
+                update_data["work_latitude"], update_data["work_longitude"] = coords
+                logger.info(
+                    f"Successfully geocoded updated work address: {update_data['work_address']} to coordinates: {update_data['work_latitude']}, {update_data['work_longitude']}"
+                )
+            else:
+                # Set default coordinates if geocoding fails
+                update_data["work_latitude"] = 59.3293
+                update_data["work_longitude"] = 18.0686
+                logger.info(
+                    f"Using default coordinates for updated work address: {update_data['work_latitude']}, {update_data['work_longitude']}"
+                )
 
         # Remove any attempt to update full_name as it's not in the model
 
@@ -434,7 +467,7 @@ class UserService:
             unique_user_id = user_id if user_id else generate_unique_user_id()
 
             # Set created_at to current time if not provided
-            current_time = datetime.utcnow()
+            current_time = datetime.now(timezone.utc)
 
             # Extract latitude and longitude from addresses if needed
             latitude = getattr(user_in, "latitude", None)
@@ -447,6 +480,8 @@ class UserService:
                     latitude, longitude = await get_coordinates_safely(
                         user_in.home_address
                     )
+                    # Create POINT string for home_location
+                    home_location = f"POINT({longitude} {latitude})"
                     logger.info(
                         f"Successfully geocoded home address to: {latitude}, {longitude}"
                     )
@@ -455,6 +490,7 @@ class UserService:
                     # Use default coordinates if geocoding fails
                     latitude = 59.3293
                     longitude = 18.0686
+                    home_location = None
 
             # Extract work latitude and longitude if needed
             work_latitude = getattr(user_in, "work_latitude", None)
@@ -466,6 +502,8 @@ class UserService:
                     work_latitude, work_longitude = await get_coordinates_safely(
                         user_in.work_address
                     )
+                    # Create POINT string for work_location
+                    work_location = f"POINT({work_longitude} {work_latitude})"
                     logger.info(
                         f"Successfully geocoded work address to: {work_latitude}, {work_longitude}"
                     )
@@ -474,26 +512,16 @@ class UserService:
                     # Use default coordinates if geocoding fails
                     work_latitude = 59.3293
                     work_longitude = 18.0686
+                    work_location = None
 
-            # Parse address components
-            home_address_components = (
-                self._parse_address(user_in.home_address)
-                if user_in.home_address
-                else {}
-            )
-            work_address_components = (
-                self._parse_address(user_in.work_address)
-                if user_in.work_address
-                else {}
-            )
+            # Parse address components if needed in the future
+            # Currently not used, but keeping the method for future use
 
             # Create user data dictionary
             user_data = {
                 "user_id": unique_user_id,
                 "email": user_in.email,
                 "password_hash": get_password_hash(user_in.password),
-                "first_name": user_in.first_name,
-                "last_name": user_in.last_name,
                 "first_name": user_in.first_name,
                 "last_name": user_in.last_name,
                 "phone_number": user_in.phone_number,
@@ -507,9 +535,17 @@ class UserService:
             user_data["latitude"] = latitude
             user_data["longitude"] = longitude
 
+            # Add home_location if available
+            if "home_location" in locals() and home_location:
+                user_data["home_location"] = home_location
+
             if work_latitude and work_longitude:
                 user_data["work_latitude"] = work_latitude
                 user_data["work_longitude"] = work_longitude
+
+            # Add work_location if available
+            if "work_location" in locals() and work_location:
+                user_data["work_location"] = work_location
 
             # Create the user first
             db_user = User(**user_data)
@@ -559,7 +595,7 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
 
         # Ensure created_at is set
         if not user.created_at:
-            user.created_at = datetime.utcnow()
+            user.created_at = datetime.now(timezone.utc)
             db.commit()
 
         # If needed, you can add any additional data relations here
@@ -589,7 +625,7 @@ def get_user_by_user_id(db: Session, user_id: str) -> User | None:
     if user:
         # Ensure created_at is set
         if not user.created_at:
-            user.created_at = datetime.utcnow()
+            user.created_at = datetime.now(timezone.utc)
             db.commit()
 
         # If needed, you can add any additional data relations here
@@ -619,7 +655,7 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 100):
                 user.user_id = f"UID-{uuid.uuid4().hex[:8].upper()}"
 
             if not user.created_at:
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(timezone.utc)
 
         # If any changes were made, commit them
         db.commit()

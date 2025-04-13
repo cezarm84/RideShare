@@ -9,6 +9,7 @@ class Location(Base):
     """Model for saved locations (addresses, points of interest, etc.)"""
 
     __tablename__ = "locations"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=True)
@@ -31,17 +32,3 @@ class Location(Base):
 
     def __repr__(self):
         return f"<Location(id={self.id}, name='{self.name}', coordinates=({self.latitude}, {self.longitude})>"
-
-
-class GeocodingCache(Base):
-    """Cache for geocoded addresses to reduce API calls"""
-
-    __tablename__ = "geocoding_cache"
-
-    id = Column(Integer, primary_key=True, index=True)
-    address = Column(String, unique=True, index=True, nullable=False)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    coordinates = Column(String, nullable=False)  # Formatted as "lat,lng"
-    created_at = Column(DateTime, default=func.now())
-    last_used = Column(DateTime, default=func.now(), onupdate=func.now())

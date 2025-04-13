@@ -11,7 +11,7 @@ from app.db.session import get_db
 from app.models.user import EnterpriseUser, User
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.services.user_service import (
-    create_user,
+    create_user_async,
     get_all_users,
     get_user_by_email,
     get_user_by_id,
@@ -195,8 +195,8 @@ async def create_new_user(user_data: UserCreate, db: Session = Depends(get_db)):
             if field in user_data_dict:
                 user_data_dict.pop(field)
 
-        # Create the user with the updated data
-        user = create_user(db, user_data_dict)
+        # Create the user with the updated data using the async function
+        user = await create_user_async(db, user_data_dict)
 
         if user is None:
             raise HTTPException(
@@ -265,6 +265,10 @@ async def create_new_user(user_data: UserCreate, db: Session = Depends(get_db)):
             "work_address",
             "home_location",
             "work_location",
+            "latitude",
+            "longitude",
+            "work_latitude",
+            "work_longitude",
             "profile_picture",
             "preferences",
             "last_login",
@@ -389,14 +393,38 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 @router.put("/me", response_model=UserResponse)
-def update_current_user(
+async def update_current_user(
     user_data: UserUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Update information for the current user.
+    Update information for the current user with automatic geocoding for addresses.
     """
+    # Check if addresses need geocoding
+    if hasattr(user_data, "home_address") and user_data.home_address:
+        try:
+            lat, lon = await geocode_address(user_data.home_address)
+            if lat and lon:
+                user_data.latitude = lat
+                user_data.longitude = lon
+                user_data.home_location = f"POINT({lon} {lat})"
+                logger.info(f"Successfully geocoded home address to: {lat}, {lon}")
+        except Exception as e:
+            logger.error(f"Error geocoding home address: {str(e)}")
+
+    if hasattr(user_data, "work_address") and user_data.work_address:
+        try:
+            lat, lon = await geocode_address(user_data.work_address)
+            if lat and lon:
+                user_data.work_latitude = lat
+                user_data.work_longitude = lon
+                user_data.work_location = f"POINT({lon} {lat})"
+                logger.info(f"Successfully geocoded work address to: {lat}, {lon}")
+        except Exception as e:
+            logger.error(f"Error geocoding work address: {str(e)}")
+
+    # Update the user with the geocoded data
     updated_user = update_user(db, current_user.id, user_data)
 
     # Get first and last name directly from the user model
@@ -443,6 +471,10 @@ def update_current_user(
         "work_address",
         "home_location",
         "work_location",
+        "latitude",
+        "longitude",
+        "work_latitude",
+        "work_longitude",
         "profile_picture",
         "preferences",
         "last_login",
@@ -516,6 +548,10 @@ def get_user(
         "work_address",
         "home_location",
         "work_location",
+        "latitude",
+        "longitude",
+        "work_latitude",
+        "work_longitude",
         "profile_picture",
         "preferences",
         "last_login",
@@ -577,6 +613,10 @@ def get_users(
             "work_address",
             "home_location",
             "work_location",
+            "latitude",
+            "longitude",
+            "work_latitude",
+            "work_longitude",
             "profile_picture",
             "preferences",
             "last_login",
@@ -654,6 +694,10 @@ def get_user_by_string_id(
         "work_address",
         "home_location",
         "work_location",
+        "latitude",
+        "longitude",
+        "work_latitude",
+        "work_longitude",
         "profile_picture",
         "preferences",
         "last_login",

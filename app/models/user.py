@@ -6,6 +6,8 @@ from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, St
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
+
+# Import models to resolve circular references
 from app.models.enterprise import Enterprise
 
 
@@ -84,48 +86,46 @@ class User(Base):
 
     # Relationships
     # Add the missing payments relationship that's referenced in the Payment model
-    payments = relationship("app.models.payment.Payment", back_populates="user")
+    payments = relationship("Payment", back_populates="user")
 
     # Payment methods relationship
-    payment_methods = relationship(
-        "app.models.payment_method.PaymentMethod", back_populates="user"
-    )
+    payment_methods = relationship("PaymentMethod", back_populates="user")
 
     # Use a single relationship for locations to avoid overlap warnings
     saved_locations = relationship(
-        "app.models.location.Location", back_populates="user", overlaps="locations"
+        "Location", back_populates="user", overlaps="locations"
     )
 
     # Vehicle relationship - single relationship to avoid overlaps
     vehicles = relationship(
-        "app.models.vehicle.Vehicle",
+        "Vehicle",
         back_populates="owner",
-        foreign_keys="app.models.vehicle.Vehicle.owner_id",
+        foreign_keys="Vehicle.owner_id",
     )
 
     # New relationships for matching
     travel_patterns = relationship(
-        "app.models.user_travel_pattern.UserTravelPattern",
+        "UserTravelPattern",
         back_populates="user",
         cascade="all, delete-orphan",
     )
     matching_preferences = relationship(
-        "app.models.user_matching_preference.UserMatchingPreference",
+        "UserMatchingPreference",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
     )
     match_history = relationship(
-        "app.models.ride_match_history.RideMatchHistory",
+        "RideMatchHistory",
         back_populates="user",
-        foreign_keys="app.models.ride_match_history.RideMatchHistory.user_id",
+        foreign_keys="RideMatchHistory.user_id",
         cascade="all, delete-orphan",
     )
     preferred_starting_hub = relationship(
-        "app.models.hub.Hub", foreign_keys=[preferred_starting_hub_id]
+        "Hub", foreign_keys=[preferred_starting_hub_id]
     )
     preferred_vehicle_type = relationship(
-        "app.models.vehicle_type.VehicleType", foreign_keys=[preferred_vehicle_type_id]
+        "VehicleType", foreign_keys=[preferred_vehicle_type_id]
     )
 
     @property

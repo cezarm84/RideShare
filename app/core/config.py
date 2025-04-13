@@ -51,6 +51,12 @@ class Settings(BaseSettings):
         "NOMINATIM_API_URL", "https://nominatim.openstreetmap.org/search"
     )
 
+    # OpenCage API settings
+    OPENCAGE_API_KEY: str = os.getenv("OPENCAGE_API_KEY", "")
+    OPENCAGE_API_URL: str = os.getenv(
+        "OPENCAGE_API_URL", "https://api.opencagedata.com/geocode/v1/json"
+    )
+
     # Environment settings
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     AUTO_MIGRATE: bool = os.getenv("AUTO_MIGRATE", "False").lower() in (
@@ -58,6 +64,10 @@ class Settings(BaseSettings):
         "1",
         "t",
     )
+
+    # Logging settings
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
     # File upload settings
     MEDIA_ROOT: str = os.getenv("MEDIA_ROOT", "media")

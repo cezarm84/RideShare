@@ -1,11 +1,14 @@
-import asyncio
-import json
 import logging
-import time
-from typing import Optional, Tuple
-from urllib.parse import quote
+from typing import Dict, List, Optional, Tuple
 
-import httpx
+# Import geocoding validation
+from app.core.geocoding_validation import is_in_gothenburg, validate_coordinates
+
+# Import the OpenCage geocoding service
+from app.services.opencage_geocoding import (
+    batch_geocode_async,
+)
+from app.services.opencage_geocoding import geocoding_service as opencage_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -14,18 +17,16 @@ logger = logging.getLogger(__name__)
 DEFAULT_LAT = 59.3293
 DEFAULT_LON = 18.0686
 
-# Rate limiting parameters - Nominatim requires 1 second between requests
+# Rate limiting parameters - API services require rate limiting
 RATE_LIMIT_SECONDS = 1
 last_request_time = 0
 
 
 async def geocode_address(address: str) -> Tuple[Optional[float], Optional[float]]:
     """
-    Geocode an address to coordinates using the free OpenStreetMap Nominatim API.
+    Geocode an address to coordinates using the Positionstack API.
     Returns (latitude, longitude) tuple or default coordinates if geocoding fails.
     """
-    global last_request_time
-
     if not address or address.strip() == "":
         logger.warning("Empty address provided for geocoding")
         return None, None
@@ -33,114 +34,81 @@ async def geocode_address(address: str) -> Tuple[Optional[float], Optional[float
     try:
         logger.info(f"Attempting to geocode address: {address}")
 
-        # Ensure we respect rate limits (1 request per second)
-        current_time = time.time()
-        time_since_last_request = current_time - last_request_time
-        if time_since_last_request < RATE_LIMIT_SECONDS:
-            await asyncio.sleep(RATE_LIMIT_SECONDS - time_since_last_request)
+        # Use the OpenCage service for geocoding
+        coordinates = await opencage_service.get_coordinates_async(address)
 
-        # URL encode the address
-        encoded_address = quote(address)
+        if coordinates:
+            lat, lon = coordinates
+            logger.info(
+                f"Successfully geocoded address: {address} to coordinates: {lat}, {lon}"
+            )
 
-        # Nominatim API URL
-        url = f"https://nominatim.openstreetmap.org/search?q={encoded_address}&format=json&limit=1"
-
-        # Required headers per Nominatim usage policy
-        headers = {
-            "User-Agent": "RideShare-App/1.0 (contact@example.com)",
-            "Accept-Language": "en-US,en;q=0.9,sv;q=0.8",  # Prioritize English but allow Swedish
-        }
-
-        # Make the API request
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            last_request_time = time.time()  # Update last request time
-            response = await client.get(url, headers=headers)
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Geocoding API returned status code {response.status_code}"
+            # Validate the coordinates
+            is_valid, error_message = validate_coordinates(lat, lon)
+            if not is_valid:
+                logger.warning(
+                    f"Invalid coordinates for address {address}: {error_message}"
                 )
                 logger.info(f"Using default coordinates for: {address}")
                 return DEFAULT_LAT, DEFAULT_LON
 
-            # Parse the JSON response
-            results = response.json()
+            # Check if coordinates are within Gothenburg area
+            if not is_in_gothenburg(lat, lon):
+                logger.warning(
+                    f"Coordinates for address {address} are outside Gothenburg area"
+                )
+                # We still use the coordinates, but log a warning
 
-            if not results or len(results) == 0:
-                logger.warning(f"No coordinates found for address: {address}")
-                logger.info(f"Using default coordinates for: {address}")
-                return DEFAULT_LAT, DEFAULT_LON
-
-            # Extract coordinates from first result
-            lat = float(results[0].get("lat"))
-            lon = float(results[0].get("lon"))
-
-            logger.info(
-                f"Successfully geocoded address: {address} to coordinates: {lat}, {lon}"
-            )
             return lat, lon
+        else:
+            logger.warning(f"No coordinates found for address: {address}")
+            logger.info(f"Using default coordinates for: {address}")
+            return DEFAULT_LAT, DEFAULT_LON
 
-    except (httpx.RequestError, httpx.HTTPStatusError) as e:
-        logger.error(f"HTTP error during geocoding for '{address}': {str(e)}")
-        logger.info(f"Using default coordinates for: {address}")
-        return DEFAULT_LAT, DEFAULT_LON
-    except (KeyError, IndexError, ValueError, json.JSONDecodeError) as e:
-        logger.error(f"Data parsing error during geocoding for '{address}': {str(e)}")
-        logger.info(f"Using default coordinates for: {address}")
-        return DEFAULT_LAT, DEFAULT_LON
     except Exception as e:
-        logger.error(f"Unexpected error during geocoding for '{address}': {str(e)}")
+        logger.error(f"Error during geocoding for '{address}': {str(e)}")
         logger.info(f"Using default coordinates for: {address}")
         return DEFAULT_LAT, DEFAULT_LON
 
 
 async def reverse_geocode(lat: float, lon: float) -> Optional[str]:
     """
-    Reverse geocode coordinates to get an address.
+    Reverse geocode coordinates to get an address using the Positionstack API.
     """
-    global last_request_time
-
     try:
         logger.info(f"Attempting to reverse geocode coordinates: {lat}, {lon}")
 
-        # Ensure we respect rate limits
-        current_time = time.time()
-        time_since_last_request = current_time - last_request_time
-        if time_since_last_request < RATE_LIMIT_SECONDS:
-            await asyncio.sleep(RATE_LIMIT_SECONDS - time_since_last_request)
+        # Use the OpenCage service for reverse geocoding
+        address_data = await opencage_service.reverse_geocode_async(lat, lon)
 
-        # Nominatim reverse geocoding API URL
-        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
+        if not address_data:
+            logger.warning(f"No address found for coordinates: {lat}, {lon}")
+            return None
 
-        # Required headers per Nominatim usage policy
-        headers = {
-            "User-Agent": "RideShare-App/1.0 (contact@example.com)",
-            "Accept-Language": "en-US,en;q=0.9,sv;q=0.8",
-        }
+        # Get the formatted address
+        formatted_address = address_data.get("formatted_address")
+        if not formatted_address:
+            # Build a formatted address from components
+            components = []
+            if address_data.get("street"):
+                street = address_data.get("street")
+                number = address_data.get("number", "")
+                components.append(f"{street} {number}".strip())
+            if address_data.get("postal_code") or address_data.get("locality"):
+                postal = address_data.get("postal_code", "")
+                locality = address_data.get("locality", "")
+                components.append(f"{postal} {locality}".strip())
+            if address_data.get("region"):
+                components.append(address_data.get("region"))
+            if address_data.get("country"):
+                components.append(address_data.get("country"))
 
-        # Make the API request
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            last_request_time = time.time()
-            response = await client.get(url, headers=headers)
+            formatted_address = ", ".join(filter(None, components))
 
-            if response.status_code != 200:
-                logger.error(
-                    f"Reverse geocoding API returned status code {response.status_code}"
-                )
-                return None
-
-            # Parse the JSON response
-            result = response.json()
-
-            if "display_name" not in result:
-                logger.warning(f"No address found for coordinates: {lat}, {lon}")
-                return None
-
-            address = result.get("display_name")
-            logger.info(
-                f"Successfully reverse geocoded coordinates {lat}, {lon} to address: {address}"
-            )
-            return address
+        logger.info(
+            f"Successfully reverse geocoded coordinates {lat}, {lon} to address: {formatted_address}"
+        )
+        return formatted_address
 
     except Exception as e:
         logger.error(
@@ -170,6 +138,44 @@ async def get_coordinates_for_address(address: str) -> Optional[Tuple[float, flo
     return coords
 
 
+async def batch_geocode_addresses(
+    addresses: List[str],
+) -> Dict[str, Tuple[float, float]]:
+    """
+    Geocode multiple addresses in a batch.
+
+    Args:
+        addresses: List of address strings to geocode
+
+    Returns:
+        Dictionary mapping address strings to coordinate tuples
+    """
+    try:
+        logger.info(f"Batch geocoding {len(addresses)} addresses")
+
+        # Use the OpenCage service for batch geocoding
+        results = await batch_geocode_async(addresses)
+
+        # Replace any None values with default coordinates
+        processed_results = {}
+        for address, coords in results.items():
+            if coords:
+                processed_results[address] = coords
+            else:
+                logger.warning(f"Failed to geocode address in batch: {address}")
+                processed_results[address] = (
+                    DEFAULT_LAT,
+                    DEFAULT_LON,
+                )  # Default coordinates
+
+        logger.info(f"Successfully batch geocoded {len(addresses)} addresses")
+        return processed_results
+    except Exception as e:
+        logger.error(f"Error batch geocoding addresses: {str(e)}")
+        # Return default coordinates for all addresses
+        return {addr: (DEFAULT_LAT, DEFAULT_LON) for addr in addresses}
+
+
 # For backward compatibility
 class GeocodingService:
     """
@@ -190,11 +196,8 @@ class GeocodingService:
         if not address:
             return None
 
-        try:
-            return asyncio.run(geocode_address(address))
-        except Exception as e:
-            logger.error(f"Error in synchronous geocoding: {str(e)}")
-            return None
+        # Use the synchronous method from OpenCage service
+        return opencage_service.get_coordinates(address)
 
     def get_default_coordinates(self) -> Tuple[float, float]:
         """

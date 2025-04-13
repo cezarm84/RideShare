@@ -41,7 +41,7 @@ class UserTravelPattern(Base):
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
-    user = relationship("app.models.user.User", back_populates="travel_patterns")
+    user = relationship("User", back_populates="travel_patterns")
 
     def __repr__(self):
         return f"<UserTravelPattern(id={self.id}, user_id={self.user_id}, day={self.day_of_week}, freq={self.frequency})>"

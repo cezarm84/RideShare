@@ -66,7 +66,7 @@ Request body (include only fields to update):
 ```json
 {
   "address": "New Address",
-  "latitude": 57.7090,
+  "latitude": 57.709,
   "longitude": 11.9747
 }
 ```
@@ -80,6 +80,7 @@ GET /api/v1/enterprises/{enterprise_id}/rides
 ```
 
 Optional query parameters:
+
 - `future_only=true` - Only show future rides
 - `limit=10` - Limit the number of results
 - `skip=0` - Skip the first N results
@@ -116,10 +117,7 @@ POST /api/v1/rides
   "recurrence_pattern": "weekdays",
   "start_date": "2025-04-15",
   "end_date": "2025-05-15",
-  "departure_times": [
-    "08:00",
-    "17:00"
-  ],
+  "departure_times": ["08:00", "17:00"],
   "vehicle_type_id": 1,
   "price_per_seat": 0,
   "available_seats": 15,
@@ -163,17 +161,29 @@ Request body:
 ```json
 {
   "email": "employee@company.com",
-  "password": "password123",
+  "password": "SecurePassword123!",
   "first_name": "John",
   "last_name": "Doe",
-  "phone_number": "1234567890",
+  "phone_number": "+46701234567",
   "user_type": "enterprise",
   "enterprise_id": 1,
   "employee_id": "EMP123",
+  "home_address": "Avenyn 1, 41136 Göteborg",
+  "work_address": "Lindholmspiren 5, 41756 Göteborg",
+  "home_street": "Avenyn",
+  "home_house_number": "1",
+  "home_post_code": "41136",
+  "home_city": "Göteborg",
+  "work_street": "Lindholmspiren",
+  "work_house_number": "5",
+  "work_post_code": "41756",
+  "work_city": "Göteborg",
   "department": "Engineering",
   "position": "Software Developer"
 }
 ```
+
+**Note:** Latitude and longitude coordinates are automatically calculated from the provided addresses using geocoding.
 
 ## Enterprise Statistics (Admin Only)
 

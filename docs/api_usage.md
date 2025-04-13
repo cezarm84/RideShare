@@ -67,13 +67,25 @@ Request body:
 ```json
 {
   "email": "new-user@example.com",
-  "password": "password123",
+  "password": "SecurePassword123!",
   "first_name": "New",
   "last_name": "User",
-  "phone_number": "1234567890",
-  "user_type": "private"
+  "phone_number": "+46701234567",
+  "user_type": "private",
+  "home_address": "Avenyn 1, 41136 Göteborg",
+  "work_address": "Lindholmspiren 5, 41756 Göteborg",
+  "home_street": "Avenyn",
+  "home_house_number": "1",
+  "home_post_code": "41136",
+  "home_city": "Göteborg",
+  "work_street": "Lindholmspiren",
+  "work_house_number": "5",
+  "work_post_code": "41756",
+  "work_city": "Göteborg"
 }
 ```
+
+**Note:** Latitude and longitude coordinates are automatically calculated from the provided addresses using geocoding.
 
 ## Ride Management
 

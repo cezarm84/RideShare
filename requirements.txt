@@ -20,6 +20,8 @@ python-dotenv==1.0.1      # Latest
 pandas==2.2.3             # Latest, supports Python 3.12
 numpy==2.0.2              # Latest, supports Python 3.12
 faker==30.1.0             # Latest
+psutil==5.9.8             # For system metrics
+alembic==1.13.1           # For database migrations
 
 # Testing
 pytest==8.3.3             # Latest
