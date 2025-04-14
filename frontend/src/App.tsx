@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -18,6 +18,8 @@ import Bookings from "./pages/RideShare/Bookings";
 import Drivers from "./pages/RideShare/Drivers";
 import Hubs from "./pages/RideShare/Hubs";
 import Enterprises from "./pages/RideShare/Enterprises";
+import FAQ from "./pages/FAQ/FAQ";
+import Contact from "./pages/Contact/Contact";
 
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
@@ -25,15 +27,21 @@ import { DocumentationPage } from "./pages/Documentation";
 // Context providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
+// Import the LoadingSpinner component
+import LoadingSpinner from "./components/common/LoadingSpinner";
+
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <LoadingSpinner fullScreen size="lg" message="Loading your profile..." />;
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/signin" />;
+  return isAuthenticated ?
+    <>{children}</> :
+    <Navigate to="/signin" state={{ from: location }} replace />;
 };
 
 // Public route with layout
@@ -41,16 +49,22 @@ const PublicLayoutRoute = ({ children }: { children: React.ReactNode }) => {
   return <AppLayout>{children}</AppLayout>;
 };
 
+// Import the ErrorBoundary component
+import ErrorBoundary from "./components/common/ErrorBoundary";
+
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ScrollToTop />
-        <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
           {/* Public Routes with App Layout */}
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
           <Route path="/rides" element={<PublicLayoutRoute><Rides /></PublicLayoutRoute>} />
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
+          <Route path="/faq" element={<PublicLayoutRoute><FAQ /></PublicLayoutRoute>} />
+          <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
 
           {/* Protected Routes with App Layout */}
           <Route path="/bookings" element={<ProtectedRoute><AppLayout><Bookings /></AppLayout></ProtectedRoute>} />
@@ -81,5 +95,6 @@ export default function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

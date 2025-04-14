@@ -31,6 +31,8 @@ import { ReactComponent as PaperPlaneIcon } from "./paper-plane.svg?react";
 import { ReactComponent as LockIcon } from "./lock.svg?react";
 import { ReactComponent as EnvelopeIcon } from "./envelope.svg?react";
 import { ReactComponent as UserIcon } from "./user-line.svg?react";
+import { ReactComponent as PhoneIcon } from "./phone.svg?react";
+import { ReactComponent as MapPinIcon } from "./map-pin.svg?react";
 import { ReactComponent as CalenderIcon } from "./calender-line.svg?react";
 import { ReactComponent as EyeIcon } from "./eye.svg?react";
 import { ReactComponent as EyeCloseIcon } from "./eye-close.svg?react";
@@ -52,6 +54,7 @@ import { ReactComponent as ChatIcon } from "./chat.svg?react";
 import { ReactComponent as MoreDotIcon } from "./moredot.svg?react";
 import { ReactComponent as AlertHexaIcon } from "./alert-hexa.svg?react";
 import { ReactComponent as ErrorHexaIcon } from "./info-hexa.svg?react";
+import { ReactComponent as QuestionIcon } from "./question.svg?react";
 
 export {
   ErrorHexaIcon,
@@ -108,4 +111,7 @@ export {
   HorizontaLDots,
   ChevronUpIcon,
   ChatIcon,
+  QuestionIcon,
+  PhoneIcon,
+  MapPinIcon,
 };

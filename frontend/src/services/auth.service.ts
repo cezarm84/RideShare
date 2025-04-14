@@ -64,6 +64,18 @@ const AuthService = {
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem('token');
   },
+
+  verifySession: async () => {
+    try {
+      // Call the auth/me endpoint to verify the token is still valid
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      // If the token is invalid, this will throw an error
+      // which will be caught by the caller
+      throw error;
+    }
+  },
 };
 
 export default AuthService;

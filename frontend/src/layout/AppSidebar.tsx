@@ -8,11 +8,13 @@ import {
   CalenderIcon,
   ChevronDownIcon,
   DocsIcon,
+  EnvelopeIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
   PageIcon,
   PieChartIcon,
+  QuestionIcon,
   TableIcon,
   UserCircleIcon,
   UserIcon,
@@ -32,6 +34,16 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Calendar",
+    path: "/calendar",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "My Profile",
+    path: "/profile",
   },
   {
     icon: <ListIcon />,
@@ -59,14 +71,14 @@ const navItems: NavItem[] = [
     path: "/enterprises",
   },
   {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    icon: <QuestionIcon />,
+    name: "FAQ",
+    path: "/faq",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "My Profile",
-    path: "/profile",
+    icon: <EnvelopeIcon />,
+    name: "Contact Us",
+    path: "/contact",
   },
 ];
 

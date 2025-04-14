@@ -29,6 +29,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('Failed to fetch user data:', err);
+        // Clear any error state
+        setError(null);
+        // Log the user out
         AuthService.logout();
       } finally {
         setLoading(false);
@@ -36,6 +39,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkAuth();
+
+    // Set up an interval to refresh the token or check session validity
+    const intervalId = setInterval(() => {
+      if (AuthService.isAuthenticated()) {
+        // Silently verify the token is still valid
+        AuthService.verifySession().catch(err => {
+          console.error('Session verification failed:', err);
+          AuthService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
+        });
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
   }, []);
 
   const login = async (email: string, password: string) => {

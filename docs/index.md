@@ -29,6 +29,8 @@ Welcome to the RideShare API documentation. This documentation provides detailed
 - [Database Migrations](database_migrations.md) - Database migration utilities
 - [Project Status](project_status.md) - Current project status
 - [Roadmap](roadmap.md) - Future development plans
+- [Frontend Components](frontend_components.md) - UI component documentation
+- [Pre-commit Setup](pre-commit-setup.md) - Development workflow setup
 
 ## Key API Endpoints
 

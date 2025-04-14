@@ -8,7 +8,9 @@ from app.api.endpoints import (
     analytics,
     auth,
     bookings,
+    contact,
     drivers,
+    faqs,
     matching,
     matching_preferences,
     messaging,
@@ -33,9 +35,11 @@ api_router.include_router(matching.router, prefix="/matching", tags=["matching"]
 
 # Vehicle Management is handled through admin/vehicle-types endpoints
 
-# Analytics and Messaging
+# Analytics, Messaging, FAQs, and Contact
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
+api_router.include_router(faqs.router, prefix="/faqs", tags=["faqs"])
+api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
 
 # Payment and Preferences
 api_router.include_router(
