@@ -21,15 +21,15 @@ describe('FAQAccordion', () => {
 
   it('expands and collapses when clicked', () => {
     render(<FAQAccordion faq={mockFAQ} />);
-    
+
     // Initially collapsed
     const content = document.getElementById(`faq-content-${mockFAQ.id}`);
     expect(content).toHaveClass('max-h-0');
-    
+
     // Click to expand
     fireEvent.click(screen.getByText('Test Question'));
     expect(content).toHaveClass('max-h-96');
-    
+
     // Click again to collapse
     fireEvent.click(screen.getByText('Test Question'));
     expect(content).toHaveClass('max-h-0');
@@ -37,17 +37,17 @@ describe('FAQAccordion', () => {
 
   it('can be initially expanded', () => {
     render(<FAQAccordion faq={mockFAQ} initiallyExpanded={true} />);
-    
+
     const content = document.getElementById(`faq-content-${mockFAQ.id}`);
     expect(content).toHaveClass('max-h-96');
   });
 
   it('renders the answer as HTML', () => {
     render(<FAQAccordion faq={mockFAQ} initiallyExpanded={true} />);
-    
+
     // Click to expand
     fireEvent.click(screen.getByText('Test Question'));
-    
+
     // Check that the HTML content is rendered
     const answerContainer = document.querySelector(`#faq-content-${mockFAQ.id} > div`);
     expect(answerContainer?.innerHTML).toContain('<p>Test Answer</p>');

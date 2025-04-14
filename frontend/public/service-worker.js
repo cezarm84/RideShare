@@ -38,7 +38,7 @@ self.addEventListener('activate', (event) => {
 // Fetch event - network first, then cache
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests and browser extensions
-  if (event.request.method !== 'GET' || 
+  if (event.request.method !== 'GET' ||
       !event.request.url.startsWith('http')) {
     return;
   }
@@ -50,7 +50,7 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Clone the response to store in cache
           const responseToCache = response.clone();
-          
+
           // Only cache successful responses
           if (response.status === 200) {
             caches.open(CACHE_NAME)
@@ -58,7 +58,7 @@ self.addEventListener('fetch', (event) => {
                 cache.put(event.request, responseToCache);
               });
           }
-          
+
           return response;
         })
         .catch(() => {
@@ -66,7 +66,7 @@ self.addEventListener('fetch', (event) => {
           return caches.match(event.request);
         })
     );
-  } 
+  }
   // For static assets, use cache first strategy
   else {
     event.respondWith(
@@ -76,12 +76,12 @@ self.addEventListener('fetch', (event) => {
           if (response) {
             return response;
           }
-          
+
           // Otherwise fetch from network
           return fetch(event.request).then((response) => {
             // Clone the response to store in cache
             const responseToCache = response.clone();
-            
+
             // Only cache successful responses
             if (response.status === 200) {
               caches.open(CACHE_NAME)
@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
                   cache.put(event.request, responseToCache);
                 });
             }
-            
+
             return response;
           });
         })

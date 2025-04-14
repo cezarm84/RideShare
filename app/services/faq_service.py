@@ -5,11 +5,17 @@ from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 from fastapi import HTTPException, status
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
 from app.models.faq import FAQ, FAQCategory
-from app.schemas.faq import FAQCreate, FAQListResponse, FAQUpdate, FAQCategoryCreate, FAQCategoryUpdate
+from app.schemas.faq import (
+    FAQCategoryCreate,
+    FAQCategoryUpdate,
+    FAQCreate,
+    FAQListResponse,
+    FAQUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +53,16 @@ class FAQService:
     ) -> List[FAQCategory]:
         """Get all FAQ categories."""
         query = self.db.query(FAQCategory)
-        
+
         if not include_inactive:
             query = query.filter(FAQCategory.is_active == True)
-            
-        return query.order_by(asc(FAQCategory.display_order)).offset(skip).limit(limit).all()
+
+        return (
+            query.order_by(asc(FAQCategory.display_order))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def update_category(
         self, category_id: int, obj_in: Union[FAQCategoryUpdate, Dict]
@@ -62,13 +73,17 @@ class FAQService:
             return None
 
         # Convert to dict if it's not already
-        update_data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump(exclude_unset=True)
-        
+        update_data = (
+            obj_in
+            if isinstance(obj_in, dict)
+            else obj_in.model_dump(exclude_unset=True)
+        )
+
         # Update the category
         for field, value in update_data.items():
             if hasattr(db_obj, field) and value is not None:
                 setattr(db_obj, field, value)
-        
+
         db_obj.updated_at = datetime.utcnow()
         self.db.add(db_obj)
         self.db.commit()
@@ -80,7 +95,7 @@ class FAQService:
         db_obj = self.get_category(category_id)
         if not db_obj:
             return False
-        
+
         self.db.delete(db_obj)
         self.db.commit()
         return True
@@ -96,7 +111,7 @@ class FAQService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"FAQ category with ID {obj_in.category_id} not found",
                 )
-        
+
         db_obj = FAQ(
             question=obj_in.question,
             answer=obj_in.answer,
@@ -116,17 +131,21 @@ class FAQService:
         return self.db.query(FAQ).filter(FAQ.id == faq_id).first()
 
     def get_faqs(
-        self, skip: int = 0, limit: int = 100, include_inactive: bool = False, category_id: Optional[int] = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        include_inactive: bool = False,
+        category_id: Optional[int] = None,
     ) -> List[FAQ]:
         """Get all FAQs, optionally filtered by category."""
         query = self.db.query(FAQ)
-        
+
         if not include_inactive:
             query = query.filter(FAQ.is_active == True)
-            
+
         if category_id is not None:
             query = query.filter(FAQ.category_id == category_id)
-            
+
         return query.order_by(asc(FAQ.display_order)).offset(skip).limit(limit).all()
 
     def update_faq(self, faq_id: int, obj_in: Union[FAQUpdate, Dict]) -> Optional[FAQ]:
@@ -136,8 +155,12 @@ class FAQService:
             return None
 
         # Convert to dict if it's not already
-        update_data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump(exclude_unset=True)
-        
+        update_data = (
+            obj_in
+            if isinstance(obj_in, dict)
+            else obj_in.model_dump(exclude_unset=True)
+        )
+
         # Verify category exists if provided
         if "category_id" in update_data and update_data["category_id"] is not None:
             category = self.get_category(update_data["category_id"])
@@ -146,12 +169,12 @@ class FAQService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"FAQ category with ID {update_data['category_id']} not found",
                 )
-        
+
         # Update the FAQ
         for field, value in update_data.items():
             if hasattr(db_obj, field) and value is not None:
                 setattr(db_obj, field, value)
-        
+
         db_obj.updated_at = datetime.utcnow()
         self.db.add(db_obj)
         self.db.commit()
@@ -163,7 +186,7 @@ class FAQService:
         db_obj = self.get_faq(faq_id)
         if not db_obj:
             return False
-        
+
         self.db.delete(db_obj)
         self.db.commit()
         return True
@@ -175,7 +198,7 @@ class FAQService:
             self.db.query(FAQ)
             .filter(
                 FAQ.is_active == True,
-                (FAQ.question.ilike(search_term) | FAQ.answer.ilike(search_term))
+                (FAQ.question.ilike(search_term) | FAQ.answer.ilike(search_term)),
             )
             .order_by(asc(FAQ.display_order))
             .limit(limit)
@@ -191,7 +214,7 @@ class FAQService:
             .order_by(asc(FAQCategory.display_order))
             .all()
         )
-        
+
         # Get uncategorized FAQs
         uncategorized = (
             self.db.query(FAQ)
@@ -199,7 +222,7 @@ class FAQService:
             .order_by(asc(FAQ.display_order))
             .all()
         )
-        
+
         return FAQListResponse(
             categories=[
                 {

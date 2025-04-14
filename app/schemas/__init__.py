@@ -1,8 +1,6 @@
 # Import all schema models here for easy access with consistent naming
 
 # Token schemas
-from .token import Token, TokenPayload
-
 # User schemas
 # Booking schemas
 from .booking import (
@@ -46,6 +44,7 @@ from .ride import (
     RideResponse,
     RideUpdate,
 )
+from .token import Token, TokenPayload
 from .user import (
     EnterpriseCreate,
     EnterpriseResponse,

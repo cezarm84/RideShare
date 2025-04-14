@@ -1,6 +1,6 @@
 /**
  * Contact Service - Provides methods for interacting with the Contact API
- * 
+ *
  * This service handles submitting contact form data to the backend API
  * and retrieving contact messages for authenticated users.
  */
@@ -60,12 +60,12 @@ export const submitContactMessage = async (message: ContactMessage): Promise<Con
       },
       body: JSON.stringify(message)
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Error submitting contact message: ${response.statusText}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error submitting contact message:', error);
@@ -85,18 +85,18 @@ export const getMyContactMessages = async (skip: number = 0, limit: number = 10)
     if (!token) {
       throw new Error('Authentication required');
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/contact/me?skip=${skip}&limit=${limit}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Error fetching contact messages: ${response.statusText}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error fetching contact messages:', error);

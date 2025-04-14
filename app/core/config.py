@@ -99,7 +99,11 @@ class Settings(BaseSettings):
 
     # Contact form settings
     CONTACT_NOTIFICATION_EMAIL: str = os.getenv("CONTACT_NOTIFICATION_EMAIL", "")
-    RECAPTCHA_ENABLED: bool = os.getenv("RECAPTCHA_ENABLED", "False").lower() in ("true", "1", "t")
+    RECAPTCHA_ENABLED: bool = os.getenv("RECAPTCHA_ENABLED", "False").lower() in (
+        "true",
+        "1",
+        "t",
+    )
     RECAPTCHA_SITE_KEY: str = os.getenv("RECAPTCHA_SITE_KEY", "")
     RECAPTCHA_SECRET_KEY: str = os.getenv("RECAPTCHA_SECRET_KEY", "")
 

@@ -55,13 +55,13 @@ The `ProtectedRoute` component is used to protect routes that require authentica
 
 **Usage:**
 ```tsx
-<Route 
-  path="/profile" 
+<Route
+  path="/profile"
   element={
     <ProtectedRoute>
       <UserProfile />
     </ProtectedRoute>
-  } 
+  }
 />
 ```
 

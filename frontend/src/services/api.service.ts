@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-    
+
     // Handle 401 Unauthorized errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
       // If we have a refresh token mechanism, we could implement it here
@@ -38,18 +38,18 @@ apiClient.interceptors.response.use(
       window.location.href = '/signin';
       return Promise.reject(error);
     }
-    
+
     // Handle network errors with retry logic
     if (error.message === 'Network Error' && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       // Wait 1 second before retrying
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Retry the request
       return apiClient(originalRequest);
     }
-    
+
     // Handle other errors
     return Promise.reject(error);
   }
@@ -57,18 +57,18 @@ apiClient.interceptors.response.use(
 
 // API service with typed methods
 const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
+  get: <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
     apiClient.get<T>(url, config),
-    
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
+
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
     apiClient.post<T>(url, data, config),
-    
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
+
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
     apiClient.put<T>(url, data, config),
-    
-  delete: <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
+
+  delete: <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
     apiClient.delete<T>(url, config),
-    
+
   // Helper method to handle errors consistently
   handleError: (error: any): never => {
     if (axios.isAxiosError(error)) {

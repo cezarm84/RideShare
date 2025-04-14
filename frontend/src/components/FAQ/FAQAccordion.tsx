@@ -1,6 +1,6 @@
 /**
  * FAQAccordion Component
- * 
+ *
  * A reusable accordion component for displaying FAQ items.
  * Each FAQ item can be expanded/collapsed to show/hide the answer.
  */
@@ -13,12 +13,12 @@ interface FAQAccordionProps {
    * The FAQ item to display
    */
   faq: FAQ;
-  
+
   /**
    * Optional CSS class name for additional styling
    */
   className?: string;
-  
+
   /**
    * Whether the accordion should be initially expanded
    * @default false
@@ -29,23 +29,23 @@ interface FAQAccordionProps {
 /**
  * FAQAccordion component displays a single FAQ item in an expandable accordion
  */
-const FAQAccordion: React.FC<FAQAccordionProps> = ({ 
-  faq, 
-  className = '', 
-  initiallyExpanded = false 
+const FAQAccordion: React.FC<FAQAccordionProps> = ({
+  faq,
+  className = '',
+  initiallyExpanded = false
 }) => {
   // State to track whether the accordion is expanded
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
-  
+
   /**
    * Toggle the expanded state of the accordion
    */
   const toggleAccordion = () => {
     setIsExpanded(!isExpanded);
   };
-  
+
   return (
-    <div 
+    <div
       className={`border border-gray-200 dark:border-gray-700 rounded-lg mb-4 overflow-hidden ${className}`}
       data-testid="faq-accordion"
     >
@@ -71,13 +71,13 @@ const FAQAccordion: React.FC<FAQAccordionProps> = ({
           )}
         </span>
       </button>
-      
+
       {/* FAQ Answer (Content) */}
-      <div 
+      <div
         id={`faq-content-${faq.id}`}
         className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96' : 'max-h-0'}`}
       >
-        <div 
+        <div
           className="p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
           dangerouslySetInnerHTML={{ __html: faq.answer }}
         />

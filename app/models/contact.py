@@ -1,7 +1,6 @@
 """Contact message models for the application."""
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text, func
-from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
 
@@ -40,17 +39,11 @@ class ContactMessage(Base):
     phone = Column(String, nullable=True)
     subject = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    category = Column(
-        String,
-        default=ContactCategory.GENERAL,
-        nullable=False
-    )
-    status = Column(
-        String,
-        default=ContactStatus.NEW,
-        nullable=False
-    )
-    user_id = Column(Integer, nullable=True, index=True)  # Optional link to user if logged in
+    category = Column(String, default=ContactCategory.GENERAL, nullable=False)
+    status = Column(String, default=ContactStatus.NEW, nullable=False)
+    user_id = Column(
+        Integer, nullable=True, index=True
+    )  # Optional link to user if logged in
     admin_notes = Column(Text, nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())

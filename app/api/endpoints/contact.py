@@ -3,7 +3,15 @@
 import logging
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Query, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_admin_user, get_current_user, get_db, get_optional_user
@@ -42,12 +50,18 @@ async def send_notification_email(db: Session, message_id: int, admin_email: str
         )
 
         # Log the notification
-        logger.info(f"Notification sent to {admin_email} about contact message {message_id}")
+        logger.info(
+            f"Notification sent to {admin_email} about contact message {message_id}"
+        )
     except Exception as e:
-        logger.error(f"Error sending notification for contact message {message_id}: {str(e)}")
+        logger.error(
+            f"Error sending notification for contact message {message_id}: {str(e)}"
+        )
 
 
-@router.post("", response_model=ContactMessagePublicResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=ContactMessagePublicResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_contact_message(
     message_in: ContactMessageCreate,
     background_tasks: BackgroundTasks,
@@ -111,7 +125,9 @@ async def get_my_contact_messages(
             return contact_service.get_messages(skip=skip, limit=limit)
 
         # Otherwise, get only messages for this user's email
-        return contact_service.get_messages_by_email(current_user.email, skip=skip, limit=limit)
+        return contact_service.get_messages_by_email(
+            current_user.email, skip=skip, limit=limit
+        )
     except Exception as e:
         logger.error(f"Error getting contact messages: {str(e)}")
         raise HTTPException(
@@ -138,11 +154,7 @@ async def get_contact_messages(
     try:
         contact_service = ContactService(db)
         return contact_service.get_messages(
-            skip=skip,
-            limit=limit,
-            status=status,
-            category=category,
-            is_read=is_read
+            skip=skip, limit=limit, status=status, category=category, is_read=is_read
         )
     except Exception as e:
         logger.error(f"Error getting contact messages: {str(e)}")

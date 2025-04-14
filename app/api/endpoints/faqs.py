@@ -1,12 +1,12 @@
 """API endpoints for FAQs."""
 
 import logging
-from typing import Any, List, Optional
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_admin_user, get_current_user, get_db, get_optional_user
+from app.api.deps import get_admin_user, get_db
 from app.models.user import User
 from app.schemas.faq import (
     FAQCategoryCreate,
@@ -186,7 +186,11 @@ async def get_faq(
 
 
 # Admin endpoints (require admin authentication)
-@router.post("/categories", response_model=FAQCategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/categories",
+    response_model=FAQCategoryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_faq_category(
     category_in: FAQCategoryCreate,
     db: Session = Depends(get_db),

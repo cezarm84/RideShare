@@ -36,7 +36,7 @@ class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
           <div className="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800 max-w-md">

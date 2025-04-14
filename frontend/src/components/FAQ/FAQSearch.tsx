@@ -1,6 +1,6 @@
 /**
  * FAQSearch Component
- * 
+ *
  * A search input component for filtering FAQs.
  */
 
@@ -13,7 +13,7 @@ interface FAQSearchProps {
    * Callback function that receives the search results
    */
   onSearchResults: (results: FAQ[]) => void;
-  
+
   /**
    * Optional CSS class name for additional styling
    */
@@ -28,7 +28,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
   const [query, setQuery] = useState('');
   // State for loading indicator
   const [isLoading, setIsLoading] = useState(false);
-  
+
   /**
    * Debounced search function to avoid too many API calls
    */
@@ -40,7 +40,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
         setIsLoading(false);
         return;
       }
-      
+
       try {
         const results = await searchFAQs(searchQuery);
         onSearchResults(results);
@@ -53,7 +53,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
     }, 500),
     [onSearchResults]
   );
-  
+
   /**
    * Effect to trigger search when query changes
    */
@@ -64,20 +64,20 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
     } else if (query.trim().length === 0) {
       onSearchResults([]);
     }
-    
+
     // Cleanup function to cancel debounced search on unmount
     return () => {
       debouncedSearch.cancel();
     };
   }, [query, debouncedSearch, onSearchResults]);
-  
+
   /**
    * Handle input change
    */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
   };
-  
+
   /**
    * Handle form submission
    */
@@ -89,7 +89,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
       debouncedSearch(query);
     }
   };
-  
+
   return (
     <div className={`mb-8 ${className}`} data-testid="faq-search">
       <form onSubmit={handleSubmit} className="relative">
@@ -100,7 +100,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </div>
-          
+
           {/* Search input */}
           <input
             type="text"
@@ -112,7 +112,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
             onChange={handleInputChange}
             aria-label="Search FAQs"
           />
-          
+
           {/* Loading indicator or clear button */}
           {query.length > 0 && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -136,7 +136,7 @@ const FAQSearch: React.FC<FAQSearchProps> = ({ onSearchResults, className = '' }
             </div>
           )}
         </div>
-        
+
         {/* Search instructions */}
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
           Type at least 2 characters to search. Search for keywords like "booking", "payment", "driver", etc.

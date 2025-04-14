@@ -1,6 +1,6 @@
 /**
  * FAQCategory Component
- * 
+ *
  * Displays a category of FAQs with a title and a list of FAQ accordions.
  */
 
@@ -13,7 +13,7 @@ interface FAQCategoryProps {
    * The FAQ category to display
    */
   category: FAQCategoryType;
-  
+
   /**
    * Optional CSS class name for additional styling
    */
@@ -28,7 +28,7 @@ const FAQCategory: React.FC<FAQCategoryProps> = ({ category, className = '' }) =
   if (!category.faqs || category.faqs.length === 0) {
     return null;
   }
-  
+
   return (
     <div className={`mb-8 ${className}`} data-testid="faq-category">
       {/* Category Header */}
@@ -44,7 +44,7 @@ const FAQCategory: React.FC<FAQCategoryProps> = ({ category, className = '' }) =
             {category.name}
           </h2>
         </div>
-        
+
         {/* Display category description if available */}
         {category.description && (
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -52,7 +52,7 @@ const FAQCategory: React.FC<FAQCategoryProps> = ({ category, className = '' }) =
           </p>
         )}
       </div>
-      
+
       {/* List of FAQs in this category */}
       <div className="space-y-4">
         {category.faqs.map((faq) => (
