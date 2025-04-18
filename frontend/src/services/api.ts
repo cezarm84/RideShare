@@ -6,6 +6,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include credentials in requests
 });
 
 // Add request interceptor for authentication
@@ -15,6 +16,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Making API Request:', config.method?.toUpperCase(), config.url);
+    console.log('Request Options:', {
+      method: config.method,
+      headers: config.headers,
+    });
     return config;
   },
   (error) => Promise.reject(error)
@@ -22,8 +28,13 @@ api.interceptors.request.use(
 
 // Add response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Request:', response.config.method?.toUpperCase(), response.config.url);
+    console.log('Response Status:', response.status);
+    return response;
+  },
   (error) => {
+    console.error('API Request Failed:', error);
     // Handle 401 Unauthorized errors (token expired)
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');

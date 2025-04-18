@@ -30,22 +30,31 @@ export interface UserProfile {
 
 const AuthService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    console.log('Login attempt with:', credentials.username);
+
     const formData = new FormData();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
-    const response = await api.post<AuthResponse>('/auth/token', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    try {
+      const response = await api.post<AuthResponse>('/auth/token', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
 
-    // Store token in localStorage
-    if (response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
+      console.log('Login successful, token received:', !!response.data.access_token);
+
+      // Store token in localStorage
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
     }
-
-    return response.data;
   },
 
   register: async (data: RegisterData) => {
@@ -57,8 +66,15 @@ const AuthService = {
   },
 
   getCurrentUser: async (): Promise<UserProfile> => {
-    const response = await api.get<UserProfile>('/users/me');
-    return response.data;
+    console.log('Fetching current user data');
+    try {
+      const response = await api.get<UserProfile>('/users/me');
+      console.log('User data received:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      throw error;
+    }
   },
 
   isAuthenticated: (): boolean => {
