@@ -10,24 +10,12 @@ dns.setDefaultResultOrder('verbatim');
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    // Configure HMR with explicit settings
-    hmr: {
-      clientPort: 5173,
-      port: 5173,
-      protocol: 'ws',
-      host: 'localhost',
-      overlay: false, // Disable the error overlay
-    },
+    // Completely disable HMR to avoid WebSocket issues
+    hmr: false,
     // Enable CORS for direct API requests
-    cors: {
-      origin: ['http://localhost:5173', 'http://localhost:8000'],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      credentials: true,
-    },
+    cors: true,
     // Prevent port conflicts
     strictPort: false,
-    // Listen on all addresses
-    host: true,
   },
   plugins: [
     react(),
