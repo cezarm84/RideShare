@@ -39,20 +39,31 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
     setIsLoading(true);
 
     // Handle different property naming conventions and ensure properties exist
-    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name;
-    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name;
+    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name || 'Unknown';
+    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name || 'Unknown';
 
-    // If either hub name is missing, don't proceed
-    if (!startingHubName || !destinationHubName) {
+    // Log the hub names for debugging
+    console.log(`Rendering map for ride: ${startingHubName} → ${destinationHubName}`);
+
+    // If either hub name is missing or Unknown, don't proceed with map rendering
+    if (startingHubName === 'Unknown' && destinationHubName === 'Unknown') {
+      console.warn('Both starting and destination hubs are unknown. Skipping map rendering.');
       setIsLoading(false);
       return;
     }
 
     // Get coordinates for the starting hub and destination hub
-    const startLat = getCoordinates(startingHubName).lat;
-    const startLng = getCoordinates(startingHubName).lng;
-    const destLat = getCoordinates(destinationHubName).lat;
-    const destLng = getCoordinates(destinationHubName).lng;
+    const startCoords = getCoordinates(startingHubName);
+    const destCoords = getCoordinates(destinationHubName);
+
+    const startLat = startCoords.lat;
+    const startLng = startCoords.lng;
+    const destLat = destCoords.lat;
+    const destLng = destCoords.lng;
+
+    // Log the coordinates for debugging
+    console.log(`Start coordinates: ${startLat}, ${startLng}`);
+    console.log(`Destination coordinates: ${destLat}, ${destLng}`);
 
     // Calculate center point and appropriate zoom level
     const centerLat = (startLat + destLat) / 2;
@@ -215,8 +226,15 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
       'Volvo Group Lundby': { lat: 57.715130, lng: 11.935290 },
       'AstraZeneca Mölndal': { lat: 57.660800, lng: 12.011580 },
       'Ericsson Lindholmen': { lat: 57.706130, lng: 11.938290 },
-      'SKF Gamlestaden': { lat: 57.728870, lng: 12.014560 }
+      'SKF Gamlestaden': { lat: 57.728870, lng: 12.014560 },
+      // Add more locations as needed
+      'Unknown': { lat: 57.708870, lng: 11.974560 } // Default for unknown locations
     };
+
+    // Log if we're missing a location
+    if (!coordinates[locationName]) {
+      console.warn(`Missing coordinates for location: ${locationName}. Using default.`);
+    }
 
     return coordinates[locationName] || { lat: 57.708870, lng: 11.974560 }; // Default to Central Station
   };
@@ -226,11 +244,11 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
     if (!selectedRide) return { distance: '0.0', time: 0 };
 
     // Handle different property naming conventions and ensure properties exist
-    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name;
-    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name;
+    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name || 'Unknown';
+    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name || 'Unknown';
 
-    // If either hub name is missing, return default values
-    if (!startingHubName || !destinationHubName) {
+    // If both hub names are unknown, return default values
+    if (startingHubName === 'Unknown' && destinationHubName === 'Unknown') {
       return { distance: '0.0', time: 0 };
     }
 

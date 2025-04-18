@@ -198,7 +198,17 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
             </div>
 
             <div className="md:col-span-1 h-full">
-              <RideDetailsMap selectedRide={ride} />
+              {/* Only render map if we have valid hub names */}
+              {((ride.startingHub?.name || ride.starting_hub?.name) &&
+                (ride.destinationHub?.name || ride.destination_hub?.name)) ? (
+                <RideDetailsMap selectedRide={ride} />
+              ) : (
+                <div className="h-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex flex-col">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <p className="text-gray-500 dark:text-gray-400">Route information not available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
