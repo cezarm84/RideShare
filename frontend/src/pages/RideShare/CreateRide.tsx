@@ -43,6 +43,12 @@ interface Hub {
   address: string;
 }
 
+interface Location extends Hub {
+  uniqueId: string;
+  originalId: number;
+  type: 'hub' | 'destination';
+}
+
 interface VehicleType {
   id: number;
   name: string;
@@ -60,7 +66,7 @@ const CreateRide = () => {
   const [error, setError] = useState<string | null>(null);
   const [hubs, setHubs] = useState<Hub[]>([]);
   const [destinations, setDestinations] = useState<Hub[]>([]);
-  const [allLocations, setAllLocations] = useState<Hub[]>([]);
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
 
@@ -79,10 +85,24 @@ const CreateRide = () => {
         if (data.vehicle_types) setVehicleTypes(data.vehicle_types);
         if (data.enterprises) setEnterprises(data.enterprises);
 
-        // Create a combined array of all locations (hubs + destinations)
+        // Create a combined array of all locations (hubs + destinations) with unique keys
+        const hubsWithPrefix = (data.hubs || []).map(hub => ({
+          ...hub,
+          uniqueId: `hub_${hub.id}`,
+          originalId: hub.id,
+          type: 'hub'
+        }));
+
+        const destinationsWithPrefix = (data.destinations || []).map(dest => ({
+          ...dest,
+          uniqueId: `dest_${dest.id}`,
+          originalId: dest.id,
+          type: 'destination'
+        }));
+
         const allLocations = [
-          ...(data.hubs || []),
-          ...(data.destinations || [])
+          ...hubsWithPrefix,
+          ...destinationsWithPrefix
         ];
         setAllLocations(allLocations);
 
@@ -227,8 +247,8 @@ const CreateRide = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {allLocations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
+                        <SelectItem key={location.uniqueId} value={location.originalId.toString()}>
+                          {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -255,8 +275,8 @@ const CreateRide = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {allLocations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
+                        <SelectItem key={location.uniqueId} value={location.originalId.toString()}>
+                          {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
