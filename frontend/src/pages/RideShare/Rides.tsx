@@ -136,7 +136,7 @@ const Rides = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Rides</h1>
         {/* Only show Create Ride button for admin users */}
-        {user && user.is_superuser && (
+        {user && (user.is_admin || user.is_superadmin) && (
           <Button onClick={handleCreateRide} className="bg-brand-500 hover:bg-brand-600">
             Create New Ride
           </Button>

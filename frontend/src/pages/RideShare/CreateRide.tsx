@@ -58,6 +58,8 @@ const CreateRide = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hubs, setHubs] = useState<Hub[]>([]);
+  const [destinations, setDestinations] = useState<Hub[]>([]);
+  const [allLocations, setAllLocations] = useState<Hub[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
 
@@ -72,26 +74,52 @@ const CreateRide = () => {
 
         // Update state with fetched data
         if (data.hubs) setHubs(data.hubs);
+        if (data.destinations) setDestinations(data.destinations);
         if (data.vehicle_types) setVehicleTypes(data.vehicle_types);
         if (data.enterprises) setEnterprises(data.enterprises);
+
+        // Create a combined array of all locations (hubs + destinations)
+        const allLocations = [
+          ...(data.hubs || []),
+          ...(data.destinations || [])
+        ];
+        setAllLocations(allLocations);
 
         setError(null);
       } catch (err) {
         console.error('Error fetching reference data:', err);
         setError('Failed to load reference data. Using default values.');
-        // Use default data if API fails
-        setHubs([
-          { id: 1, name: 'Central Station', address: 'Drottningtorget 5, 411 03 Göteborg' },
-          { id: 2, name: 'Lindholmen', address: 'Lindholmspiren 7, 417 56 Göteborg' },
-          { id: 3, name: 'Mölndal', address: 'Göteborgsvägen 97, 431 30 Mölndal' },
-          { id: 4, name: 'Landvetter Airport', address: 'Flygplatsvägen 90, 438 80 Landvetter' },
-        ]);
+        // Use default data if API fails - with 8 hubs and 5 destinations (total 13)
+        const defaultHubs = [
+          { id: 1, name: 'Brunnsparken Hub', address: 'Brunnsparken, 411 03 Göteborg', city: 'Göteborg' },
+          { id: 2, name: 'Lindholmen Hub', address: 'Lindholmspiren 5, 417 56 Göteborg', city: 'Göteborg' },
+          { id: 3, name: 'Mölndal Hub', address: 'Göteborgsvägen 97, 431 30 Mölndal', city: 'Mölndal' },
+          { id: 4, name: 'Landvetter Hub', address: 'Flygplatsvägen 90, 438 80 Landvetter', city: 'Landvetter' },
+          { id: 5, name: 'Partille Hub', address: 'Partille Centrum, 433 38 Partille', city: 'Partille' },
+          { id: 6, name: 'Kungsbacka Hub', address: 'Kungsbacka Station, 434 30 Kungsbacka', city: 'Kungsbacka' },
+          { id: 7, name: 'Lerum Hub', address: 'Lerum Station, 443 30 Lerum', city: 'Lerum' },
+          { id: 8, name: 'Kungälv Hub', address: 'Kungälv Resecentrum, 442 30 Kungälv', city: 'Kungälv' },
+        ];
+
+        const defaultDestinations = [
+          { id: 101, name: 'Volvo Cars Torslanda', address: 'Torslandavägen 1, 405 31 Göteborg', city: 'Göteborg' },
+          { id: 102, name: 'Volvo Group Lundby', address: 'Gropegårdsgatan 2, 417 15 Göteborg', city: 'Göteborg' },
+          { id: 103, name: 'AstraZeneca Mölndal', address: 'Pepparedsleden 1, 431 83 Mölndal', city: 'Mölndal' },
+          { id: 104, name: 'Ericsson Lindholmen', address: 'Lindholmspiren 11, 417 56 Göteborg', city: 'Göteborg' },
+          { id: 105, name: 'SKF Gamlestaden', address: 'Hornsgatan 1, 415 50 Göteborg', city: 'Göteborg' },
+        ];
+
+        setHubs(defaultHubs);
+        setDestinations(defaultDestinations);
+        setAllLocations([...defaultHubs, ...defaultDestinations]);
+
         setVehicleTypes([
           { id: 1, name: 'Sedan', capacity: 4 },
           { id: 2, name: 'SUV', capacity: 5 },
           { id: 3, name: 'Minivan', capacity: 7 },
           { id: 4, name: 'Bus', capacity: 15 },
         ]);
+
         setEnterprises([
           { id: 1, name: 'Volvo' },
           { id: 2, name: 'Ericsson' },
@@ -233,9 +261,9 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select starting hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {hubs.map((hub) => (
-                        <SelectItem key={hub.id} value={hub.id.toString()}>
-                          {hub.name}
+                      {allLocations.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -261,9 +289,9 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select destination hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {hubs.map((hub) => (
-                        <SelectItem key={hub.id} value={hub.id.toString()}>
-                          {hub.name}
+                      {allLocations.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

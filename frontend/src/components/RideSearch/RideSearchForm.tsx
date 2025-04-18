@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { apiClient } from '@/services/apiClient';
+import RideService from '@/services/ride.service';
 import { DatePickerWithPreview } from '@/components/ui/date-picker-with-preview';
 
 // Define the form schema with Zod
@@ -49,39 +49,54 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
   });
 
   useEffect(() => {
-    // Use hardcoded hub data that matches the database
-    // In a real implementation, this would fetch from the API
-    const hubData = [
-      { id: 1, name: 'Brunnsparken Hub', address: 'Brunnsparken, 411 03 Göteborg', city: 'Göteborg' },
-      { id: 2, name: 'Lindholmen Hub', address: 'Lindholmspiren 5, 417 56 Göteborg', city: 'Göteborg' },
-      { id: 3, name: 'Mölndal Hub', address: 'Göteborgsvägen 97, 431 30 Mölndal', city: 'Mölndal' },
-      { id: 4, name: 'Landvetter Hub', address: 'Flygplatsvägen 90, 438 80 Landvetter', city: 'Landvetter' },
-      { id: 5, name: 'Partille Hub', address: 'Partille Centrum, 433 38 Partille', city: 'Partille' },
-      { id: 6, name: 'Kungsbacka Hub', address: 'Kungsbacka Station, 434 30 Kungsbacka', city: 'Kungsbacka' },
-      { id: 7, name: 'Lerum Hub', address: 'Lerum Station, 443 30 Lerum', city: 'Lerum' },
-      { id: 8, name: 'Kungälv Hub', address: 'Kungälv Resecentrum, 442 30 Kungälv', city: 'Kungälv' },
-    ];
+    const fetchReferenceData = async () => {
+      try {
+        setLoading(true);
+        // Fetch reference data from the API
+        const data = await RideService.getRideReferenceData();
+        console.log('Reference data for search form:', data);
 
-    // Set up destinations that match the database
-    // Using IDs starting from 101 to avoid conflicts with hub IDs
-    const destinationData = [
-      { id: 101, name: 'Volvo Cars Torslanda', address: 'Torslandavägen 1, 405 31 Göteborg', city: 'Göteborg' },
-      { id: 102, name: 'Volvo Group Lundby', address: 'Gropegårdsgatan 2, 417 15 Göteborg', city: 'Göteborg' },
-      { id: 103, name: 'AstraZeneca Mölndal', address: 'Pepparedsleden 1, 431 83 Mölndal', city: 'Mölndal' },
-      { id: 104, name: 'Ericsson Lindholmen', address: 'Lindholmspiren 11, 417 56 Göteborg', city: 'Göteborg' },
-      { id: 105, name: 'SKF Gamlestaden', address: 'Hornsgatan 1, 415 50 Göteborg', city: 'Göteborg' },
-    ];
+        // Update state with fetched data
+        if (data.hubs) setHubs(data.hubs);
+        if (data.destinations) setDestinations(data.destinations);
 
-    // Create a combined array of all locations (hubs + destinations)
-    const allLocations = [
-      ...hubData,
-      ...destinationData
-    ];
+        // Create a combined array of all locations (hubs + destinations)
+        const allLocations = [
+          ...(data.hubs || []),
+          ...(data.destinations || [])
+        ];
+        setAllLocations(allLocations);
+      } catch (err) {
+        console.error('Error fetching reference data:', err);
+        // Use default data if API fails - with 8 hubs and 5 destinations (total 13)
+        const defaultHubs = [
+          { id: 1, name: 'Brunnsparken Hub', address: 'Brunnsparken, 411 03 Göteborg', city: 'Göteborg' },
+          { id: 2, name: 'Lindholmen Hub', address: 'Lindholmspiren 5, 417 56 Göteborg', city: 'Göteborg' },
+          { id: 3, name: 'Mölndal Hub', address: 'Göteborgsvägen 97, 431 30 Mölndal', city: 'Mölndal' },
+          { id: 4, name: 'Landvetter Hub', address: 'Flygplatsvägen 90, 438 80 Landvetter', city: 'Landvetter' },
+          { id: 5, name: 'Partille Hub', address: 'Partille Centrum, 433 38 Partille', city: 'Partille' },
+          { id: 6, name: 'Kungsbacka Hub', address: 'Kungsbacka Station, 434 30 Kungsbacka', city: 'Kungsbacka' },
+          { id: 7, name: 'Lerum Hub', address: 'Lerum Station, 443 30 Lerum', city: 'Lerum' },
+          { id: 8, name: 'Kungälv Hub', address: 'Kungälv Resecentrum, 442 30 Kungälv', city: 'Kungälv' },
+        ];
 
-    setHubs(hubData);
-    setDestinations(destinationData);
-    setAllLocations(allLocations);
-    setLoading(false);
+        const defaultDestinations = [
+          { id: 101, name: 'Volvo Cars Torslanda', address: 'Torslandavägen 1, 405 31 Göteborg', city: 'Göteborg' },
+          { id: 102, name: 'Volvo Group Lundby', address: 'Gropegårdsgatan 2, 417 15 Göteborg', city: 'Göteborg' },
+          { id: 103, name: 'AstraZeneca Mölndal', address: 'Pepparedsleden 1, 431 83 Mölndal', city: 'Mölndal' },
+          { id: 104, name: 'Ericsson Lindholmen', address: 'Lindholmspiren 11, 417 56 Göteborg', city: 'Göteborg' },
+          { id: 105, name: 'SKF Gamlestaden', address: 'Hornsgatan 1, 415 50 Göteborg', city: 'Göteborg' },
+        ];
+
+        setHubs(defaultHubs);
+        setDestinations(defaultDestinations);
+        setAllLocations([...defaultHubs, ...defaultDestinations]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReferenceData();
   }, []);
 
   const handleFormSubmit = (data: SearchFormValues) => {

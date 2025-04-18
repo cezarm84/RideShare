@@ -74,12 +74,40 @@ const AuthService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch user data:', error);
+      // Clear the token if we get an error
+      localStorage.removeItem('token');
       throw error;
     }
   },
 
   isAuthenticated: (): boolean => {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    // Check if token is expired (if it's a JWT)
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return true; // Not a JWT token
+
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      const { exp } = JSON.parse(jsonPayload);
+      const expired = exp ? Date.now() >= exp * 1000 : false;
+
+      if (expired) {
+        console.log('Token is expired, removing it');
+        localStorage.removeItem('token');
+        return false;
+      }
+    } catch (e) {
+      console.error('Error checking token expiration:', e);
+      // If we can't parse the token, assume it's valid
+    }
+
+    return true;
   },
 
   verifySession: async () => {
