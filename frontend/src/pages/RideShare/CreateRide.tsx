@@ -53,11 +53,13 @@ interface VehicleType {
   id: number;
   name: string;
   capacity: number;
+  uniqueId?: string;
 }
 
 interface Enterprise {
   id: number;
   name: string;
+  uniqueId?: string;
 }
 
 const CreateRide = () => {
@@ -82,8 +84,20 @@ const CreateRide = () => {
         // Update state with fetched data
         if (data.hubs) setHubs(data.hubs);
         if (data.destinations) setDestinations(data.destinations);
-        if (data.vehicle_types) setVehicleTypes(data.vehicle_types);
-        if (data.enterprises) setEnterprises(data.enterprises);
+        if (data.vehicle_types) {
+          const vehicleTypesWithIds = data.vehicle_types.map(type => ({
+            ...type,
+            uniqueId: `vehicle_${type.id}`
+          }));
+          setVehicleTypes(vehicleTypesWithIds);
+        }
+        if (data.enterprises) {
+          const enterprisesWithIds = data.enterprises.map(enterprise => ({
+            ...enterprise,
+            uniqueId: `enterprise_${enterprise.id}`
+          }));
+          setEnterprises(enterprisesWithIds);
+        }
 
         // Create a combined array of all locations (hubs + destinations) with unique keys
         const hubsWithPrefix = (data.hubs || []).map(hub => ({
@@ -305,7 +319,7 @@ const CreateRide = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {enterprises.map((enterprise) => (
-                        <SelectItem key={enterprise.id} value={enterprise.id.toString()}>
+                        <SelectItem key={enterprise.uniqueId || `enterprise_${enterprise.id}`} value={enterprise.id.toString()}>
                           {enterprise.name}
                         </SelectItem>
                       ))}
@@ -389,7 +403,7 @@ const CreateRide = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {vehicleTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id.toString()}>
+                        <SelectItem key={type.uniqueId || `vehicle_${type.id}`} value={type.id.toString()}>
                           {type.name} (Capacity: {type.capacity})
                         </SelectItem>
                       ))}
