@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { apiClient } from '@/services/apiClient';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import PageMeta from '@/components/common/PageMeta';
 import { DatePickerWithPreview } from '@/components/ui/date-picker-with-preview';
 import { TimePickerWithPreview } from '@/components/ui/time-picker-with-preview';
+import RideService from '@/services/ride.service';
 
 // Define the form schema with Zod
 const createRideSchema = z.object({
@@ -54,23 +56,54 @@ interface Enterprise {
 const CreateRide = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [hubs, setHubs] = useState<Hub[]>([
-    { id: 1, name: 'Central Station', address: 'Drottningtorget 5, 411 03 Göteborg' },
-    { id: 2, name: 'Lindholmen', address: 'Lindholmspiren 7, 417 56 Göteborg' },
-    { id: 3, name: 'Mölndal', address: 'Göteborgsvägen 97, 431 30 Mölndal' },
-    { id: 4, name: 'Landvetter Airport', address: 'Flygplatsvägen 90, 438 80 Landvetter' },
-  ]);
-  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([
-    { id: 1, name: 'Sedan', capacity: 4 },
-    { id: 2, name: 'SUV', capacity: 5 },
-    { id: 3, name: 'Minivan', capacity: 7 },
-    { id: 4, name: 'Bus', capacity: 15 },
-  ]);
-  const [enterprises, setEnterprises] = useState<Enterprise[]>([
-    { id: 1, name: 'Volvo' },
-    { id: 2, name: 'Ericsson' },
-    { id: 3, name: 'AstraZeneca' },
-  ]);
+  const [error, setError] = useState<string | null>(null);
+  const [hubs, setHubs] = useState<Hub[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
+
+  // Fetch reference data when component mounts
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        setLoading(true);
+        // Fetch reference data from the API
+        const data = await RideService.getRideReferenceData();
+        console.log('Reference data:', data);
+
+        // Update state with fetched data
+        if (data.hubs) setHubs(data.hubs);
+        if (data.vehicle_types) setVehicleTypes(data.vehicle_types);
+        if (data.enterprises) setEnterprises(data.enterprises);
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching reference data:', err);
+        setError('Failed to load reference data. Using default values.');
+        // Use default data if API fails
+        setHubs([
+          { id: 1, name: 'Central Station', address: 'Drottningtorget 5, 411 03 Göteborg' },
+          { id: 2, name: 'Lindholmen', address: 'Lindholmspiren 7, 417 56 Göteborg' },
+          { id: 3, name: 'Mölndal', address: 'Göteborgsvägen 97, 431 30 Mölndal' },
+          { id: 4, name: 'Landvetter Airport', address: 'Flygplatsvägen 90, 438 80 Landvetter' },
+        ]);
+        setVehicleTypes([
+          { id: 1, name: 'Sedan', capacity: 4 },
+          { id: 2, name: 'SUV', capacity: 5 },
+          { id: 3, name: 'Minivan', capacity: 7 },
+          { id: 4, name: 'Bus', capacity: 15 },
+        ]);
+        setEnterprises([
+          { id: 1, name: 'Volvo' },
+          { id: 2, name: 'Ericsson' },
+          { id: 3, name: 'AstraZeneca' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReferenceData();
+  }, []);
 
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<CreateRideFormValues>({
     resolver: zodResolver(createRideSchema),
@@ -91,6 +124,7 @@ const CreateRide = () => {
 
   const handleFormSubmit = async (data: CreateRideFormValues) => {
     setLoading(true);
+    setError(null);
 
     try {
       // Combine date and time
@@ -106,6 +140,8 @@ const CreateRide = () => {
         price_per_seat: parseFloat(data.pricePerSeat),
         vehicle_type_id: parseInt(data.vehicleTypeId),
         notes: data.notes || '',
+        status: 'scheduled',
+        recurrence_pattern: 'one_time'
       };
 
       // Add enterprise_id if it's an enterprise ride
@@ -115,16 +151,16 @@ const CreateRide = () => {
 
       console.log('Creating ride with payload:', payload);
 
-      // In a real app, we would send this to the API
-      // const response = await apiClient.post('/rides', payload);
+      // Call the API to create the ride
+      const response = await RideService.createRide(payload);
+      console.log('Ride created successfully:', response);
 
-      // For now, simulate a successful API call
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/rides');
-      }, 1000);
+      // Navigate to the rides page
+      navigate('/rides');
     } catch (error) {
       console.error('Error creating ride:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create ride. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -145,6 +181,14 @@ const CreateRide = () => {
           Cancel
         </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Card className="p-6">
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">

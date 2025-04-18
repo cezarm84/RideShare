@@ -1,6 +1,7 @@
 import datetime
 import logging
 import time
+from contextlib import asynccontextmanager
 
 import sqlalchemy as sa
 from fastapi import FastAPI, Request
@@ -122,7 +123,6 @@ async def add_process_time_header(request: Request, call_next):
 
 
 # Use the new lifespan approach instead of on_event
-from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
@@ -220,7 +220,10 @@ app = FastAPI(
 # Add CORS middleware to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Frontend development server
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],  # Frontend development servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -76,6 +76,12 @@ const RideService = {
     const response = await api.get<Ride[]>('/rides/me');
     return response.data;
   },
+
+  // Get reference data for ride creation
+  getRideReferenceData: async () => {
+    const response = await api.get('/rides/reference-data');
+    return response.data;
+  },
 };
 
 export default RideService;
