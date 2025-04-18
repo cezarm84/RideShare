@@ -72,14 +72,23 @@ const AuthService = {
   signup: async (credentials: SignupCredentials) => {
     console.log('Signup attempt with:', credentials);
     try {
-      const response = await api.post('/users/', {
+      // Create the request payload based on API requirements
+      const userData = {
         email: credentials.email,
         password: credentials.password,
         first_name: credentials.first_name,
         last_name: credentials.last_name,
         is_active: true,
-        user_type: 'private'
-      });
+        is_superuser: false,
+        phone_number: "",  // Add empty phone number
+        home_address: "",  // Add empty home address
+        work_address: "",  // Add empty work address
+        home_coordinates: null,  // Add null coordinates
+        work_coordinates: null   // Add null coordinates
+      };
+
+      console.log('Sending user data:', userData);
+      const response = await api.post('/users/', userData);
 
       // After successful signup, automatically log in the user
       const loginResponse = await api.post<AuthResponse>('/auth/token',
