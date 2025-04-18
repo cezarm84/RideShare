@@ -32,12 +32,13 @@ const AuthService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     console.log('Login attempt with:', credentials.username);
 
-    const formData = new FormData();
+    // Create URLSearchParams for x-www-form-urlencoded format
+    const formData = new URLSearchParams();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
     try {
-      const response = await api.post<AuthResponse>('/auth/token', formData, {
+      const response = await api.post<AuthResponse>('/auth/token', formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
