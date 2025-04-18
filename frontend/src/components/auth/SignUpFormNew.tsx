@@ -1,37 +1,49 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../ui/form/Label";
 import Input from "../ui/form/input/InputField";
 import Checkbox from "../ui/form/input/Checkbox";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import TermsModal from "../ui/modal/TermsModal";
 
 export default function SignUpFormNew() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const { signup } = useAuth();
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-    agree_terms: false
+  // Initialize form data from localStorage if available
+  const [formData, setFormData] = useState(() => {
+    const savedData = localStorage.getItem('signupFormData');
+    return savedData ? JSON.parse(savedData) : {
+      first_name: "",
+      last_name: "",
+      email: "",
+      password: "",
+      confirm_password: "",
+      agree_terms: false
+    };
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const updatedData = {
+      ...formData,
       [name]: value
-    }));
+    };
+
+    setFormData(updatedData);
+
+    // Save to localStorage
+    localStorage.setItem('signupFormData', JSON.stringify(updatedData));
 
     // Clear error when field is edited
     if (errors[name]) {
@@ -44,10 +56,15 @@ export default function SignUpFormNew() {
   };
 
   const handleCheckboxChange = (checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
+    const updatedData = {
+      ...formData,
       agree_terms: checked
-    }));
+    };
+
+    setFormData(updatedData);
+
+    // Save to localStorage
+    localStorage.setItem('signupFormData', JSON.stringify(updatedData));
 
     // Clear error when field is edited
     if (errors.agree_terms) {
@@ -112,6 +129,8 @@ export default function SignUpFormNew() {
       });
 
       showToast('Account created successfully! Please complete your profile.', 'success');
+      // Clear saved form data
+      localStorage.removeItem('signupFormData');
       // Redirect to profile page to complete additional information
       navigate('/profile');
     } catch (error) {
@@ -248,12 +267,14 @@ export default function SignUpFormNew() {
                     className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     I agree to the{" "}
-                    <Link
-                      to="/terms"
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    <button
+                      type="button"
+                      onClick={() => setTermsModalOpen(true)}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
                     >
                       terms and conditions
-                    </Link>
+                    </button>
+                    <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
                   </label>
                 </div>
                 {errors.agree_terms && <p className="mt-1 text-sm text-red-500">{errors.agree_terms}</p>}
