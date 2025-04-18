@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 // Import the real auth service
-import RealAuthService from '../services/auth.service';
+import RealAuthService, { SignupCredentials } from '../services/auth.service';
 import { UserProfile } from '../services/auth.service';
 
 // Use the real service for production
@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (credentials: SignupCredentials) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -77,6 +78,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signup = async (credentials: SignupCredentials) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await AuthService.signup(credentials);
+      const userData = await AuthService.getCurrentUser();
+      setUser(userData);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setError('Signup failed. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     AuthService.logout();
     setUser(null);
@@ -90,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         error,
         login,
+        signup,
         logout,
         isAuthenticated
       }}
