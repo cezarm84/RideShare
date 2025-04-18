@@ -62,7 +62,7 @@ export function CustomTimePicker({ time, onTimeChange, className }: CustomTimePi
               className="py-1 px-2 pe-6 w-full cursor-pointer bg-white border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 appearance-none"
             >
               {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hour) => (
-                <option key={hour} value={hour.toString()}>
+                <option key={`hour_${hour}`} value={hour.toString()}>
                   {hour}
                 </option>
               ))}
@@ -91,7 +91,7 @@ export function CustomTimePicker({ time, onTimeChange, className }: CustomTimePi
               {[
                 "00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"
               ].map((minute) => (
-                <option key={minute} value={minute}>
+                <option key={`minute_${minute}`} value={minute}>
                   {minute}
                 </option>
               ))}
@@ -115,8 +115,8 @@ export function CustomTimePicker({ time, onTimeChange, className }: CustomTimePi
               }}
               className="py-1 px-2 pe-6 w-full cursor-pointer bg-white border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 appearance-none"
             >
-              <option value="AM">AM</option>
-              <option value="PM">PM</option>
+              <option key="period_am" value="AM">AM</option>
+              <option key="period_pm" value="PM">PM</option>
             </select>
 
             <div className="absolute top-1/2 end-2 -translate-y-1/2 pointer-events-none">

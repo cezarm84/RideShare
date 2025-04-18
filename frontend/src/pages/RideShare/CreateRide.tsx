@@ -233,9 +233,9 @@ const CreateRide = () => {
                     <SelectValue placeholder="Select ride type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="hub_to_hub">Hub to Hub</SelectItem>
-                    <SelectItem value="hub_to_destination">Hub to Destination</SelectItem>
-                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                    <SelectItem key="ride_type_hub_to_hub" value="hub_to_hub">Hub to Hub</SelectItem>
+                    <SelectItem key="ride_type_hub_to_destination" value="hub_to_destination">Hub to Destination</SelectItem>
+                    <SelectItem key="ride_type_enterprise" value="enterprise">Enterprise</SelectItem>
                   </SelectContent>
                 </Select>
               )}
