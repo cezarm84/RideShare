@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ContactMessage, mockSubmitContactMessage, submitContactMessage } from '../../services/ContactService';
+import { ContactMessage, mockSubmitContactMessage } from '../../services/ContactService';
 
 interface ContactFormProps {
   /**
@@ -46,7 +46,7 @@ const CONTACT_CATEGORIES = [
  * ContactForm component displays a form for users to contact the RideShare team
  */
 const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState<ContactMessage>({
@@ -141,14 +141,14 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
       // Submit form data
       // In production, use submitContactMessage
       // For development without backend, use mockSubmitContactMessage
-      const response = await mockSubmitContactMessage(formData);
+      await mockSubmitContactMessage(formData);
 
       // Handle success
       setSubmitSuccess(true);
 
       // Reset form
       setFormData({
-        name: user?.name || '',
+        name: user ? `${user.first_name} ${user.last_name}` : '',
         email: user?.email || '',
         phone: '',
         subject: '',
