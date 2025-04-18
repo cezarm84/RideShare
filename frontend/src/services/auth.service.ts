@@ -87,6 +87,7 @@ const AuthService = {
       const response = await api.get('/auth/me');
       return response.data;
     } catch (error) {
+      console.error('Session verification failed:', error);
       // If the token is invalid, this will throw an error
       // which will be caught by the caller
       throw error;

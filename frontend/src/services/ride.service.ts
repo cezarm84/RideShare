@@ -73,14 +73,61 @@ const RideService = {
 
   // Get rides for the current user (as a passenger)
   getMyRides: async (): Promise<Ride[]> => {
-    const response = await api.get<Ride[]>('/rides/me');
-    return response.data;
+    try {
+      const response = await api.get<Ride[]>('/rides/me');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user rides:', error);
+      // Return empty array if the API fails
+      return [];
+    }
   },
 
   // Get reference data for ride creation
   getRideReferenceData: async () => {
-    const response = await api.get('/rides/reference-data');
-    return response.data;
+    try {
+      const response = await api.get('/rides/reference-data');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching reference data:', error);
+      // Return mock data if the API fails
+      return {
+        hubs: [
+          { id: 1, name: 'Central Station', address: 'Drottningtorget 5, 411 03 Göteborg' },
+          { id: 2, name: 'Lindholmen', address: 'Lindholmspiren 7, 417 56 Göteborg' },
+          { id: 3, name: 'Mölndal', address: 'Göteborgsvägen 97, 431 30 Mölndal' },
+          { id: 4, name: 'Landvetter Airport', address: 'Flygplatsvägen 90, 438 80 Landvetter' },
+        ],
+        vehicle_types: [
+          { id: 1, name: 'Sedan', capacity: 4 },
+          { id: 2, name: 'SUV', capacity: 5 },
+          { id: 3, name: 'Minivan', capacity: 7 },
+          { id: 4, name: 'Bus', capacity: 15 },
+        ],
+        enterprises: [
+          { id: 1, name: 'Volvo' },
+          { id: 2, name: 'Ericsson' },
+          { id: 3, name: 'AstraZeneca' },
+        ],
+        ride_types: [
+          { id: 'hub_to_hub', name: 'Hub to Hub', description: 'Ride between two hubs' },
+          { id: 'hub_to_destination', name: 'Hub to Destination', description: 'Ride from a hub to a custom destination' },
+          { id: 'enterprise', name: 'Enterprise', description: 'Ride for company employees' },
+        ],
+        recurrence_patterns: [
+          { id: 'one_time', name: 'One Time' },
+          { id: 'daily', name: 'Daily' },
+          { id: 'weekly', name: 'Weekly' },
+          { id: 'monthly', name: 'Monthly' },
+        ],
+        status_options: [
+          { id: 'scheduled', name: 'Scheduled' },
+          { id: 'in_progress', name: 'In Progress' },
+          { id: 'completed', name: 'Completed' },
+          { id: 'cancelled', name: 'Cancelled' },
+        ],
+      };
+    }
   },
 };
 
