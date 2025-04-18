@@ -34,8 +34,8 @@ class FAQCategoryInDBBase(FAQCategoryBase):
     """Base schema for FAQ category in DB."""
 
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         """Pydantic config."""
@@ -85,8 +85,8 @@ class FAQInDBBase(FAQBase):
     """Base schema for FAQ in DB."""
 
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         """Pydantic config."""

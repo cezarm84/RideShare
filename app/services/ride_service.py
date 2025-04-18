@@ -29,7 +29,7 @@ class RideService:
 
     @staticmethod
     def create_ride(
-        db: Session, ride_data: dict, driver_id: int
+        db: Session, ride_data: dict, driver_id: Optional[int] = None
     ) -> Union[Ride, List[Ride]]:
         """
         Create rides based on the specified pattern
@@ -37,26 +37,28 @@ class RideService:
         For one-time rides, returns a single Ride.
         For recurring rides, creates the pattern and returns a list of generated Rides.
         """
-        # Check if driver has a vehicle with passed inspection status
-        driver_vehicles = (
-            db.query(DriverVehicle)
-            .filter(
-                DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+        # Only check vehicle inspection status if a driver is specified
+        if driver_id is not None:
+            # Check if driver has a vehicle with passed inspection status
+            driver_vehicles = (
+                db.query(DriverVehicle)
+                .filter(
+                    DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+                )
+                .all()
             )
-            .all()
-        )
 
-        # Check if any of the driver's primary vehicles have passed inspection
-        has_passed_vehicle = False
-        for vehicle in driver_vehicles:
-            if vehicle.inspection_status == "passed":
-                has_passed_vehicle = True
-                break
+            # Check if any of the driver's primary vehicles have passed inspection
+            has_passed_vehicle = False
+            for vehicle in driver_vehicles:
+                if vehicle.inspection_status == "passed":
+                    has_passed_vehicle = True
+                    break
 
-        if not has_passed_vehicle:
-            raise ValueError(
-                "Driver does not have any vehicles with passed inspection status. Cannot create rides."
-            )
+            if not has_passed_vehicle:
+                raise ValueError(
+                    "Driver does not have any vehicles with passed inspection status. Cannot create rides."
+                )
 
         # Validate that starting hub exists
         starting_hub = (
@@ -246,25 +248,30 @@ class RideService:
                 f"Final departure_time: {departure_time}, type: {type(departure_time)}"
             )
 
-            new_ride = Ride(
-                ride_type=ride_type,
-                driver_id=driver_id,
-                # Set enterprise_id property
-                # But don't include it in the SQL INSERT
-                starting_hub_id=ride_data.get("starting_hub_id"),
-                destination_hub_id=ride_data.get("destination_hub_id"),
-                destination=destination_json,
-                origin_lat=starting_hub.latitude,
-                origin_lng=starting_hub.longitude,
-                destination_lat=destination_lat,
-                destination_lng=destination_lng,
-                departure_time=departure_time,
-                status=ride_data.get("status", RideStatus.SCHEDULED),
-                available_seats=ride_data.get("available_seats", 4),
-                price_per_seat=ride_data.get("price_per_seat"),
-                vehicle_type_id=ride_data.get("vehicle_type_id"),
+            # Create ride data dictionary
+            ride_attrs = {
+                "ride_type": ride_type,
+                # Set enterprise_id property but don't include it in the SQL INSERT
+                "starting_hub_id": ride_data.get("starting_hub_id"),
+                "destination_hub_id": ride_data.get("destination_hub_id"),
+                "destination": destination_json,
+                "origin_lat": starting_hub.latitude,
+                "origin_lng": starting_hub.longitude,
+                "destination_lat": destination_lat,
+                "destination_lng": destination_lng,
+                "departure_time": departure_time,
+                "status": ride_data.get("status", RideStatus.SCHEDULED),
+                "available_seats": ride_data.get("available_seats", 4),
+                "price_per_seat": ride_data.get("price_per_seat"),
+                "vehicle_type_id": ride_data.get("vehicle_type_id"),
                 # is_recurring is handled through a property
-            )
+            }
+
+            # Only add driver_id if it's provided
+            if driver_id is not None:
+                ride_attrs["driver_id"] = driver_id
+
+            new_ride = Ride(**ride_attrs)
 
             db.add(new_ride)
             db.commit()
@@ -316,26 +323,30 @@ class RideService:
 
             first_departure = datetime.combine(start_date, first_departure_time)
 
-            # Create the parent ride
-            parent_ride = Ride(
-                ride_type=ride_type,
-                driver_id=driver_id,
-                # Set enterprise_id property
-                # But don't include it in the SQL INSERT
-                starting_hub_id=ride_data.get("starting_hub_id"),
-                destination_hub_id=ride_data.get("destination_hub_id"),
-                destination=destination_json,
-                origin_lat=starting_hub.latitude,
-                origin_lng=starting_hub.longitude,
-                destination_lat=destination_lat,
-                destination_lng=destination_lng,
-                departure_time=first_departure,
-                status=ride_data.get("status", RideStatus.SCHEDULED),
-                available_seats=ride_data.get("available_seats", 4),
-                price_per_seat=ride_data.get("price_per_seat"),
-                vehicle_type_id=ride_data.get("vehicle_type_id"),
+            # Create ride data dictionary for parent ride
+            parent_ride_attrs = {
+                "ride_type": ride_type,
+                # Set enterprise_id property but don't include it in the SQL INSERT
+                "starting_hub_id": ride_data.get("starting_hub_id"),
+                "destination_hub_id": ride_data.get("destination_hub_id"),
+                "destination": destination_json,
+                "origin_lat": starting_hub.latitude,
+                "origin_lng": starting_hub.longitude,
+                "destination_lat": destination_lat,
+                "destination_lng": destination_lng,
+                "departure_time": first_departure,
+                "status": ride_data.get("status", RideStatus.SCHEDULED),
+                "available_seats": ride_data.get("available_seats", 4),
+                "price_per_seat": ride_data.get("price_per_seat"),
+                "vehicle_type_id": ride_data.get("vehicle_type_id"),
                 # is_recurring is handled through a property
-            )
+            }
+
+            # Only add driver_id if it's provided
+            if driver_id is not None:
+                parent_ride_attrs["driver_id"] = driver_id
+
+            parent_ride = Ride(**parent_ride_attrs)
 
             db.add(parent_ride)
             db.flush()  # Get ID without committing

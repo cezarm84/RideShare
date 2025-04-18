@@ -469,12 +469,37 @@ async def create_ride(
                 ride_dict.pop("destination", None)
 
         elif ride.ride_type == "hub_to_destination":
-            # For hub_to_destination rides, destination object is required
-            if not ride.destination:
+            # For hub_to_destination rides, either destination_id or destination object is required
+            if not ride.destination_id and not ride.destination:
                 raise HTTPException(
                     status_code=400,
-                    detail="Hub-to-destination rides require a destination object",
+                    detail="Hub-to-destination rides require either a destination_id or destination object",
                 )
+
+            # If destination_id is provided, fetch the destination from the database
+            if ride.destination_id:
+                from app.models.destination import Destination
+
+                destination = db.query(Destination).filter(Destination.id == ride.destination_id).first()
+                if not destination:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Destination with ID {ride.destination_id} not found",
+                    )
+
+                # Create a destination object from the database record
+                destination_dict = {
+                    "name": destination.name,
+                    "address": destination.address,
+                    "city": destination.city,
+                    "latitude": destination.latitude,
+                    "longitude": destination.longitude,
+                    "postal_code": destination.postal_code,
+                    "country": destination.country if hasattr(destination, "country") else "Sweden",
+                }
+
+                # Update the ride_dict with the destination object
+                ride_dict["destination"] = destination_dict
 
             # Geocode the destination address if coordinates are not provided
             if hasattr(ride.destination, "address") and ride.destination.address:
@@ -527,21 +552,16 @@ async def create_ride(
                 ride_dict["available_seats"] = 4
                 logger.info("Setting default available_seats to 4")
 
-        # Set a default driver_id if no user is authenticated
+        # Log if no driver_id is provided
         if "driver_id" not in ride_dict or ride_dict["driver_id"] is None:
-            if current_user:
-                ride_dict["driver_id"] = current_user.id
-                logger.info(f"Setting driver_id to current user: {current_user.id}")
-            else:
-                # Use a default driver ID (1) when no user is authenticated
-                ride_dict["driver_id"] = 1
-                logger.info("No authenticated user, setting default driver_id to 1")
+            logger.info("No driver_id provided - creating ride without a driver")
 
         # Create a new RideCreate instance with the updated dictionary
         updated_ride = RideCreate(**ride_dict)
 
-        # Get the driver_id from the updated dictionary
-        driver_id = ride_dict.get("driver_id", 1)
+        # Get the driver_id from the updated dictionary if it exists
+        # If not provided, it will be None (no driver assigned yet)
+        driver_id = ride_dict.get("driver_id") if "driver_id" in ride_dict else None
 
         ride_service = RideService(db)
         new_rides = ride_service.create_ride(db, ride_dict, driver_id)

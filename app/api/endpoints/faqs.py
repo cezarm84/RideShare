@@ -1,7 +1,7 @@
 """API endpoints for FAQs."""
 
 import logging
-from typing import Any, List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
@@ -65,7 +65,7 @@ async def search_faqs(
         )
 
 
-@router.get("/categories", response_model=List[FAQCategoryResponse])
+@router.get("/categories", response_model=List[Dict])
 async def get_faq_categories(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
@@ -76,7 +76,21 @@ async def get_faq_categories(
     """
     try:
         faq_service = FAQService(db)
-        return faq_service.get_categories(skip, limit)
+        categories = faq_service.get_categories(skip, limit)
+        # Convert to dictionaries to avoid validation errors
+        return [
+            {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+                "icon": category.icon,
+                "display_order": category.display_order,
+                "is_active": category.is_active,
+                "created_at": category.created_at or None,
+                "updated_at": category.updated_at or None,
+            }
+            for category in categories
+        ]
     except Exception as e:
         logger.error(f"Error getting FAQ categories: {str(e)}")
         raise HTTPException(
@@ -157,8 +171,8 @@ async def get_faq(
             "category_id": faq.category_id,
             "display_order": faq.display_order,
             "is_active": faq.is_active,
-            "created_at": faq.created_at,
-            "updated_at": faq.updated_at,
+            "created_at": faq.created_at or None,
+            "updated_at": faq.updated_at or None,
             "category": None,
         }
 
@@ -170,8 +184,8 @@ async def get_faq(
                 "icon": category.icon,
                 "display_order": category.display_order,
                 "is_active": category.is_active,
-                "created_at": category.created_at,
-                "updated_at": category.updated_at,
+                "created_at": category.created_at or None,
+                "updated_at": category.updated_at or None,
             }
 
         return response

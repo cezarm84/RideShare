@@ -232,8 +232,8 @@ class FAQService:
                     "icon": category.icon,
                     "display_order": category.display_order,
                     "is_active": category.is_active,
-                    "created_at": category.created_at,
-                    "updated_at": category.updated_at,
+                    "created_at": category.created_at or None,
+                    "updated_at": category.updated_at or None,
                     "faqs": [
                         {
                             "id": faq.id,
@@ -242,8 +242,8 @@ class FAQService:
                             "category_id": faq.category_id,
                             "display_order": faq.display_order,
                             "is_active": faq.is_active,
-                            "created_at": faq.created_at,
-                            "updated_at": faq.updated_at,
+                            "created_at": faq.created_at or None,
+                            "updated_at": faq.updated_at or None,
                         }
                         for faq in category.faqs
                         if faq.is_active
@@ -259,8 +259,8 @@ class FAQService:
                     "category_id": faq.category_id,
                     "display_order": faq.display_order,
                     "is_active": faq.is_active,
-                    "created_at": faq.created_at,
-                    "updated_at": faq.updated_at,
+                    "created_at": faq.created_at or None,
+                    "updated_at": faq.updated_at or None,
                 }
                 for faq in uncategorized
             ],
