@@ -257,30 +257,45 @@ export default function SignUpFormNew() {
               </div>
 
               <div>
-                <div className="flex items-center">
-                  <Checkbox
-                    id="agree_terms"
-                    checked={formData.agree_terms}
-                    onChange={(e) => handleCheckboxChange(e.target.checked)}
-                  />
-                  <label
-                    htmlFor="agree_terms"
-                    className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    I agree to the{" "}
-                    <button
-                      type="button"
-                      onClick={() => setTermsModalOpen(true)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
-                    >
-                      terms and conditions
-                    </button>
-                    <TermsModal
-                      isOpen={termsModalOpen}
-                      onClose={() => setTermsModalOpen(false)}
-                      onAgree={() => handleCheckboxChange(true)}
+                <div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="agree_terms"
+                      checked={formData.agree_terms}
+                      onChange={(e) => {
+                        // If trying to check without reading terms, show the modal
+                        if (e.target.checked && !formData.agree_terms) {
+                          setTermsModalOpen(true);
+                        } else {
+                          // Only allow unchecking
+                          handleCheckboxChange(false);
+                        }
+                      }}
                     />
-                  </label>
+                    <label
+                      htmlFor="agree_terms"
+                      className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      I agree to the{" "}
+                      <button
+                        type="button"
+                        onClick={() => setTermsModalOpen(true)}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                      >
+                        terms and conditions
+                      </button>
+                    </label>
+                  </div>
+                  {!formData.agree_terms && (
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      You must read and agree to the terms and conditions to continue
+                    </div>
+                  )}
+                  <TermsModal
+                    isOpen={termsModalOpen}
+                    onClose={() => setTermsModalOpen(false)}
+                    onAgree={() => handleCheckboxChange(true)}
+                  />
                 </div>
                 {errors.agree_terms && <p className="mt-1 text-sm text-red-500">{errors.agree_terms}</p>}
               </div>

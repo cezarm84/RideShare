@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface TermsModalProps {
   isOpen: boolean;
@@ -7,11 +7,31 @@ interface TermsModalProps {
 }
 
 const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, onAgree }) => {
+  const [hasReadTerms, setHasReadTerms] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Reset the read state when the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setHasReadTerms(false);
+    }
+  }, [isOpen]);
+
+  const handleScroll = () => {
+    if (!contentRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+    // Consider terms as read when user scrolls to the bottom (with a small buffer)
+    if (scrollTop + clientHeight >= scrollHeight - 30) {
+      setHasReadTerms(true);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50">
-      <div className="relative w-full max-w-4xl p-6 mx-4 bg-white rounded-lg shadow-xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-4xl p-6 mx-4 bg-white rounded-lg shadow-xl dark:bg-gray-800 max-h-[90vh]">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -23,7 +43,11 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, onAgree }) => 
 
         <h1 className="mb-6 text-3xl font-bold text-gray-900 dark:text-white">Terms and Conditions</h1>
 
-        <div className="space-y-6 text-gray-700 dark:text-gray-300">
+        <div
+          ref={contentRef}
+          onScroll={handleScroll}
+          className="space-y-6 text-gray-700 dark:text-gray-300 max-h-[60vh] overflow-y-auto pr-4"
+        >
           <section>
             <h2 className="mb-3 text-xl font-semibold text-gray-800 dark:text-white">1. Introduction</h2>
             <p>
@@ -131,11 +155,20 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, onAgree }) => 
               if (onAgree) onAgree();
               onClose();
             }}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+            disabled={!hasReadTerms}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${hasReadTerms
+              ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
+              : 'bg-blue-400 cursor-not-allowed dark:bg-blue-500'}`}
           >
-            I Agree to Terms
+            {hasReadTerms ? 'I Agree to Terms' : 'Please read to the end'}
           </button>
         </div>
+
+        {!hasReadTerms && (
+          <div className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            Please scroll to the bottom to read the entire terms and conditions
+          </div>
+        )}
       </div>
     </div>
   );
