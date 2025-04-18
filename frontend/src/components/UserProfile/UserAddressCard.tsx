@@ -65,45 +65,61 @@ export default function UserAddressCard() {
               Address
             </h4>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
-              <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Home Address
-                </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {profileLoading ? 'Loading...' : profile?.home_street && profile?.home_city ?
-                    `${profile.home_street} ${profile.home_house_number || ''}, ${profile.home_post_code || ''} ${profile.home_city}` :
-                    'No home address set'}
-                </p>
+            <div className="space-y-6">
+              {/* Home Address Section */}
+              <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700">
+                <h5 className="mb-3 text-base font-medium text-gray-800 dark:text-white/90">Home Address</h5>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+                  <div>
+                    <p className="mb-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                      Street & Number
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {profileLoading ? 'Loading...' : profile?.home_street ?
+                        `${profile.home_street} ${profile.home_house_number || ''}` :
+                        'Not set'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="mb-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                      Postal Code & City
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {profileLoading ? 'Loading...' : profile?.home_post_code || profile?.home_city ?
+                        `${profile.home_post_code || ''} ${profile.home_city || ''}` :
+                        'Not set'}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Work Address
-                </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {profileLoading ? 'Loading...' : profile?.work_street && profile?.work_city ?
-                    `${profile.work_street} ${profile.work_house_number || ''}, ${profile.work_post_code || ''} ${profile.work_city}` :
-                    'No work address set'}
-                </p>
-              </div>
+              {/* Work Address Section */}
+              <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700">
+                <h5 className="mb-3 text-base font-medium text-gray-800 dark:text-white/90">Work Address</h5>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+                  <div>
+                    <p className="mb-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                      Street & Number
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {profileLoading ? 'Loading...' : profile?.work_street ?
+                        `${profile.work_street} ${profile.work_house_number || ''}` :
+                        'Not set'}
+                    </p>
+                  </div>
 
-              <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Home Postal Code
-                </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {profileLoading ? 'Loading...' : profile?.home_post_code || 'Not set'}
-                </p>
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Work Postal Code
-                </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {profileLoading ? 'Loading...' : profile?.work_post_code || 'Not set'}
-                </p>
+                  <div>
+                    <p className="mb-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                      Postal Code & City
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {profileLoading ? 'Loading...' : profile?.work_post_code || profile?.work_city ?
+                        `${profile.work_post_code || ''} ${profile.work_city || ''}` :
+                        'Not set'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -143,93 +159,105 @@ export default function UserAddressCard() {
           </div>
           <form className="flex flex-col">
             <div className="px-2 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                <div>
-                  <Label>Home Street</Label>
-                  <Input
-                    type="text"
-                    name="home_street"
-                    value={formData.home_street}
-                    onChange={handleChange}
-                    placeholder="Street name"
-                  />
+              <div className="space-y-6">
+                {/* Home Address Section */}
+                <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700">
+                  <h5 className="mb-4 text-lg font-medium text-gray-800 dark:text-white/90">Home Address</h5>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
+                    <div>
+                      <Label>Street</Label>
+                      <Input
+                        type="text"
+                        name="home_street"
+                        value={formData.home_street}
+                        onChange={handleChange}
+                        placeholder="Street name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>House Number</Label>
+                      <Input
+                        type="text"
+                        name="home_house_number"
+                        value={formData.home_house_number}
+                        onChange={handleChange}
+                        placeholder="House number"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Postal Code</Label>
+                      <Input
+                        type="text"
+                        name="home_post_code"
+                        value={formData.home_post_code}
+                        onChange={handleChange}
+                        placeholder="Postal code"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>City</Label>
+                      <Input
+                        type="text"
+                        name="home_city"
+                        value={formData.home_city}
+                        onChange={handleChange}
+                        placeholder="City"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <Label>Home House Number</Label>
-                  <Input
-                    type="text"
-                    name="home_house_number"
-                    value={formData.home_house_number}
-                    onChange={handleChange}
-                    placeholder="House number"
-                  />
-                </div>
+                {/* Work Address Section */}
+                <div className="p-4 border border-gray-200 rounded-lg dark:border-gray-700">
+                  <h5 className="mb-4 text-lg font-medium text-gray-800 dark:text-white/90">Work Address</h5>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
+                    <div>
+                      <Label>Street</Label>
+                      <Input
+                        type="text"
+                        name="work_street"
+                        value={formData.work_street}
+                        onChange={handleChange}
+                        placeholder="Street name"
+                      />
+                    </div>
 
-                <div>
-                  <Label>Home Postal Code</Label>
-                  <Input
-                    type="text"
-                    name="home_post_code"
-                    value={formData.home_post_code}
-                    onChange={handleChange}
-                    placeholder="Postal code"
-                  />
-                </div>
+                    <div>
+                      <Label>House Number</Label>
+                      <Input
+                        type="text"
+                        name="work_house_number"
+                        value={formData.work_house_number}
+                        onChange={handleChange}
+                        placeholder="House number"
+                      />
+                    </div>
 
-                <div>
-                  <Label>Home City</Label>
-                  <Input
-                    type="text"
-                    name="home_city"
-                    value={formData.home_city}
-                    onChange={handleChange}
-                    placeholder="City"
-                  />
-                </div>
+                    <div>
+                      <Label>Postal Code</Label>
+                      <Input
+                        type="text"
+                        name="work_post_code"
+                        value={formData.work_post_code}
+                        onChange={handleChange}
+                        placeholder="Postal code"
+                      />
+                    </div>
 
-                <div>
-                  <Label>Work Street</Label>
-                  <Input
-                    type="text"
-                    name="work_street"
-                    value={formData.work_street}
-                    onChange={handleChange}
-                    placeholder="Street name"
-                  />
-                </div>
-
-                <div>
-                  <Label>Work House Number</Label>
-                  <Input
-                    type="text"
-                    name="work_house_number"
-                    value={formData.work_house_number}
-                    onChange={handleChange}
-                    placeholder="House number"
-                  />
-                </div>
-
-                <div>
-                  <Label>Work Postal Code</Label>
-                  <Input
-                    type="text"
-                    name="work_post_code"
-                    value={formData.work_post_code}
-                    onChange={handleChange}
-                    placeholder="Postal code"
-                  />
-                </div>
-
-                <div>
-                  <Label>Work City</Label>
-                  <Input
-                    type="text"
-                    name="work_city"
-                    value={formData.work_city}
-                    onChange={handleChange}
-                    placeholder="City"
-                  />
+                    <div>
+                      <Label>City</Label>
+                      <Input
+                        type="text"
+                        name="work_city"
+                        value={formData.work_city}
+                        onChange={handleChange}
+                        placeholder="City"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
