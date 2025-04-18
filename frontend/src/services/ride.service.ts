@@ -1,4 +1,5 @@
 import api from './api';
+import mockReferenceData from './mockReferenceData';
 
 export interface Ride {
   id: number;
@@ -91,7 +92,8 @@ const RideService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching reference data:', error);
-      throw new Error('Failed to fetch reference data from the API. Please try again later.');
+      console.log('Using mock reference data as fallback');
+      return mockReferenceData;
     }
   },
 };

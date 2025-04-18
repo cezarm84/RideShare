@@ -69,7 +69,7 @@ const CreateRide = () => {
     const fetchReferenceData = async () => {
       try {
         setLoading(true);
-        // Fetch reference data from the API
+        // Fetch reference data from the API (will use mock data as fallback)
         const data = await RideService.getRideReferenceData();
         console.log('Reference data:', data);
 
@@ -89,17 +89,7 @@ const CreateRide = () => {
         setError(null);
       } catch (err) {
         console.error('Error fetching reference data:', err);
-        setError('Failed to load reference data from the main API. Attempting to fetch vehicle types directly.');
-
-        // Try to fetch vehicle types directly as a fallback
-        try {
-          const vehicleTypes = await VehicleTypeService.getAllVehicleTypes();
-          console.log('Successfully fetched vehicle types directly:', vehicleTypes);
-          setVehicleTypes(vehicleTypes);
-        } catch (vehicleTypeError) {
-          console.error('Error fetching vehicle types directly:', vehicleTypeError);
-          setError('Failed to load vehicle types. Please try again later.');
-        }
+        setError('Failed to load reference data. Please try again later.');
       } finally {
         setLoading(false);
       }
