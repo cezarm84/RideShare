@@ -3,13 +3,53 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../ui/form/input/InputField";
 import Label from "../ui/form/Label";
+import { useUserProfile } from "../../context/UserProfileContext";
+import { useState } from "react";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { profile, loading: profileLoading, updateProfile } = useUserProfile();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: profile?.first_name || '',
+    last_name: profile?.last_name || '',
+    email: profile?.email || '',
+    phone_number: profile?.phone_number || '',
+    user_type: profile?.user_type || 'private',
+  });
+
+  // Update form data when profile changes
+  useState(() => {
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        email: profile.email || '',
+        phone_number: profile.phone_number || '',
+        user_type: profile.user_type || 'private',
+      });
+    }
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateProfile(formData);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <>
@@ -21,15 +61,15 @@ export default function UserMetaCard() {
             </div>
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                Musharof Chowdhury
+                {profileLoading ? 'Loading...' : `${profile?.first_name || ''} ${profile?.last_name || ''}`}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Team Manager
+                  {profile?.user_type === 'admin' ? 'Administrator' : profile?.user_type === 'enterprise' ? 'Enterprise User' : 'Private User'}
                 </p>
                 <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Arizona, United States
+                  {profile?.home_city || profile?.home_address?.split(',').pop()?.trim() || 'No location set'}
                 </p>
               </div>
             </div>
@@ -195,27 +235,52 @@ export default function UserMetaCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input
+                      type="text"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input
+                      type="text"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
+                    <Input
+                      type="text"
+                      name="phone_number"
+                      value={formData.phone_number}
+                      onChange={handleChange}
+                      placeholder="+46 123 456 789"
+                    />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
+                    <Label>User Type</Label>
+                    <Input
+                      type="text"
+                      value={formData.user_type === 'admin' ? 'Administrator' : formData.user_type === 'enterprise' ? 'Enterprise User' : 'Private User'}
+                      disabled
+                    />
                   </div>
                 </div>
               </div>
@@ -224,8 +289,15 @@ export default function UserMetaCard() {
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
+              <Button size="sm" onClick={handleSave} disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="mr-2">Saving...</span>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </form>

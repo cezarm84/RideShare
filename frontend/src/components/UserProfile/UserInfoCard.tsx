@@ -3,13 +3,52 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../ui/form/input/InputField";
 import Label from "../ui/form/Label";
+import { useUserProfile } from "../../context/UserProfileContext";
+import { useState } from "react";
 
 export default function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { profile, loading: profileLoading, updateProfile } = useUserProfile();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: profile?.first_name || '',
+    last_name: profile?.last_name || '',
+    email: profile?.email || '',
+    phone_number: profile?.phone_number || '',
+    user_type: profile?.user_type || 'private',
+  });
+
+  // Update form data when profile changes
+  useState(() => {
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        email: profile.email || '',
+        phone_number: profile.phone_number || '',
+        user_type: profile.user_type || 'private',
+      });
+    }
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateProfile(formData);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -25,7 +64,7 @@ export default function UserInfoCard() {
                 First Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Musharof
+                {profileLoading ? 'Loading...' : profile?.first_name || 'Not set'}
               </p>
             </div>
 
@@ -34,7 +73,7 @@ export default function UserInfoCard() {
                 Last Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Chowdhury
+                {profileLoading ? 'Loading...' : profile?.last_name || 'Not set'}
               </p>
             </div>
 
@@ -43,7 +82,7 @@ export default function UserInfoCard() {
                 Email address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
+                {profileLoading ? 'Loading...' : profile?.email || 'Not set'}
               </p>
             </div>
 
@@ -52,7 +91,7 @@ export default function UserInfoCard() {
                 Phone
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                +09 363 398 46
+                {profileLoading ? 'Loading...' : profile?.phone_number || 'Not set'}
               </p>
             </div>
 
@@ -61,7 +100,7 @@ export default function UserInfoCard() {
                 Bio
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Team Manager
+                {profileLoading ? 'Loading...' : profile?.user_type === 'admin' ? 'Administrator' : profile?.user_type === 'enterprise' ? 'Enterprise User' : 'Private User'}
               </p>
             </div>
           </div>
@@ -143,27 +182,52 @@ export default function UserInfoCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input
+                      type="text"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input
+                      type="text"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
+                    <Input
+                      type="text"
+                      name="phone_number"
+                      value={formData.phone_number}
+                      onChange={handleChange}
+                      placeholder="+46 123 456 789"
+                    />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
+                    <Label>User Type</Label>
+                    <Input
+                      type="text"
+                      value={formData.user_type === 'admin' ? 'Administrator' : formData.user_type === 'enterprise' ? 'Enterprise User' : 'Private User'}
+                      disabled
+                    />
                   </div>
                 </div>
               </div>
@@ -172,8 +236,15 @@ export default function UserInfoCard() {
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
+              <Button size="sm" onClick={handleSave} disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="mr-2">Saving...</span>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </form>

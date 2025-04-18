@@ -3,13 +3,58 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../ui/form/input/InputField";
 import Label from "../ui/form/Label";
+import { useUserProfile } from "../../context/UserProfileContext";
+import { useState } from "react";
 
 export default function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { profile, loading: profileLoading, updateProfile } = useUserProfile();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    home_street: profile?.home_street || '',
+    home_house_number: profile?.home_house_number || '',
+    home_post_code: profile?.home_post_code || '',
+    home_city: profile?.home_city || '',
+    work_street: profile?.work_street || '',
+    work_house_number: profile?.work_house_number || '',
+    work_post_code: profile?.work_post_code || '',
+    work_city: profile?.work_city || '',
+  });
+
+  // Update form data when profile changes
+  useState(() => {
+    if (profile) {
+      setFormData({
+        home_street: profile.home_street || '',
+        home_house_number: profile.home_house_number || '',
+        home_post_code: profile.home_post_code || '',
+        home_city: profile.home_city || '',
+        work_street: profile.work_street || '',
+        work_house_number: profile.work_house_number || '',
+        work_post_code: profile.work_post_code || '',
+        work_city: profile.work_city || '',
+      });
+    }
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateProfile(formData);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update address:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <>
@@ -23,37 +68,41 @@ export default function UserAddressCard() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Country
+                  Home Address
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  United States.
+                  {profileLoading ? 'Loading...' : profile?.home_street && profile?.home_city ?
+                    `${profile.home_street} ${profile.home_house_number || ''}, ${profile.home_post_code || ''} ${profile.home_city}` :
+                    'No home address set'}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  City/State
+                  Work Address
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Phoenix, Arizona, United States.
+                  {profileLoading ? 'Loading...' : profile?.work_street && profile?.work_city ?
+                    `${profile.work_street} ${profile.work_house_number || ''}, ${profile.work_post_code || ''} ${profile.work_city}` :
+                    'No work address set'}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Postal Code
+                  Home Postal Code
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  ERT 2489
+                  {profileLoading ? 'Loading...' : profile?.home_post_code || 'Not set'}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  TAX ID
+                  Work Postal Code
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  AS4568384
+                  {profileLoading ? 'Loading...' : profile?.work_post_code || 'Not set'}
                 </p>
               </div>
             </div>
@@ -96,23 +145,91 @@ export default function UserAddressCard() {
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <Label>Country</Label>
-                  <Input type="text" value="United States" />
+                  <Label>Home Street</Label>
+                  <Input
+                    type="text"
+                    name="home_street"
+                    value={formData.home_street}
+                    onChange={handleChange}
+                    placeholder="Street name"
+                  />
                 </div>
 
                 <div>
-                  <Label>City/State</Label>
-                  <Input type="text" value="Arizona, United States." />
+                  <Label>Home House Number</Label>
+                  <Input
+                    type="text"
+                    name="home_house_number"
+                    value={formData.home_house_number}
+                    onChange={handleChange}
+                    placeholder="House number"
+                  />
                 </div>
 
                 <div>
-                  <Label>Postal Code</Label>
-                  <Input type="text" value="ERT 2489" />
+                  <Label>Home Postal Code</Label>
+                  <Input
+                    type="text"
+                    name="home_post_code"
+                    value={formData.home_post_code}
+                    onChange={handleChange}
+                    placeholder="Postal code"
+                  />
                 </div>
 
                 <div>
-                  <Label>TAX ID</Label>
-                  <Input type="text" value="AS4568384" />
+                  <Label>Home City</Label>
+                  <Input
+                    type="text"
+                    name="home_city"
+                    value={formData.home_city}
+                    onChange={handleChange}
+                    placeholder="City"
+                  />
+                </div>
+
+                <div>
+                  <Label>Work Street</Label>
+                  <Input
+                    type="text"
+                    name="work_street"
+                    value={formData.work_street}
+                    onChange={handleChange}
+                    placeholder="Street name"
+                  />
+                </div>
+
+                <div>
+                  <Label>Work House Number</Label>
+                  <Input
+                    type="text"
+                    name="work_house_number"
+                    value={formData.work_house_number}
+                    onChange={handleChange}
+                    placeholder="House number"
+                  />
+                </div>
+
+                <div>
+                  <Label>Work Postal Code</Label>
+                  <Input
+                    type="text"
+                    name="work_post_code"
+                    value={formData.work_post_code}
+                    onChange={handleChange}
+                    placeholder="Postal code"
+                  />
+                </div>
+
+                <div>
+                  <Label>Work City</Label>
+                  <Input
+                    type="text"
+                    name="work_city"
+                    value={formData.work_city}
+                    onChange={handleChange}
+                    placeholder="City"
+                  />
                 </div>
               </div>
             </div>
@@ -120,8 +237,15 @@ export default function UserAddressCard() {
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
+              <Button size="sm" onClick={handleSave} disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="mr-2">Saving...</span>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </form>

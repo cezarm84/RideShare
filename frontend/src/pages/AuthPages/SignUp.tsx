@@ -1,6 +1,6 @@
 import PageMeta from "../../components/common/PageMeta";
 import AuthLayout from "./AuthPageLayout";
-import SignUpForm from "../../components/auth/SignUpForm";
+import SignUpFormNew from "../../components/auth/SignUpFormNew";
 
 export default function SignUp() {
   return (
@@ -10,7 +10,7 @@ export default function SignUp() {
         description="Create your RideShare account to access the ride-sharing platform with enterprise support and intelligent matching"
       />
       <AuthLayout>
-        <SignUpForm />
+        <SignUpFormNew />
       </AuthLayout>
     </>
   );

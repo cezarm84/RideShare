@@ -5,6 +5,13 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
 export interface RegisterData {
   email: string;
   password: string;
@@ -60,6 +67,45 @@ const AuthService = {
 
   register: async (data: RegisterData) => {
     return api.post('/users', data);
+  },
+
+  signup: async (credentials: SignupCredentials) => {
+    console.log('Signup attempt with:', credentials);
+    try {
+      const response = await api.post('/users/', {
+        email: credentials.email,
+        password: credentials.password,
+        first_name: credentials.first_name,
+        last_name: credentials.last_name,
+        is_active: true,
+        user_type: 'private'
+      });
+
+      // After successful signup, automatically log in the user
+      const loginResponse = await api.post<AuthResponse>('/auth/token',
+        new URLSearchParams({
+          'username': credentials.email,
+          'password': credentials.password
+        }).toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+
+      // Store the token
+      const { access_token } = loginResponse.data;
+      localStorage.setItem('token', access_token);
+
+      // Set the token in the API client
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      return response.data;
+    } catch (error) {
+      console.error('Signup failed:', error);
+      throw error;
+    }
   },
 
   logout: () => {

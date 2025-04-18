@@ -33,12 +33,14 @@ import Hubs from "./pages/RideShare/Hubs";
 import Enterprises from "./pages/RideShare/Enterprises";
 import FAQ from "./pages/FAQ/FAQ";
 import Contact from "./pages/Contact/Contact";
+import Terms from "./pages/Terms";
 
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
 
 // Context providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { UserProfileProvider } from "./context/UserProfileContext";
 
 // Import the LoadingSpinner component
 import LoadingSpinner from "./components/common/LoadingSpinner";
@@ -70,7 +72,8 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <ScrollToTop />
+          <UserProfileProvider>
+            <ScrollToTop />
           <Routes>
           {/* Public Routes with App Layout */}
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
@@ -79,6 +82,7 @@ export default function App() {
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
           <Route path="/faq" element={<PublicLayoutRoute><FAQ /></PublicLayoutRoute>} />
           <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
+          <Route path="/terms" element={<PublicLayoutRoute><Terms /></PublicLayoutRoute>} />
 
           {/* Protected Routes with App Layout */}
           <Route path="/bookings" element={<ProtectedRoute><AppLayout><Bookings /></AppLayout></ProtectedRoute>} />
@@ -109,8 +113,9 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+          </UserProfileProvider>
+        </Router>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
