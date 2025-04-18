@@ -1,4 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider } from "react-router-dom";
+import { UNSAFE_DataRouterContext, UNSAFE_DataRouterStateContext } from "react-router";
+
+// Configure future flags for React Router
+UNSAFE_DataRouterContext.displayName = 'DataRouterContext';
+UNSAFE_DataRouterStateContext.displayName = 'DataRouterStateContext';
+
+// Set future flags
+window.REACT_ROUTER_FUTURE = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
