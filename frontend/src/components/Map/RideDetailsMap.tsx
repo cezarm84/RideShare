@@ -119,6 +119,13 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
       const dirX = destLng - startLng;
       const dirY = destLat - startLat;
 
+      // Check if we have a valid direction vector (not zero length)
+      const dirLength = Math.sqrt(dirX * dirX + dirY * dirY);
+      if (dirLength < 0.0001) {
+        // If start and end are too close, just return a direct line
+        return [[startLat, startLng], [destLat, destLng]];
+      }
+
       // Add some randomness to the route
       for (let i = 1; i < numWaypoints; i++) {
         const t = i / numWaypoints;
@@ -129,10 +136,17 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
         const perpY = dirX;
         const len = Math.sqrt(perpX * perpX + perpY * perpY);
 
-        const lat = startLat + dirY * t + (perpY / len) * deviation;
-        const lng = startLng + dirX * t + (perpX / len) * deviation;
-
-        waypoints.push([lat, lng]);
+        // Avoid division by zero
+        if (len > 0) {
+          const lat = startLat + dirY * t + (perpY / len) * deviation;
+          const lng = startLng + dirX * t + (perpX / len) * deviation;
+          waypoints.push([lat, lng]);
+        } else {
+          // If we can't calculate perpendicular, just interpolate directly
+          const lat = startLat + dirY * t;
+          const lng = startLng + dirX * t;
+          waypoints.push([lat, lng]);
+        }
       }
 
       // Add destination
@@ -152,25 +166,38 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
     }).addTo(mapRef.current);
 
     // Add direction arrow markers along the route
-    for (let i = 1; i < routeWaypoints.length - 1; i += 2) {
-      const p1 = routeWaypoints[i];
-      const p2 = routeWaypoints[i + 1];
+    // Only add arrows if we have enough waypoints
+    if (routeWaypoints.length > 2) {
+      // Calculate how many arrows to add (max 5)
+      const numArrows = Math.min(5, Math.floor(routeWaypoints.length / 2));
+      const step = Math.floor(routeWaypoints.length / (numArrows + 1));
 
-      // Calculate angle for the arrow
-      const dx = p2[1] - p1[1];
-      const dy = p2[0] - p1[0];
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      for (let i = step; i < routeWaypoints.length - step; i += step) {
+        // Make sure we have valid indices
+        if (i >= 0 && i < routeWaypoints.length - 1) {
+          const p1 = routeWaypoints[i];
+          const p2 = routeWaypoints[i + 1];
 
-      // Create a custom arrow icon
-      const arrowIcon = L.divIcon({
-        html: `<div style="transform: rotate(${angle}deg); font-size: 16px;">➤</div>`,
-        className: 'arrow-icon',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
+          // Make sure both points are valid
+          if (p1 && p2 && p1.length === 2 && p2.length === 2) {
+            // Calculate angle for the arrow
+            const dx = p2[1] - p1[1];
+            const dy = p2[0] - p1[0];
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-      // Add the arrow marker
-      L.marker([p1[0], p1[1]], { icon: arrowIcon }).addTo(mapRef.current);
+            // Create a custom arrow icon
+            const arrowIcon = L.divIcon({
+              html: `<div style="transform: rotate(${angle}deg); font-size: 16px;">➤</div>`,
+              className: 'arrow-icon',
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            });
+
+            // Add the arrow marker
+            L.marker([p1[0], p1[1]], { icon: arrowIcon }).addTo(mapRef.current);
+          }
+        }
+      }
     }
 
     // Add a route outline for visual effect
@@ -219,9 +246,11 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
       'Mölndal Hub': { lat: 57.655800, lng: 12.013580 },
       'Landvetter Hub': { lat: 57.668799, lng: 12.292314 },
       'Partille Hub': { lat: 57.739040, lng: 12.106430 },
+      'Partille Centrum Hub': { lat: 57.739040, lng: 12.106430 },
       'Kungsbacka Hub': { lat: 57.483730, lng: 12.076040 },
       'Lerum Hub': { lat: 57.769720, lng: 12.269840 },
       'Kungälv Hub': { lat: 57.871090, lng: 11.975550 },
+      'Frölunda Torg Hub': { lat: 57.651200, lng: 11.911600 },
       'Volvo Cars Torslanda': { lat: 57.720890, lng: 12.025600 },
       'Volvo Group Lundby': { lat: 57.715130, lng: 11.935290 },
       'AstraZeneca Mölndal': { lat: 57.660800, lng: 12.011580 },
