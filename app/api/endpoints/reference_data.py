@@ -3,15 +3,16 @@ Reference data endpoints for the RideShare application.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.models.hub import Hub
 from app.models.vehicle import VehicleType
 from app.models.enterprise import Enterprise
+from app.models.destination import Destination
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -44,8 +45,11 @@ async def get_ride_reference_data(
                 "name": hub.name,
                 "address": hub.address,
                 "city": hub.city,
+                "postal_code": getattr(hub, "postal_code", None),
                 "latitude": getattr(hub, "latitude", None),
                 "longitude": getattr(hub, "longitude", None),
+                "description": getattr(hub, "description", None),
+                "is_active": True
             }
             for hub in hubs
         ]
@@ -64,8 +68,25 @@ async def get_ride_reference_data(
             for vt in vehicle_types
         ]
 
-        # Get all destinations (same as hubs for now)
-        destination_list = hub_list.copy()
+        # Get destinations from the database
+
+        # Get all destinations
+        destinations = db.query(Destination).filter(Destination.is_active == True).all()
+        destination_list = [
+            {
+                "id": dest.id,
+                "name": dest.name,
+                "address": dest.address,
+                "city": dest.city,
+                "postal_code": getattr(dest, "postal_code", None),
+                "country": getattr(dest, "country", "Sweden"),
+                "latitude": getattr(dest, "latitude", None),
+                "longitude": getattr(dest, "longitude", None),
+                "enterprise_id": getattr(dest, "enterprise_id", None),
+                "is_active": True
+            }
+            for dest in destinations
+        ]
 
         # Get enterprises
         enterprise_list = []
