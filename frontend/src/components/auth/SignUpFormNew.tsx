@@ -3,10 +3,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../ui/form/Label";
 import Input from "../ui/form/input/InputField";
-import Checkbox from "../ui/form/input/Checkbox";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import TermsModal from "../ui/modal/TermsModal";
+import TermsCheckbox from "./TermsCheckbox";
 
 export default function SignUpFormNew() {
   const navigate = useNavigate();
@@ -14,7 +13,6 @@ export default function SignUpFormNew() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const { signup } = useAuth();
   const { showToast } = useToast();
 
@@ -29,17 +27,6 @@ export default function SignUpFormNew() {
       confirm_password: "",
       agree_terms: false
     };
-  });
-
-  // Separate state to track if terms have been read
-  const [hasReadTerms, setHasReadTerms] = useState(() => {
-    const savedData = localStorage.getItem('signupFormData');
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      // If terms were agreed to in saved data, consider them as read
-      return parsedData.agree_terms || false;
-    }
-    return false;
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -140,9 +127,8 @@ export default function SignUpFormNew() {
       });
 
       showToast('Account created successfully! Please complete your profile.', 'success');
-      // Clear saved form data and states
+      // Clear saved form data
       localStorage.removeItem('signupFormData');
-      setHasReadTerms(false);
       // Redirect to profile page to complete additional information
       navigate('/profile');
     } catch (error) {
@@ -269,49 +255,10 @@ export default function SignUpFormNew() {
               </div>
 
               <div>
-                <div>
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="agree_terms"
-                      checked={formData.agree_terms}
-                      onChange={(e) => {
-                        // If trying to check without reading terms, show the modal
-                        if (e.target.checked && !hasReadTerms) {
-                          setTermsModalOpen(true);
-                        } else {
-                          // Allow toggling if terms have been read
-                          handleCheckboxChange(e.target.checked);
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="agree_terms"
-                      className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      I agree to the{" "}
-                      <button
-                        type="button"
-                        onClick={() => setTermsModalOpen(true)}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
-                      >
-                        terms and conditions
-                      </button>
-                    </label>
-                  </div>
-                  {!formData.agree_terms && (
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      You must read and agree to the terms and conditions to continue
-                    </div>
-                  )}
-                  <TermsModal
-                    isOpen={termsModalOpen}
-                    onClose={() => setTermsModalOpen(false)}
-                    onAgree={() => {
-                      setHasReadTerms(true);
-                      handleCheckboxChange(true);
-                    }}
-                  />
-                </div>
+                <TermsCheckbox
+                  checked={formData.agree_terms}
+                  onChange={(checked) => handleCheckboxChange(checked)}
+                />
                 {errors.agree_terms && <p className="mt-1 text-sm text-red-500">{errors.agree_terms}</p>}
               </div>
 
