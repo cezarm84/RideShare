@@ -17,7 +17,7 @@ class VehicleType(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False, unique=True, index=True)
     description = Column(Text)
-    # Removed min_capacity and max_capacity as they don't exist in the DB
+    capacity = Column(Integer, default=4)  # Added capacity field
     # Commented out fields that don't exist in the current DB schema
     # is_active = Column(Boolean, default=True)
     # price_factor = Column(Float, default=1.0)

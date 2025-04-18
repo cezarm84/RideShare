@@ -768,7 +768,7 @@ async def get_ride_reference_data(
                 "id": vt.id,
                 "name": vt.name,
                 "description": vt.description,
-                "capacity": 4,  # Default capacity since it's not in the DB
+                "capacity": getattr(vt, "capacity", 4),  # Use capacity from DB or default to 4
                 "is_active": True,  # Default value
                 "price_factor": 1.0,  # Default value
             }
