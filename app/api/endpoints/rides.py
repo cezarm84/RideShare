@@ -480,7 +480,11 @@ async def create_ride(
             if ride.destination_id:
                 from app.models.destination import Destination
 
-                destination = db.query(Destination).filter(Destination.id == ride.destination_id).first()
+                destination = (
+                    db.query(Destination)
+                    .filter(Destination.id == ride.destination_id)
+                    .first()
+                )
                 if not destination:
                     raise HTTPException(
                         status_code=404,
@@ -495,7 +499,11 @@ async def create_ride(
                     "latitude": destination.latitude,
                     "longitude": destination.longitude,
                     "postal_code": destination.postal_code,
-                    "country": destination.country if hasattr(destination, "country") else "Sweden",
+                    "country": (
+                        destination.country
+                        if hasattr(destination, "country")
+                        else "Sweden"
+                    ),
                 }
 
                 # Update the ride_dict with the destination object

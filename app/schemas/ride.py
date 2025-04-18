@@ -83,7 +83,9 @@ class RideCreate(BaseModel):
         None, description="ID of the destination hub (for hub_to_hub)", example=2
     )
     destination_id: Optional[int] = Field(
-        None, description="ID of an existing destination (for hub_to_destination)", example=1
+        None,
+        description="ID of an existing destination (for hub_to_destination)",
+        example=1,
     )
     destination: Optional[DestinationInfo] = Field(
         None,
@@ -163,7 +165,9 @@ class RideCreate(BaseModel):
         # Hub to destination rides need either destination_id or destination info
         if ride_type == RideType.HUB_TO_DESTINATION:
             if not values.get("destination_id") and not values.get("destination"):
-                raise ValueError("Hub-to-destination rides require either destination_id or destination details")
+                raise ValueError(
+                    "Hub-to-destination rides require either destination_id or destination details"
+                )
 
         # Validate recurrence pattern fields
         recurrence = values.get("recurrence_pattern")

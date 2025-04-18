@@ -43,7 +43,8 @@ class RideService:
             driver_vehicles = (
                 db.query(DriverVehicle)
                 .filter(
-                    DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+                    DriverVehicle.driver_id == driver_id,
+                    DriverVehicle.is_primary == True,
                 )
                 .all()
             )
