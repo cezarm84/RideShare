@@ -260,8 +260,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select starting hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={location.uniqueId} value={location.originalId.toString()}>
+                      {allLocations.map((location, index) => (
+                        <SelectItem key={`starting_${location.uniqueId}_${index}`} value={location.originalId.toString()}>
                           {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
@@ -288,8 +288,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select destination hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={location.uniqueId} value={location.originalId.toString()}>
+                      {allLocations.map((location, index) => (
+                        <SelectItem key={`destination_${location.uniqueId}_${index}`} value={location.originalId.toString()}>
                           {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
@@ -318,8 +318,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select enterprise" />
                     </SelectTrigger>
                     <SelectContent>
-                      {enterprises.map((enterprise) => (
-                        <SelectItem key={enterprise.uniqueId || `enterprise_${enterprise.id}`} value={enterprise.id.toString()}>
+                      {enterprises.map((enterprise, index) => (
+                        <SelectItem key={`enterprise_select_${enterprise.id}_${index}`} value={enterprise.id.toString()}>
                           {enterprise.name}
                         </SelectItem>
                       ))}
@@ -402,8 +402,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select vehicle type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vehicleTypes.map((type) => (
-                        <SelectItem key={type.uniqueId || `vehicle_${type.id}`} value={type.id.toString()}>
+                      {vehicleTypes.map((type, index) => (
+                        <SelectItem key={`vehicle_type_${type.id}_${index}`} value={type.id.toString()}>
                           {type.name} (Capacity: {type.capacity})
                         </SelectItem>
                       ))}
