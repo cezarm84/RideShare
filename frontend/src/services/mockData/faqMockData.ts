@@ -3,6 +3,10 @@
  *
  * This file contains mock data for testing the FAQ components
  * without requiring a backend connection.
+ *
+ * IMPORTANT: This mock data should ONLY be used in test files,
+ * not in production code. The actual application should always
+ * use the real API data.
  */
 
 import { FAQListResponse } from '../FAQService';

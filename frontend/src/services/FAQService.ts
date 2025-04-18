@@ -6,7 +6,36 @@
  */
 
 import { API_BASE_URL } from '../config/constants';
-import { getMockFAQData } from './mockData/faqMockData';
+// Import mock data for fallback when API is unavailable
+import { mockFAQData } from './mockData/faqMockData';
+// Import the API client for making requests
+import { apiClient } from './apiClient';
+
+/**
+ * Helper function to search in mock data
+ * @param query The search query
+ * @returns Array of matching FAQs
+ */
+const searchInMockData = (query: string): FAQ[] => {
+  const searchTerm = query.toLowerCase();
+
+  // Search in mock categories
+  const categoryResults = mockFAQData.categories.flatMap(category =>
+    category.faqs.filter(faq =>
+      faq.question.toLowerCase().includes(searchTerm) ||
+      faq.answer.toLowerCase().includes(searchTerm)
+    )
+  );
+
+  // Search in mock uncategorized
+  const uncategorizedResults = mockFAQData.uncategorized.filter(faq =>
+    faq.question.toLowerCase().includes(searchTerm) ||
+    faq.answer.toLowerCase().includes(searchTerm)
+  );
+
+  // Combine and return results
+  return [...categoryResults, ...uncategorizedResults];
+};
 
 /**
  * FAQ Category interface
@@ -58,18 +87,14 @@ export interface FAQListResponse {
  */
 export const getAllFAQs = async (): Promise<FAQListResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/faqs`);
-
-    if (!response.ok) {
-      throw new Error(`Error fetching FAQs: ${response.statusText}`);
-    }
-
-    return await response.json();
+    // Use the API client to make the request
+    console.log('Fetching FAQs from API...');
+    const data = await apiClient.get<FAQListResponse>('/faqs');
+    console.log('Successfully fetched FAQs from API');
+    return data;
   } catch (error) {
-    console.error('Error fetching FAQs:', error);
-    console.log('Falling back to mock data');
-    // Fall back to mock data when API is not available
-    return await getMockFAQData();
+    console.log('Error fetching FAQs from API, using mock data:', error);
+    return mockFAQData;
   }
 };
 
@@ -119,15 +144,34 @@ export const getFAQCategory = async (categoryId: number): Promise<FAQCategory | 
  */
 export const getFAQ = async (faqId: number): Promise<FAQWithCategory | null> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/faqs/${faqId}`);
-
-    if (!response.ok) {
-      throw new Error(`Error fetching FAQ: ${response.statusText}`);
-    }
-
-    return await response.json();
+    // Use the API client to make the request
+    console.log(`Fetching FAQ ${faqId} from API...`);
+    const data = await apiClient.get<FAQWithCategory>(`/faqs/${faqId}`);
+    console.log(`Successfully fetched FAQ ${faqId} from API`);
+    return data;
   } catch (error) {
-    console.error(`Error fetching FAQ ${faqId}:`, error);
+    console.log(`Error fetching FAQ ${faqId} from API, using mock data if available:`, error);
+    // Try to find the FAQ in mock data
+    const mockFaq = mockFAQData.categories
+      .flatMap(category => category.faqs)
+      .concat(mockFAQData.uncategorized)
+      .find(faq => faq.id === faqId);
+
+    if (mockFaq) {
+      const category = mockFaq.category_id
+        ? mockFAQData.categories.find(cat => cat.id === mockFaq.category_id)
+        : null;
+
+      return {
+        ...mockFaq,
+        category: category ? {
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          icon: category.icon,
+        } : null
+      };
+    }
     return null;
   }
 };
@@ -138,41 +182,19 @@ export const getFAQ = async (faqId: number): Promise<FAQWithCategory | null> => 
  * @returns Promise with matching FAQs
  */
 export const searchFAQs = async (query: string): Promise<FAQ[]> => {
-  if (!query || query.trim().length < 2) {
-    return [];
-  }
-
   try {
-    const response = await fetch(`${API_BASE_URL}/faqs/search?query=${encodeURIComponent(query)}`);
-
-    if (!response.ok) {
-      throw new Error(`Error searching FAQs: ${response.statusText}`);
+    // Validate query length to match backend requirements
+    if (!query || query.trim().length < 2) {
+      return [];
     }
 
-    return await response.json();
+    // Use the API client to make the request
+    console.log('Searching FAQs from API...');
+    const data = await apiClient.get<FAQ[]>(`/faqs/search?query=${encodeURIComponent(query)}`);
+    console.log('Successfully searched FAQs from API');
+    return data;
   } catch (error) {
-    console.error(`Error searching FAQs with query "${query}":`, error);
-    console.log('Falling back to client-side search with mock data');
-
-    // Fall back to client-side search with mock data
-    const mockData = await getMockFAQData();
-    const searchTermLower = query.toLowerCase();
-
-    // Search in categories
-    const categoryResults = mockData.categories.flatMap(category =>
-      category.faqs.filter(faq =>
-        faq.question.toLowerCase().includes(searchTermLower) ||
-        faq.answer.toLowerCase().includes(searchTermLower)
-      )
-    );
-
-    // Search in uncategorized
-    const uncategorizedResults = mockData.uncategorized.filter(faq =>
-      faq.question.toLowerCase().includes(searchTermLower) ||
-      faq.answer.toLowerCase().includes(searchTermLower)
-    );
-
-    // Combine results
-    return [...categoryResults, ...uncategorizedResults];
+    console.log('Error searching FAQs from API, using mock data:', error);
+    return searchInMockData(query);
   }
 };
