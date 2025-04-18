@@ -341,11 +341,11 @@ const AppSidebar: React.FC = () => {
       >
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <div className="text-2xl font-bold text-brand-500 dark:text-white">
-                RideShare
-              </div>
-            </>
+            <img
+              className="h-8 w-auto"
+              src="/images/logo/rideshare-logo-dark.svg"
+              alt="RideShare Logo"
+            />
           ) : (
             <div className="text-2xl font-bold text-brand-500 dark:text-white">
               RS

@@ -9,7 +9,8 @@
  * In development, this should match the backend server URL
  * In production, this would typically be the same domain or a dedicated API domain
  */
-export const API_BASE_URL = '/api/v1';
+// Use the full URL for API requests to avoid proxy issues
+export const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 /**
  * Maximum file upload size in bytes (10MB)

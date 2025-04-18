@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import AuthService, { UserProfile } from '../services/auth.service';
+// Import the mock auth service for testing
+import MockAuthService from '../services/mockAuth.service';
+import { UserProfile } from '../services/auth.service';
+
+// Use the mock service for now
+const AuthService = MockAuthService;
 
 interface AuthContextType {
   user: UserProfile | null;

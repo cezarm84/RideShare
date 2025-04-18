@@ -5,6 +5,10 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    hmr: false, // Disable HMR to fix WebSocket issues
+    cors: true, // Enable CORS for direct API requests
+  },
   plugins: [
     react(),
     svgr({

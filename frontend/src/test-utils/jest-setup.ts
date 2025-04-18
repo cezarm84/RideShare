@@ -7,6 +7,17 @@ import '@testing-library/jest-dom';
 import fetchMock from 'jest-fetch-mock';
 fetchMock.enableMocks();
 
+// Mock TextEncoder/TextDecoder for React Router tests
+if (typeof global.TextEncoder === 'undefined') {
+  // @ts-ignore
+  global.TextEncoder = require('util').TextEncoder;
+}
+
+if (typeof global.TextDecoder === 'undefined') {
+  // @ts-ignore
+  global.TextDecoder = require('util').TextDecoder;
+}
+
 // Mock the cn function from utils
 jest.mock('@/lib/utils', () => ({
   cn: (...inputs: any[]) => inputs.join(' '),

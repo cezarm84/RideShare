@@ -14,7 +14,11 @@ import TestPage from "./pages/TestPage";
 
 // RideShare specific pages
 import Rides from "./pages/RideShare/Rides";
+import CreateRide from "./pages/RideShare/CreateRide";
+import CreateBooking from "./pages/RideShare/CreateBooking";
+import BookingConfirmation from "./pages/RideShare/BookingConfirmation";
 import Bookings from "./pages/RideShare/Bookings";
+import RideShareCalendar from "./pages/RideShare/Calendar";
 import Drivers from "./pages/RideShare/Drivers";
 import Hubs from "./pages/RideShare/Hubs";
 import Enterprises from "./pages/RideShare/Enterprises";
@@ -62,19 +66,22 @@ export default function App() {
           {/* Public Routes with App Layout */}
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
           <Route path="/rides" element={<PublicLayoutRoute><Rides /></PublicLayoutRoute>} />
+          <Route path="/rides/create" element={<PublicLayoutRoute><CreateRide /></PublicLayoutRoute>} />
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
           <Route path="/faq" element={<PublicLayoutRoute><FAQ /></PublicLayoutRoute>} />
           <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
 
           {/* Protected Routes with App Layout */}
           <Route path="/bookings" element={<ProtectedRoute><AppLayout><Bookings /></AppLayout></ProtectedRoute>} />
+          <Route path="/bookings/create" element={<ProtectedRoute><AppLayout><CreateBooking /></AppLayout></ProtectedRoute>} />
+          <Route path="/bookings/confirmation" element={<ProtectedRoute><AppLayout><BookingConfirmation /></AppLayout></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><AppLayout><RideShareCalendar /></AppLayout></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><AppLayout><UserProfiles /></AppLayout></ProtectedRoute>} />
 
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="drivers" element={<Drivers />} />
             <Route path="enterprises" element={<Enterprises />} />
-            <Route path="calendar" element={<Calendar />} />
             <Route path="form-elements" element={<FormElements />} />
             <Route path="basic-tables" element={<BasicTables />} />
           </Route>

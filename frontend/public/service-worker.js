@@ -5,8 +5,14 @@ const CACHE_NAME = 'rideshare-cache-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/favicon.png',
   '/images/logo/rideshare-logo-dark.svg',
   '/images/logo/auth-bg.svg',
+  // Add routes that should be available offline
+  '/dashboard',
+  '/rides',
+  '/faq',
+  '/contact',
 ];
 
 // Install event - cache static assets
@@ -64,6 +70,18 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           // If network fails, try to get from cache
           return caches.match(event.request);
+        })
+    );
+  }
+  // For navigation requests (HTML), use cache first but fall back to index.html
+  else if (event.request.mode === 'navigate' ||
+           (event.request.method === 'GET' &&
+            event.request.headers.get('accept').includes('text/html'))) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // If network fails, return the cached index.html
+          return caches.match('/index.html');
         })
     );
   }
