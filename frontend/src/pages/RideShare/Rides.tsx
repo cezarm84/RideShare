@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiClient } from '@/services/apiClient';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import RideSearchForm from '@/components/RideSearch/RideSearchForm';
 import RideList, { Ride } from '@/components/RideSearch/RideList';
 import PageMeta from '@/components/common/PageMeta';
+import RideService from '@/services/ride.service';
 
 interface SearchFormValues {
   startLocation: string;
@@ -24,6 +26,7 @@ const Rides = () => {
   const [myRides, setMyRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // When the component mounts or the tab changes, load the appropriate data
@@ -46,28 +49,17 @@ const Rides = () => {
 
   const fetchAllRides = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Try to fetch from API
-      try {
-        const response = await apiClient.get<Ride[]>('/rides');
-
-        if (Array.isArray(response) && response.length > 0) {
-          console.log(`Found ${response.length} rides in the database`);
-          console.log('Ride statuses:', response.map(ride => ride.status));
-          setSearchResults(response);
-          setLoading(false);
-          return;
-        }
-      } catch (apiError) {
-        // Silent catch - we'll use mock data instead
-      }
-
-      // If we get here, either the API failed or returned no data
-      // Use mock data instead
-      setSearchResults(getMockRides());
+      // Fetch rides from the API using RideService
+      const rides = await RideService.getAllRides();
+      console.log(`Found ${rides.length} rides in the database`);
+      setSearchResults(rides);
     } catch (error) {
-      // Fallback in case of any other errors
-      setSearchResults(getMockRides());
+      console.error('Error fetching rides:', error);
+      setError('Failed to load rides. Please try again.');
+      // Don't use mock data anymore - show the error instead
+      setSearchResults([]);
     } finally {
       setLoading(false);
     }
@@ -77,138 +69,47 @@ const Rides = () => {
     if (!isAuthenticated) return;
 
     setLoading(true);
-
-    // Skip API call and use mock data directly
-    // This avoids 422 errors when the endpoint isn't fully implemented
-
-    // Get a subset of mock rides to simulate user's rides
-    // In a real implementation, this would come from the API
-    const userRides = getMockRides().slice(0, 2);
-
-    // Add a small delay to simulate network request
-    setTimeout(() => {
-      setMyRides(userRides);
-      setLoading(false);
-      console.log(`Showing ${userRides.length} mock rides for the current user`);
-    }, 300);
-
-    /* Uncomment this when the API endpoint is ready
+    setError(null);
     try {
-      // Try to fetch from API
-      try {
-        const response = await apiClient.get<Ride[]>('/rides/my-rides');
-
-        if (Array.isArray(response) && response.length > 0) {
-          console.log(`Found ${response.length} user rides in the database`);
-          setMyRides(response);
-          setLoading(false);
-          return;
-        }
-      } catch (apiError: any) {
-        // Check for specific error types
-        if (apiError.status === 422) {
-          console.log('The my-rides endpoint requires additional parameters');
-        }
-      }
-
-      // If we get here, either the API failed or returned no data
-      // Use mock data instead - only show a subset of mock rides to simulate user's rides
-      setMyRides(getMockRides().slice(0, 2));
+      // Fetch user's rides from the API using RideService
+      const rides = await RideService.getMyRides();
+      console.log(`Found ${rides.length} user rides in the database`);
+      setMyRides(rides);
     } catch (error) {
-      // Fallback in case of any other errors
-      setMyRides(getMockRides().slice(0, 2));
+      console.error('Error fetching user rides:', error);
+      setError('Failed to load your rides. Please try again.');
+      setMyRides([]);
     } finally {
       setLoading(false);
     }
-    */
   };
 
   const handleSearch = async (values: SearchFormValues) => {
     console.log('Search form submitted with values:', values);
     setLoading(true);
     setSearchPerformed(true);
+    setError(null);
 
     try {
-      // Prepare query parameters for the correct endpoint
-      const queryParams = new URLSearchParams();
+      // Prepare filters for the RideService
+      const filters = {
+        start_hub_id: values.startLocation ? parseInt(values.startLocation) : undefined,
+        destination_hub_id: values.destination ? parseInt(values.destination) : undefined,
+        ride_type: values.rideType,
+        departure_date: values.date,
+        min_available_seats: values.passengers
+      };
 
-      // Map frontend field names to backend parameter names
-      // For hub_id, we need to check if it's the starting hub or destination hub based on ride type
-      if (values.startLocation) {
-        // For all ride types, startLocation is the starting_hub_id
-        queryParams.append('hub_id', values.startLocation);
-      }
+      console.log('Searching rides with filters:', filters);
 
-      if (values.destination) {
-        // For hub_to_hub rides, destination is the destination_hub_id
-        // For other ride types, we'll handle it client-side
-        queryParams.append('destination_id', values.destination);
-      }
+      // Use RideService to search for rides
+      const rides = await RideService.getAllRides(filters);
+      console.log(`Found ${rides.length} rides matching search criteria`);
 
-      // Add additional parameters
-      queryParams.append('future_only', 'true');
-      queryParams.append('status', 'scheduled');
-
-      console.log('Searching rides with query params:', queryParams.toString());
-
-      try {
-        // Make the API request to the correct endpoint
-        const response = await apiClient.get<Ride[]>(`/rides?${queryParams.toString()}`);
-        console.log('API response:', response);
-
-        if (Array.isArray(response) && response.length > 0) {
-          // Apply client-side filtering for parameters not supported by the backend
-          let filteredResults = response;
-
-          // Filter by date if provided
-          if (values.date) {
-            filteredResults = filteredResults.filter(ride => {
-              const rideDate = new Date(ride.departureTime).toISOString().split('T')[0];
-              return rideDate === values.date;
-            });
-          }
-
-          // Filter by ride type if provided
-          if (values.rideType) {
-            filteredResults = filteredResults.filter(ride => ride.rideType === values.rideType);
-          }
-
-          // Filter by passengers - ensure there are enough available seats
-          filteredResults = filteredResults.filter(ride => ride.availableSeats >= values.passengers);
-
-          // Additional filtering for specific ride types
-          if (values.rideType === 'hub_to_destination' || values.rideType === 'enterprise') {
-            // For these ride types, we need to do additional client-side filtering
-            // since the backend doesn't fully support them in the search endpoint
-            console.log(`Applying additional filtering for ${values.rideType} rides`);
-          }
-
-          console.log(`Found ${filteredResults.length} rides matching all criteria`);
-          setSearchResults(filteredResults);
-          setLoading(false);
-          return;
-        } else {
-          console.log('No rides found in API response');
-        }
-      } catch (apiError) {
-        console.error('Error searching rides from API:', apiError);
-        // Continue to use mock data
-      }
-
-      // If we get here, either the API failed or returned no data
-      // Filter mock rides based on search criteria
-      const mockRides = getMockRides();
-      const filteredRides = filterMockRides(mockRides, values);
-
-      if (filteredRides.length > 0) {
-        console.log(`Found ${filteredRides.length} mock rides matching search criteria`);
-        setSearchResults(filteredRides);
-      } else {
-        console.log('No rides found matching search criteria');
-        setSearchResults([]);
-      }
+      setSearchResults(rides);
     } catch (error) {
-      // Fallback in case of any other errors
+      console.error('Error searching rides:', error);
+      setError('Failed to search for rides. Please try again.');
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -223,153 +124,7 @@ const Rides = () => {
     navigate(`/bookings/create?rideId=${rideId}`);
   };
 
-  // Filter mock rides based on search criteria
-  const filterMockRides = (rides: Ride[], values: SearchFormValues): Ride[] => {
-    console.log('Filtering mock rides with values:', values);
-    return rides.filter(ride => {
-      // Apply basic filtering based on search criteria
 
-      // Filter by ride type
-      if (values.rideType && ride.rideType !== values.rideType) {
-        console.log(`Ride ${ride.id} filtered out: ride type mismatch`);
-        return false;
-      }
-
-      // Filter by starting hub
-      if (values.startLocation && ride.startingHub.id.toString() !== values.startLocation) {
-        console.log(`Ride ${ride.id} filtered out: starting hub mismatch`);
-        return false;
-      }
-
-      // Filter by destination hub
-      if (values.destination && ride.destinationHub.id.toString() !== values.destination) {
-        console.log(`Ride ${ride.id} filtered out: destination hub mismatch`);
-        return false;
-      }
-
-      // Filter by passenger count
-      if (values.passengers && ride.availableSeats < values.passengers) {
-        console.log(`Ride ${ride.id} filtered out: not enough seats (needed ${values.passengers}, has ${ride.availableSeats})`);
-        return false;
-      }
-
-      // Filter by date
-      if (values.date) {
-        const rideDate = new Date(ride.departureTime).toISOString().split('T')[0];
-        if (rideDate !== values.date) {
-          console.log(`Ride ${ride.id} filtered out: date mismatch (needed ${values.date}, has ${rideDate})`);
-          return false;
-        }
-      }
-
-      // Only include active or scheduled rides
-      if (ride.status !== 'active' && ride.status !== 'scheduled') {
-        console.log(`Ride ${ride.id} filtered out: status is not active or scheduled`);
-        return false;
-      }
-
-      // Only include future rides
-      if (new Date(ride.departureTime) < new Date()) {
-        console.log(`Ride ${ride.id} filtered out: departure time is in the past`);
-        return false;
-      }
-
-      console.log(`Ride ${ride.id} matches all criteria`);
-      return true;
-    });
-  };
-
-  // Mock data for development
-  const getMockRides = (): Ride[] => [
-    {
-      id: '1',
-      rideType: 'hub_to_hub',
-      startingHub: {
-        id: 1,
-        name: 'Central Station',
-        address: 'Drottningtorget 5, 411 03 Göteborg'
-      },
-      destinationHub: {
-        id: 2,
-        name: 'Lindholmen',
-        address: 'Lindholmspiren 7, 417 56 Göteborg'
-      },
-      departureTime: new Date(Date.now() + 3600000).toISOString(),
-      availableSeats: 3,
-      pricePerSeat: 25,
-      status: 'active',
-      driver: {
-        id: 'd1',
-        name: 'Johan Andersson',
-        rating: 4.8
-      },
-      vehicleType: {
-        id: 1,
-        name: 'Sedan',
-        capacity: 4
-      }
-    },
-    {
-      id: '2',
-      rideType: 'enterprise',
-      startingHub: {
-        id: 3,
-        name: 'Mölndal',
-        address: 'Göteborgsvägen 97, 431 30 Mölndal'
-      },
-      destinationHub: {
-        id: 4,
-        name: 'Volvo Headquarters',
-        address: 'Gropegårdsgatan 2, 417 15 Göteborg'
-      },
-      departureTime: new Date(Date.now() + 7200000).toISOString(),
-      availableSeats: 6,
-      pricePerSeat: 15,
-      status: 'active',
-      driver: {
-        id: 'd2',
-        name: 'Maria Johansson',
-        rating: 4.9
-      },
-      vehicleType: {
-        id: 2,
-        name: 'Minivan',
-        capacity: 7
-      },
-      enterprise: {
-        id: 1,
-        name: 'Volvo'
-      }
-    },
-    {
-      id: '3',
-      rideType: 'hub_to_destination',
-      startingHub: {
-        id: 1,
-        name: 'Central Station',
-        address: 'Drottningtorget 5, 411 03 Göteborg'
-      },
-      destinationHub: {
-        id: 5,
-        name: 'Landvetter Airport',
-        address: 'Flygplatsvägen 90, 438 80 Landvetter'
-      },
-      departureTime: new Date(Date.now() + 10800000).toISOString(),
-      availableSeats: 2,
-      pricePerSeat: 35,
-      status: 'active',
-      driver: {
-        id: 'd3',
-        name: 'Erik Svensson',
-        rating: 4.7
-      },
-      vehicleType: {
-        id: 3,
-        name: 'SUV',
-        capacity: 5
-      }
-    }
-  ];
 
   return (
     <div className="p-6">
@@ -387,6 +142,14 @@ const Rides = () => {
           </Button>
         )}
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Tabs
         defaultValue="all-rides"
