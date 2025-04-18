@@ -31,6 +31,17 @@ export default function SignUpFormNew() {
     };
   });
 
+  // Separate state to track if terms have been read
+  const [hasReadTerms, setHasReadTerms] = useState(() => {
+    const savedData = localStorage.getItem('signupFormData');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      // If terms were agreed to in saved data, consider them as read
+      return parsedData.agree_terms || false;
+    }
+    return false;
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,8 +140,9 @@ export default function SignUpFormNew() {
       });
 
       showToast('Account created successfully! Please complete your profile.', 'success');
-      // Clear saved form data
+      // Clear saved form data and states
       localStorage.removeItem('signupFormData');
+      setHasReadTerms(false);
       // Redirect to profile page to complete additional information
       navigate('/profile');
     } catch (error) {
@@ -264,11 +276,11 @@ export default function SignUpFormNew() {
                       checked={formData.agree_terms}
                       onChange={(e) => {
                         // If trying to check without reading terms, show the modal
-                        if (e.target.checked && !formData.agree_terms) {
+                        if (e.target.checked && !hasReadTerms) {
                           setTermsModalOpen(true);
                         } else {
-                          // Only allow unchecking
-                          handleCheckboxChange(false);
+                          // Allow toggling if terms have been read
+                          handleCheckboxChange(e.target.checked);
                         }
                       }}
                     />
@@ -294,7 +306,10 @@ export default function SignUpFormNew() {
                   <TermsModal
                     isOpen={termsModalOpen}
                     onClose={() => setTermsModalOpen(false)}
-                    onAgree={() => handleCheckboxChange(true)}
+                    onAgree={() => {
+                      setHasReadTerms(true);
+                      handleCheckboxChange(true);
+                    }}
                   />
                 </div>
                 {errors.agree_terms && <p className="mt-1 text-sm text-red-500">{errors.agree_terms}</p>}
