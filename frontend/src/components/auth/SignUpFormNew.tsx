@@ -144,13 +144,14 @@ export default function SignUpFormNew() {
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={() => navigate('/')}
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeftIcon className="size-5" />
           Back to home
-        </Link>
+        </button>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
@@ -274,7 +275,11 @@ export default function SignUpFormNew() {
                     >
                       terms and conditions
                     </button>
-                    <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
+                    <TermsModal
+                      isOpen={termsModalOpen}
+                      onClose={() => setTermsModalOpen(false)}
+                      onAgree={() => handleCheckboxChange(true)}
+                    />
                   </label>
                 </div>
                 {errors.agree_terms && <p className="mt-1 text-sm text-red-500">{errors.agree_terms}</p>}
