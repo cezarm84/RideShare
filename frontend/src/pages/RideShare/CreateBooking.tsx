@@ -15,8 +15,8 @@ import PageMeta from '@/components/common/PageMeta';
 
 // Define the form schema with Zod
 const createBookingSchema = z.object({
-  numberOfSeats: z.string().transform((val) => parseInt(val, 10)).refine((val) => val >= 1 && val <= 10, {
-    message: 'Number of seats must be between 1 and 10',
+  numberOfSeats: z.string().transform((val) => parseInt(val, 10)).refine((val) => val >= 1 && val <= 50, {
+    message: 'Number of seats must be between 1 and 50',
   }),
   paymentMethod: z.enum(['credit_card', 'paypal', 'swish', 'apple_pay', 'google_pay']),
   specialRequests: z.string().optional(),
@@ -86,7 +86,7 @@ const CreateBooking = () => {
 
     const params = new URLSearchParams(location.search);
     const rideId = params.get('rideId');
-    
+
     if (!rideId) {
       navigate('/rides');
       return;
@@ -99,7 +99,7 @@ const CreateBooking = () => {
         // In a real app, we would fetch from the API
         // const response = await apiClient.get<Ride>(`/rides/${rideId}`);
         // setRide(response);
-        
+
         // For now, use mock data
         setTimeout(() => {
           setRide({
@@ -143,9 +143,9 @@ const CreateBooking = () => {
 
   const handleFormSubmit = async (data: CreateBookingFormValues) => {
     if (!ride) return;
-    
+
     setLoading(true);
-    
+
     try {
       // Prepare the payload
       const payload = {
@@ -155,12 +155,12 @@ const CreateBooking = () => {
         special_requests: data.specialRequests || '',
         total_price: ride.pricePerSeat * parseInt(data.numberOfSeats),
       };
-      
+
       console.log('Creating booking with payload:', payload);
-      
+
       // In a real app, we would send this to the API
       // const response = await apiClient.post('/bookings', payload);
-      
+
       // For now, simulate a successful API call
       setTimeout(() => {
         setLoading(false);
@@ -194,15 +194,15 @@ const CreateBooking = () => {
 
   return (
     <div className="p-6">
-      <PageMeta 
-        title="RideShare - Book a Ride" 
+      <PageMeta
+        title="RideShare - Book a Ride"
         description="Complete your booking for the selected ride."
       />
-      
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Book a Ride</h1>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => navigate('/rides')}
         >
           Cancel
@@ -224,15 +224,15 @@ const CreateBooking = () => {
                   name="numberOfSeats"
                   control={control}
                   render={({ field }) => (
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <SelectTrigger id="numberOfSeats">
                         <SelectValue placeholder="Select number of seats" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: Math.min(ride.availableSeats, 10) }, (_, i) => i + 1).map((num) => (
+                        {Array.from({ length: Math.min(ride.availableSeats, 50) }, (_, i) => i + 1).map((num) => (
                           <SelectItem key={num} value={num.toString()}>
                             {num} {num === 1 ? 'seat' : 'seats'}
                           </SelectItem>
@@ -252,8 +252,8 @@ const CreateBooking = () => {
                   name="paymentMethod"
                   control={control}
                   render={({ field }) => (
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <SelectTrigger id="paymentMethod">
@@ -284,7 +284,7 @@ const CreateBooking = () => {
                       disabled={loading}
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="expiryDate">Expiry Date</Label>
@@ -294,7 +294,7 @@ const CreateBooking = () => {
                         disabled={loading}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="cvv">CVV</Label>
                       <Input
@@ -304,7 +304,7 @@ const CreateBooking = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="cardholderName">Cardholder Name</Label>
                     <Input
@@ -327,16 +327,16 @@ const CreateBooking = () => {
               </div>
 
               <div className="flex justify-end space-x-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => navigate('/rides')}
                   disabled={loading}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="bg-brand-500 hover:bg-brand-600"
                   disabled={loading}
                 >
@@ -357,41 +357,41 @@ const CreateBooking = () => {
         <div>
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Ride Summary</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600">Route</p>
                 <p className="font-medium">{ride.startingHub.name} → {ride.destinationHub.name}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Departure Time</p>
                 <p className="font-medium">{new Date(ride.departureTime).toLocaleString()}</p>
               </div>
-              
+
               {ride.driver && (
                 <div>
                   <p className="text-sm text-gray-600">Driver</p>
                   <p className="font-medium">{ride.driver.name} ({ride.driver.rating}★)</p>
                 </div>
               )}
-              
+
               <div>
                 <p className="text-sm text-gray-600">Vehicle</p>
                 <p className="font-medium">{ride.vehicleType.name}</p>
               </div>
-              
+
               <div className="pt-4 border-t">
                 <div className="flex justify-between mb-2">
                   <p>Price per seat</p>
                   <p>${ride.pricePerSeat.toFixed(2)}</p>
                 </div>
-                
+
                 <div className="flex justify-between mb-2">
                   <p>Number of seats</p>
                   <p>{numberOfSeats || 1}</p>
                 </div>
-                
+
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <p>Total</p>
                   <p>${totalPrice.toFixed(2)}</p>

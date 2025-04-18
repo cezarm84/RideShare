@@ -252,6 +252,7 @@ const RideForm = ({ initialData, onSubmit, onCancel }: RideFormProps) => {
             id="availableSeats"
             type="number"
             min="1"
+            max="50"
             {...register('availableSeats')}
           />
           {errors.availableSeats && (

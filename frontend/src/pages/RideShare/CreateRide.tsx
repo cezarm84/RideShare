@@ -23,8 +23,8 @@ const createRideSchema = z.object({
   destinationHubId: z.string().min(1, 'Destination hub is required'),
   departureDate: z.string().min(1, 'Departure date is required'),
   departureTime: z.string().min(1, 'Departure time is required'),
-  availableSeats: z.string().transform((val) => parseInt(val, 10)).refine((val) => val >= 1 && val <= 10, {
-    message: 'Available seats must be between 1 and 10',
+  availableSeats: z.string().transform((val) => parseInt(val, 10)).refine((val) => val >= 1 && val <= 50, {
+    message: 'Available seats must be between 1 and 50',
   }),
   pricePerSeat: z.string().transform((val) => parseFloat(val)).refine((val) => val >= 0, {
     message: 'Price must be a positive number',
@@ -423,7 +423,7 @@ const CreateRide = () => {
                 id="availableSeats"
                 type="number"
                 min="1"
-                max="10"
+                max="50"
                 {...register('availableSeats')}
               />
               {errors.availableSeats && (
