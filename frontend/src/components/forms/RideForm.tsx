@@ -10,19 +10,24 @@ import { Textarea } from '../ui/textarea';
 import { rideService } from '../../services/ride.service'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { driverService } from '../../services/driver.service';
 import { Driver } from '../../services/driver.service';
+import { DatePickerWithPreview } from '../ui/date-picker-with-preview';
+import { TimePickerWithPreview } from '../ui/time-picker-with-preview';
 
 const rideSchema = z.object({
   origin: z.string().min(1, 'Origin is required'),
   destination: z.string().min(1, 'Destination is required'),
-  departureTime: z.string().min(1, 'Departure time is required')
-    .refine(val => {
-      const date = new Date(val);
-      return date > new Date();
-    }, { message: 'Departure time must be in the future' }),
+  departureDate: z.string().min(1, 'Departure date is required'),
+  departureTime: z.string().min(1, 'Departure time is required'),
   availableSeats: z.coerce.number().min(1, 'Available seats must be greater than 0'),
   price: z.coerce.number().min(0, 'Price must be greater than 0'),
   driverId: z.string().min(1, 'Driver is required'),
   notes: z.string().optional(),
+}).refine(data => {
+  const date = new Date(`${data.departureDate}T${data.departureTime}`);
+  return date > new Date();
+}, {
+  message: 'Departure date and time must be in the future',
+  path: ['departureDate'] // Show the error on the date field
 });
 
 type RideFormValues = z.infer<typeof rideSchema>;
@@ -32,7 +37,7 @@ interface RideFormProps {
     id: string;
     origin: string;
     destination: string;
-    departureTime: string;
+    departureTime: string; // ISO string format
     availableSeats: number;
     price: number;
     driverId: string;
@@ -57,10 +62,20 @@ const RideForm = ({ initialData, onSubmit, onCancel }: RideFormProps) => {
     trigger,
   } = useForm<RideFormValues>({
     resolver: zodResolver(rideSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      origin: initialData.origin,
+      destination: initialData.destination,
+      departureDate: initialData.departureTime ? new Date(initialData.departureTime).toISOString().split('T')[0] : '',
+      departureTime: initialData.departureTime ? new Date(initialData.departureTime).toISOString().split('T')[1].substring(0, 5) : '',
+      availableSeats: initialData.availableSeats,
+      price: initialData.price,
+      driverId: initialData.driverId,
+      notes: initialData.notes || '',
+    } : {
       origin: '',
       destination: '',
-      departureTime: '',
+      departureDate: new Date().toISOString().split('T')[0],
+      departureTime: '08:00',
       availableSeats: 1,
       price: 0,
       driverId: '',
@@ -94,7 +109,16 @@ const RideForm = ({ initialData, onSubmit, onCancel }: RideFormProps) => {
     setLoading(true);
     setError(null);
     try {
-      await onSubmit(data);
+      // Combine date and time into a single ISO string
+      const combinedData = {
+        ...data,
+        departureTime: `${data.departureDate}T${data.departureTime}`,
+      };
+
+      // Remove the separate date field before submitting
+      const { departureDate, ...submitData } = combinedData;
+
+      await onSubmit(submitData as RideFormValues);
     } catch (error) {
       if (error instanceof Error) {
         console.error('Error submitting form:', error);
@@ -140,11 +164,51 @@ const RideForm = ({ initialData, onSubmit, onCancel }: RideFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="departureTime">Departure Time</Label>
-          <Input
-            id="departureTime"
-            type="datetime-local"
-            {...register('departureTime')}
+          <Controller
+            name="departureDate"
+            control={control}
+            render={({ field }) => {
+              // Convert string date to Date object for the DatePickerWithPreview
+              const dateValue = field.value ? new Date(field.value) : undefined;
+
+              return (
+                <DatePickerWithPreview
+                  date={dateValue}
+                  setDate={(date) => {
+                    if (date) {
+                      // Format date as YYYY-MM-DD without timezone issues
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const dateStr = `${year}-${month}-${day}`;
+                      field.onChange(dateStr);
+                    }
+                  }}
+                  label="Departure Date"
+                  placeholder="Select departure date"
+                />
+              );
+            }}
+          />
+          {errors.departureDate && (
+            <p className="text-sm text-red-500">{errors.departureDate.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Controller
+            name="departureTime"
+            control={control}
+            render={({ field }) => (
+              <TimePickerWithPreview
+                time={field.value || ''}
+                setTime={(timeStr) => {
+                  field.onChange(timeStr);
+                }}
+                label="Departure Time"
+                placeholder="Select departure time"
+              />
+            )}
           />
           {errors.departureTime && (
             <p className="text-sm text-red-500">{errors.departureTime.message}</p>

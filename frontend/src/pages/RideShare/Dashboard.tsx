@@ -67,7 +67,7 @@ const Dashboard = () => {
 
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-600">Revenue</h3>
-          <p className="text-3xl font-bold mt-2">${stats.revenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold mt-2">{stats.revenue.toFixed(0)} kr</p>
         </Card>
       </div>
 
