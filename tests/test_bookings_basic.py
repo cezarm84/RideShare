@@ -4,12 +4,12 @@ def test_create_booking_legacy(client, db_session):
 
     # Login as a fake user
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
-    token_response = client.post("/api/auth/token", data=login_data)
+    token_response = client.post("/api/v1/auth/token", data=login_data)
     assert token_response.status_code == 200
     token = token_response.json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.post("/api/bookings", json=booking_data, headers=headers)
+    response = client.post("/api/v1/bookings", json=booking_data, headers=headers)
     assert response.status_code == 201
     booking = response.json()
     assert booking["ride_id"] == 1
@@ -35,12 +35,12 @@ def test_create_booking_with_passengers(client, db_session):
     }
     # Login as a fake user
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
-    token_response = client.post("/api/auth/token", data=login_data)
+    token_response = client.post("/api/v1/auth/token", data=login_data)
     assert token_response.status_code == 200
     token = token_response.json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.post("/api/bookings", json=booking_data, headers=headers)
+    response = client.post("/api/v1/bookings", json=booking_data, headers=headers)
     assert response.status_code == 201
     booking = response.json()
     assert booking["ride_id"] == 1
@@ -56,12 +56,12 @@ def test_get_user_bookings(client, db_session):
     """Test getting all bookings for the current user"""
     # Login as a fake user
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
-    token_response = client.post("/api/auth/token", data=login_data)
+    token_response = client.post("/api/v1/auth/token", data=login_data)
     assert token_response.status_code == 200
     token = token_response.json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.get("/api/bookings", headers=headers)
+    response = client.get("/api/v1/bookings", headers=headers)
     assert response.status_code == 200
     bookings = response.json()
     assert isinstance(bookings, list)

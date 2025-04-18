@@ -6,11 +6,13 @@ def test_find_rides(client, db_session):
         "max_results": 5,
     }
     login_data = {"username": "employee1@volvo.com", "password": "password123"}
-    token_response = client.post("/api/auth/token", data=login_data)
+    token_response = client.post("/api/v1/auth/token", data=login_data)
     token = token_response.json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.post("/api/matching/find-rides", json=match_data, headers=headers)
+    response = client.post(
+        "/api/v1/matching/find-rides", json=match_data, headers=headers
+    )
     assert response.status_code == 200
     matches = response.json()
     assert isinstance(matches, list)

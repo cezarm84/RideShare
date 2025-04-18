@@ -8,7 +8,7 @@ def test_create_user(client, db_session):
         "latitude": 57.7089,
         "longitude": 11.9750,
     }
-    response = client.post("/api/users", json=user_data)
+    response = client.post("/api/v1/users", json=user_data)
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "test@example.com"
