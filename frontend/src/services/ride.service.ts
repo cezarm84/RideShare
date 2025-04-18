@@ -87,13 +87,23 @@ const RideService = {
   // Get reference data for ride creation
   getRideReferenceData: async () => {
     try {
-      const response = await api.get('/rides/reference-data');
+      // Try the new endpoint first
+      const response = await api.get('/reference-data/ride-reference-data');
       console.log('Successfully fetched reference data from API:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching reference data:', error);
-      console.log('Using mock reference data as fallback');
-      return mockReferenceData;
+      console.error('Error fetching reference data from new endpoint:', error);
+
+      try {
+        // Fall back to the old endpoint if the new one fails
+        const response = await api.get('/rides/reference-data');
+        console.log('Successfully fetched reference data from old API endpoint:', response.data);
+        return response.data;
+      } catch (fallbackError) {
+        console.error('Error fetching reference data from fallback endpoint:', fallbackError);
+        console.log('Using mock reference data as final fallback');
+        return mockReferenceData;
+      }
     }
   },
 };

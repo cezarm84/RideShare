@@ -15,6 +15,7 @@ from app.api.endpoints import (
     matching_preferences,
     messaging,
     payment_methods,
+    reference_data,
     rides,
     user_preferences,
     user_travel_patterns,
@@ -32,6 +33,9 @@ api_router.include_router(drivers.router, prefix="/drivers", tags=["drivers"])
 api_router.include_router(rides.router, prefix="/rides", tags=["rides"])
 api_router.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
 api_router.include_router(matching.router, prefix="/matching", tags=["matching"])
+
+# Reference Data
+api_router.include_router(reference_data.router, prefix="/reference-data", tags=["reference-data"])
 
 # Vehicle Management is handled through admin/vehicle-types endpoints
 
