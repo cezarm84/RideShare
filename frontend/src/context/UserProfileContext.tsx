@@ -58,8 +58,8 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [error, setError] = useState<string | null>(null);
 
   // Check if profile is complete (has all required fields)
-  const isProfileComplete = !!profile && 
-    !!profile.phone_number && 
+  const isProfileComplete = !!profile &&
+    !!profile.phone_number &&
     (!!profile.home_address || (!!profile.home_street && !!profile.home_post_code && !!profile.home_city));
 
   const fetchProfile = async () => {
