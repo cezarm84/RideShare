@@ -61,8 +61,10 @@ self.addEventListener('fetch', (event) => {
           if (response.status === 200) {
             caches.open(CACHE_NAME)
               .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+                cache.put(event.request, responseToCache)
+                  .catch(err => console.error('Cache put error:', err));
+              })
+              .catch(err => console.error('Cache open error:', err));
           }
 
           return response;
@@ -104,8 +106,10 @@ self.addEventListener('fetch', (event) => {
             if (response.status === 200) {
               caches.open(CACHE_NAME)
                 .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                });
+                  cache.put(event.request, responseToCache)
+                    .catch(err => console.error('Cache put error:', err));
+                })
+                .catch(err => console.error('Cache open error:', err));
             }
 
             return response;

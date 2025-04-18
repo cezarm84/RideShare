@@ -9,13 +9,26 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Service worker disabled to fix WebSocket issues
+      // Service worker registration with proper error handling
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-            console.log('Service Worker unregistered');
-          }
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(function(error) {
+              console.error('Service Worker registration failed:', error);
+            });
+        });
+
+        // Handle service worker messages
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          console.log('Message from Service Worker:', event.data);
+        });
+
+        // Handle service worker controller changes
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          console.log('Service Worker controller changed');
         });
       }
     </script>
