@@ -139,3 +139,5 @@ alembic.ini
 frontend/coverage/
 frontend/cypress/
 frontend/frontend/
+frontend/tsconfig.tsbuildinfo
+frontend/vite.config.d.ts
