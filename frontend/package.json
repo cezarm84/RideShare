@@ -49,7 +49,7 @@
     "react-dropzone": "^14.3.5",
     "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.55.0",
-    "react-leaflet": "^5.0.0",
+    "react-leaflet": "^4.2.1",
     "react-router": "^7.1.5",
     "react-router-dom": "^7.1.5",
     "swiper": "^11.2.3",
@@ -99,6 +99,14 @@
     "@react-jvectormap/world": {
       "react": "^16.8.0 || ^17 || ^18 || ^19",
       "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
+    },
+    "react-leaflet": {
+      "react": "^16.8.0 || ^17 || ^18",
+      "react-dom": "^16.8.0 || ^17 || ^18"
+    },
+    "@react-leaflet/core": {
+      "react": "^16.8.0 || ^17 || ^18",
+      "react-dom": "^16.8.0 || ^17 || ^18"
     }
   }
 }
