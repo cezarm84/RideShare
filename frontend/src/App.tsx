@@ -70,6 +70,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     <Navigate to="/signin" state={{ from: location }} replace />;
 };
 
+// Import the AdminProtectedRoute component
+import AdminProtectedRoute from "./components/common/AdminProtectedRoute";
+
 // Public route with layout
 const PublicLayoutRoute = ({ children }: { children: React.ReactNode }) => {
   return <AppLayout>{children}</AppLayout>;
@@ -103,15 +106,15 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><AppLayout><UserProfiles /></AppLayout></ProtectedRoute>} />
 
           {/* Admin Protected Routes */}
-          <Route path="/admin" element={<ProtectedRoute><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/hubs" element={<ProtectedRoute><AppLayout><HubsManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/destinations" element={<ProtectedRoute><AppLayout><DestinationsManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/vehicle-types" element={<ProtectedRoute><AppLayout><VehicleTypesManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/enterprises" element={<ProtectedRoute><AppLayout><EnterprisesManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute><AppLayout><UsersManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/drivers" element={<ProtectedRoute><AppLayout><DriversManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/rides" element={<ProtectedRoute><AppLayout><RidesManagement /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute><AppLayout><SystemSettings /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminProtectedRoute><AppLayout><AdminDashboard /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/hubs" element={<AdminProtectedRoute><AppLayout><HubsManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/destinations" element={<AdminProtectedRoute><AppLayout><DestinationsManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/vehicle-types" element={<AdminProtectedRoute><AppLayout><VehicleTypesManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/enterprises" element={<AdminProtectedRoute><AppLayout><EnterprisesManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/users" element={<AdminProtectedRoute><AppLayout><UsersManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/drivers" element={<AdminProtectedRoute><AppLayout><DriversManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/rides" element={<AdminProtectedRoute><AppLayout><RidesManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/settings" element={<AdminProtectedRoute><AppLayout><SystemSettings /></AppLayout></AdminProtectedRoute>} />
 
           {/* Documentation Routes */}
           <Route path="/docs" element={<AppLayout><DocumentationPage /></AppLayout>} />

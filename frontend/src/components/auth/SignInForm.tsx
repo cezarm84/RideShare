@@ -20,6 +20,8 @@ export default function SignInForm() {
 
   // Get the redirect path from the location state or default to home
   const from = location.state?.from?.pathname || "/";
+
+  console.log('Redirect path after login will be:', from);
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -102,6 +104,7 @@ export default function SignInForm() {
               try {
                 await login(email, password);
                 // Redirect to the page they were trying to access or home
+                console.log('Login successful, redirecting to:', from);
                 navigate(from, { replace: true });
               } catch (err) {
                 console.error('Login failed:', err);

@@ -204,10 +204,9 @@ const AppSidebar: React.FC = () => {
             return null;
           }
 
-          // Skip the Admin menu if user is not an admin
-          if (nav.name === "Admin" && (!user?.is_admin && !user?.is_superadmin && !user?.is_superuser)) {
-            return null;
-          }
+          // We'll show the Admin menu to all users, but the routes will be protected
+          // Admin routes will redirect to login if not authenticated
+          // and to dashboard if authenticated but not admin
 
           return (
             <li key={nav.name}>

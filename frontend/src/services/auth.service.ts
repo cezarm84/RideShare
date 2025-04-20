@@ -53,6 +53,9 @@ const AuthService = {
       // Store admin email for getCurrentUser
       localStorage.setItem('mock_user_email', credentials.username);
 
+      // Log the successful mock login
+      console.log('Mock admin login successful');
+
       return {
         access_token: mockToken,
         token_type: 'bearer'
