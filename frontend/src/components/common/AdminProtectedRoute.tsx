@@ -18,7 +18,9 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   // If not authenticated, redirect to sign-in
+  // but only for admin routes
   if (!isAuthenticated) {
+    console.log('User not authenticated, redirecting from admin route to sign-in');
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 

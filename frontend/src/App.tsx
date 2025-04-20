@@ -66,6 +66,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <LoadingSpinner fullScreen size="lg" message="Loading your profile..." />;
   }
 
+  // Only redirect to sign-in if the user is trying to access a protected route
+  // and is not authenticated
   return isAuthenticated ?
     <>{children}</> :
     <Navigate to="/signin" state={{ from: location }} replace />;
