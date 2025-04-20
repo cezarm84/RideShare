@@ -264,9 +264,21 @@ const AuthService = {
       return response.data;
     } catch (error) {
       console.error('Session verification failed:', error);
-      // If the token is invalid, this will throw an error
-      // which will be caught by the caller
-      throw error;
+
+      // If it's a network error or CORS issue, don't invalidate the session
+      if (error.message && (error.message.includes('Network Error') || error.message.includes('CORS'))) {
+        console.log('Network or CORS error during session verification - keeping session active');
+        return { valid: true };
+      }
+
+      // If it's a 401 or 403, the token is invalid
+      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        throw error;
+      }
+
+      // For other errors (like 500), keep the session active
+      console.log('Server error during session verification - keeping session active');
+      return { valid: true };
     }
   },
 };
