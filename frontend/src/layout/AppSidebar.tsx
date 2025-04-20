@@ -205,7 +205,7 @@ const AppSidebar: React.FC = () => {
           }
 
           // Skip the Admin menu if user is not an admin
-          if (nav.name === "Admin" && (!user?.is_admin && !user?.is_superadmin)) {
+          if (nav.name === "Admin" && (!user?.is_admin && !user?.is_superadmin && !user?.is_superuser)) {
             return null;
           }
 
