@@ -31,13 +31,34 @@ const UsersManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/admin/users');
-      setUsers(response.data);
+      // Try the admin/users endpoint first
+      try {
+        console.log('Fetching users from admin/users endpoint');
+        const response = await api.get('/admin/users');
+        console.log('Users data received:', response.data);
+        setUsers(response.data);
+        return;
+      } catch (adminErr) {
+        console.error('Error fetching from admin/users endpoint:', adminErr);
+
+        // Try the regular users endpoint as fallback
+        try {
+          console.log('Trying fallback to /users endpoint');
+          const response = await api.get('/users');
+          console.log('Users data received from fallback endpoint:', response.data);
+          setUsers(response.data);
+          return;
+        } catch (usersErr) {
+          console.error('Error fetching from users endpoint:', usersErr);
+          throw usersErr; // Re-throw to be caught by the outer catch
+        }
+      }
     } catch (err) {
-      console.error('Error fetching users:', err);
+      console.error('All attempts to fetch users failed:', err);
       setError('Failed to load users. Please try again later.');
-      // Use mock data for development
-      setUsers([
+
+      // Only use mock data if we got an empty response or a 404
+      const mockUsers = [
         {
           id: 1,
           email: 'admin@example.com',
@@ -71,7 +92,16 @@ const UsersManagement = () => {
           user_type: 'driver',
           created_at: '2023-01-03T00:00:00Z',
         },
-      ]);
+      ];
+
+      // Only use mock data if we received a 404 (endpoint not found)
+      if (err.response && err.response.status === 404) {
+        console.log('Using mock user data since endpoint not found');
+        setUsers(mockUsers);
+      } else {
+        // For other errors, set empty array to show 'No users found' message
+        setUsers([]);
+      }
     } finally {
       setLoading(false);
     }

@@ -32,13 +32,49 @@ const RidesManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/admin/rides');
-      setRides(response.data);
+      // Try the admin/rides endpoint first
+      try {
+        console.log('Fetching rides from admin/rides endpoint');
+        const response = await api.get('/admin/rides');
+        console.log('Rides data received:', response.data);
+        setRides(response.data);
+        return;
+      } catch (adminErr) {
+        console.error('Error fetching from admin/rides endpoint:', adminErr);
+
+        // Try the regular rides endpoint as fallback
+        try {
+          console.log('Trying fallback to /rides endpoint');
+          const response = await api.get('/rides');
+          console.log('Rides data received from fallback endpoint:', response.data);
+
+          // Transform the data to match the expected format if needed
+          const formattedRides = response.data.map(ride => ({
+            id: ride.id,
+            ride_type: ride.ride_type,
+            starting_hub_name: ride.starting_hub?.name || 'Unknown',
+            destination_hub_name: ride.destination?.name || ride.destination_hub?.name || 'Unknown',
+            departure_time: ride.departure_time,
+            available_seats: ride.available_seats,
+            price_per_seat: ride.price_per_seat,
+            driver_name: ride.driver?.name || 'Not assigned',
+            status: ride.status,
+            created_at: ride.created_at
+          }));
+
+          setRides(formattedRides);
+          return;
+        } catch (ridesErr) {
+          console.error('Error fetching from rides endpoint:', ridesErr);
+          throw ridesErr; // Re-throw to be caught by the outer catch
+        }
+      }
     } catch (err) {
-      console.error('Error fetching rides:', err);
+      console.error('All attempts to fetch rides failed:', err);
       setError('Failed to load rides. Please try again later.');
-      // Use mock data for development
-      setRides([
+
+      // Mock data for development
+      const mockRides = [
         {
           id: 1,
           ride_type: 'hub_to_hub',
@@ -75,7 +111,16 @@ const RidesManagement = () => {
           status: 'completed',
           created_at: '2023-05-09T11:20:00Z',
         },
-      ]);
+      ];
+
+      // Only use mock data if we received a 404 (endpoint not found)
+      if (err.response && err.response.status === 404) {
+        console.log('Using mock ride data since endpoint not found');
+        setRides(mockRides);
+      } else {
+        // For other errors, set empty array to show 'No rides found' message
+        setRides([]);
+      }
     } finally {
       setLoading(false);
     }

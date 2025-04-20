@@ -33,13 +33,34 @@ const DriversManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/admin/drivers');
-      setDrivers(response.data);
+      // Try the admin/drivers endpoint first
+      try {
+        console.log('Fetching drivers from admin/drivers endpoint');
+        const response = await api.get('/admin/drivers');
+        console.log('Drivers data received:', response.data);
+        setDrivers(response.data);
+        return;
+      } catch (adminErr) {
+        console.error('Error fetching from admin/drivers endpoint:', adminErr);
+
+        // Try the regular drivers endpoint as fallback
+        try {
+          console.log('Trying fallback to /drivers endpoint');
+          const response = await api.get('/drivers');
+          console.log('Drivers data received from fallback endpoint:', response.data);
+          setDrivers(response.data);
+          return;
+        } catch (driversErr) {
+          console.error('Error fetching from drivers endpoint:', driversErr);
+          throw driversErr; // Re-throw to be caught by the outer catch
+        }
+      }
     } catch (err) {
-      console.error('Error fetching drivers:', err);
+      console.error('All attempts to fetch drivers failed:', err);
       setError('Failed to load drivers. Please try again later.');
-      // Use mock data for development
-      setDrivers([
+
+      // Mock data for development
+      const mockDrivers = [
         {
           id: 1,
           user_id: 3,
@@ -66,7 +87,16 @@ const DriversManagement = () => {
           is_active: true,
           created_at: '2023-02-15T00:00:00Z',
         },
-      ]);
+      ];
+
+      // Only use mock data if we received a 404 (endpoint not found)
+      if (err.response && err.response.status === 404) {
+        console.log('Using mock driver data since endpoint not found');
+        setDrivers(mockDrivers);
+      } else {
+        // For other errors, set empty array to show 'No drivers found' message
+        setDrivers([]);
+      }
     } finally {
       setLoading(false);
     }
