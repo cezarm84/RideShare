@@ -44,13 +44,9 @@ const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/signin?redirect=/calendar');
-      return;
-    }
-
+    // Fetch events regardless of authentication status
     fetchEvents();
-  }, [isAuthenticated, navigate]);
+  }, []);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -221,9 +217,8 @@ const Calendar = () => {
     return '';
   };
 
-  if (!isAuthenticated) {
-    return null; // Redirect handled in useEffect
-  }
+  // No need to check authentication here, the ProtectedRoute component in App.tsx
+  // will handle redirecting if needed
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

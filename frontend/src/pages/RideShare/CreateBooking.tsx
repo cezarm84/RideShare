@@ -79,10 +79,6 @@ const CreateBooking = () => {
 
   // Get the ride ID from the URL query parameters
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/signin?redirect=' + encodeURIComponent(location.pathname + location.search));
-      return;
-    }
 
     const params = new URLSearchParams(location.search);
     const rideId = params.get('rideId');

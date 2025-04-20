@@ -45,14 +45,10 @@ const BookingConfirmation = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/signin');
-      return;
-    }
 
     const params = new URLSearchParams(location.search);
     const bookingId = params.get('bookingId');
-    
+
     if (!bookingId) {
       navigate('/bookings');
       return;
@@ -65,7 +61,7 @@ const BookingConfirmation = () => {
         // In a real app, we would fetch from the API
         // const response = await apiClient.get<Booking>(`/bookings/${bookingId}`);
         // setBooking(response);
-        
+
         // For now, use mock data
         setTimeout(() => {
           setBooking({
@@ -128,11 +124,11 @@ const BookingConfirmation = () => {
 
   return (
     <div className="p-6">
-      <PageMeta 
-        title="RideShare - Booking Confirmation" 
+      <PageMeta
+        title="RideShare - Booking Confirmation"
         description="Your ride booking has been confirmed."
       />
-      
+
       <div className="max-w-3xl mx-auto">
         <Card className="p-8">
           <div className="text-center mb-8">
@@ -144,7 +140,7 @@ const BookingConfirmation = () => {
               Your booking has been successfully confirmed. Below are your booking details.
             </p>
           </div>
-          
+
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4 pb-2 border-b">Booking Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,34 +148,34 @@ const BookingConfirmation = () => {
                 <p className="text-sm text-gray-600">Booking ID</p>
                 <p className="font-medium">{booking.id}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Booking Date</p>
                 <p className="font-medium">{new Date(booking.createdAt).toLocaleDateString()}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Status</p>
                 <p className="font-medium capitalize">{booking.status}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Payment Method</p>
                 <p className="font-medium capitalize">{booking.paymentMethod.replace('_', ' ')}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Payment Status</p>
                 <p className="font-medium capitalize">{booking.paymentStatus}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Number of Seats</p>
                 <p className="font-medium">{booking.numberOfSeats}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4 pb-2 border-b">Ride Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,23 +184,23 @@ const BookingConfirmation = () => {
                 <p className="font-medium">{booking.ride.startingHub.name}</p>
                 <p className="text-sm text-gray-600">{booking.ride.startingHub.address}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">To</p>
                 <p className="font-medium">{booking.ride.destinationHub.name}</p>
                 <p className="text-sm text-gray-600">{booking.ride.destinationHub.address}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Departure Time</p>
                 <p className="font-medium">{new Date(booking.ride.departureTime).toLocaleString()}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Vehicle Type</p>
                 <p className="font-medium">{booking.ride.vehicleType.name}</p>
               </div>
-              
+
               {booking.ride.driver && (
                 <div>
                   <p className="text-sm text-gray-600">Driver</p>
@@ -216,34 +212,34 @@ const BookingConfirmation = () => {
               )}
             </div>
           </div>
-          
+
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4 pb-2 border-b">Payment Summary</h2>
             <div className="flex justify-between mb-2">
               <p>Price per seat</p>
               <p>${(booking.totalPrice / booking.numberOfSeats).toFixed(2)}</p>
             </div>
-            
+
             <div className="flex justify-between mb-2">
               <p>Number of seats</p>
               <p>{booking.numberOfSeats}</p>
             </div>
-            
+
             <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
               <p>Total</p>
               <p>${booking.totalPrice.toFixed(2)}</p>
             </div>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <Button 
+            <Button
               onClick={() => navigate('/bookings')}
               className="bg-brand-500 hover:bg-brand-600"
             >
               View My Bookings
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate('/rides')}
             >
               Find More Rides

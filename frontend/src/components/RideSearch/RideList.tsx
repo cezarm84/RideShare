@@ -71,10 +71,7 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
   const [expandedRideId, setExpandedRideId] = useState<string | null>(null);
 
   const handleBookRide = (rideId: string) => {
-    if (!isAuthenticated) {
-      navigate('/signin?redirect=/rides');
-      return;
-    }
+    // Let the ProtectedRoute component handle authentication
     onBookRide(rideId);
   };
 
