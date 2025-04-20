@@ -85,31 +85,31 @@ const CreateRide = () => {
         if (data.hubs) setHubs(data.hubs);
         if (data.destinations) setDestinations(data.destinations);
         if (data.vehicle_types) {
-          const vehicleTypesWithIds = data.vehicle_types.map(type => ({
+          const vehicleTypesWithIds = data.vehicle_types.map((type, index) => ({
             ...type,
-            uniqueId: `vehicle_${type.id}`
+            uniqueId: `vehicle_${type.id}_${index}`
           }));
           setVehicleTypes(vehicleTypesWithIds);
         }
         if (data.enterprises) {
-          const enterprisesWithIds = data.enterprises.map(enterprise => ({
+          const enterprisesWithIds = data.enterprises.map((enterprise, index) => ({
             ...enterprise,
-            uniqueId: `enterprise_${enterprise.id}`
+            uniqueId: `enterprise_${enterprise.id}_${index}`
           }));
           setEnterprises(enterprisesWithIds);
         }
 
         // Create a combined array of all locations (hubs + destinations) with unique keys
-        const hubsWithPrefix = (data.hubs || []).map(hub => ({
+        const hubsWithPrefix = (data.hubs || []).map((hub, index) => ({
           ...hub,
-          uniqueId: `hub_${hub.id}`,
+          uniqueId: `hub_${hub.id}_${index}`,
           originalId: hub.id,
           type: 'hub'
         }));
 
-        const destinationsWithPrefix = (data.destinations || []).map(dest => ({
+        const destinationsWithPrefix = (data.destinations || []).map((dest, index) => ({
           ...dest,
-          uniqueId: `dest_${dest.id}`,
+          uniqueId: `dest_${dest.id}_${index}`,
           originalId: dest.id,
           type: 'destination'
         }));
@@ -260,8 +260,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select starting hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allLocations.map((location, index) => (
-                        <SelectItem key={`starting_${location.uniqueId}_${index}`} value={location.originalId.toString()}>
+                      {allLocations.map((location) => (
+                        <SelectItem key={`starting_location_${location.uniqueId}`} value={location.originalId.toString()}>
                           {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
@@ -288,8 +288,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select destination hub" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allLocations.map((location, index) => (
-                        <SelectItem key={`destination_${location.uniqueId}_${index}`} value={location.originalId.toString()}>
+                      {allLocations.map((location) => (
+                        <SelectItem key={`destination_location_${location.uniqueId}`} value={location.originalId.toString()}>
                           {location.name} {location.type === 'destination' ? '(Destination)' : ''}
                         </SelectItem>
                       ))}
@@ -318,8 +318,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select enterprise" />
                     </SelectTrigger>
                     <SelectContent>
-                      {enterprises.map((enterprise, index) => (
-                        <SelectItem key={`enterprise_select_${enterprise.id}_${index}`} value={enterprise.id.toString()}>
+                      {enterprises.map((enterprise) => (
+                        <SelectItem key={`enterprise_select_${enterprise.uniqueId}`} value={enterprise.id.toString()}>
                           {enterprise.name}
                         </SelectItem>
                       ))}
@@ -402,8 +402,8 @@ const CreateRide = () => {
                       <SelectValue placeholder="Select vehicle type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vehicleTypes.map((type, index) => (
-                        <SelectItem key={`vehicle_type_${type.id}_${index}`} value={type.id.toString()}>
+                      {vehicleTypes.map((type) => (
+                        <SelectItem key={`vehicle_type_select_${type.uniqueId}`} value={type.id.toString()}>
                           {type.name} (Capacity: {type.capacity})
                         </SelectItem>
                       ))}
