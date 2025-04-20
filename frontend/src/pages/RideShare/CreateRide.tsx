@@ -171,6 +171,25 @@ const CreateRide = () => {
         recurrence_pattern: 'one_time'
       };
 
+      // Add additional fields required by the backend
+      if (data.rideType === 'hub_to_destination') {
+        // For hub_to_destination, we need to set destination_hub_id to null
+        // and provide a destination object
+        payload.destination_hub_id = null;
+
+        // Get the destination location from allLocations
+        const destinationLocation = allLocations.find(
+          location => location.originalId.toString() === data.destinationHubId
+        );
+
+        if (destinationLocation) {
+          payload.destination = {
+            name: destinationLocation.name,
+            address: destinationLocation.address || '',
+          };
+        }
+      }
+
       // Add enterprise_id if it's an enterprise ride
       if (data.rideType === 'enterprise' && data.enterpriseId) {
         Object.assign(payload, { enterprise_id: parseInt(data.enterpriseId) });
@@ -186,7 +205,18 @@ const CreateRide = () => {
       navigate('/rides');
     } catch (error) {
       console.error('Error creating ride:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create ride. Please try again.');
+
+      // Display a more user-friendly error message
+      if (error instanceof Error) {
+        // Check if it's a validation error
+        if (error.message.startsWith('Validation error:')) {
+          setError(error.message);
+        } else {
+          setError(`Failed to create ride: ${error.message}`);
+        }
+      } else {
+        setError('Failed to create ride. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -58,9 +58,38 @@ const RideService = {
     return response.data;
   },
 
-  createRide: async (rideData: CreateRideData): Promise<Ride> => {
-    const response = await api.post<Ride>('/rides', rideData);
-    return response.data;
+  createRide: async (rideData: any): Promise<Ride> => {
+    try {
+      console.log('Creating ride with payload:', rideData);
+      const response = await api.post<Ride>('/rides', rideData);
+      console.log('Ride created successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating ride:', error);
+
+      // Check if we have validation errors in the response
+      if (error.response && error.response.status === 422 && error.response.data) {
+        console.error('Validation errors:', error.response.data);
+
+        // Format validation errors into a more readable message
+        let errorMessage = 'Validation error: ';
+        if (error.response.data.detail) {
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage += error.response.data.detail.map((err: any) =>
+              `${err.loc.join('.')} - ${err.msg}`
+            ).join('; ');
+          } else {
+            errorMessage += error.response.data.detail;
+          }
+        } else {
+          errorMessage += JSON.stringify(error.response.data);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      throw error;
+    }
   },
 
   updateRide: async (id: number, rideData: Partial<CreateRideData>): Promise<Ride> => {
