@@ -20,6 +20,7 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import TestPage from "./pages/TestPage";
+import TestRedirect from "./pages/TestRedirect";
 
 // RideShare specific pages
 import Rides from "./pages/RideShare/Rides";
@@ -125,8 +126,10 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
 
-          {/* Test Page for Cypress */}
+          {/* Test Pages */}
           <Route path="/test" element={<TestPage />} />
+          <Route path="/test-redirect" element={<TestRedirect />} />
+          <Route path="/raw-test" element={<div>Raw Test Page</div>} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
