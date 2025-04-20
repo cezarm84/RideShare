@@ -4,6 +4,7 @@ from app.api.endpoints import (
     admin_destinations,
     admin_enterprises,
     admin_hubs,
+    admin_stats,
     admin_vehicle_types,
     analytics,
     auth,
@@ -64,6 +65,9 @@ api_router.include_router(
 )
 
 # Admin Endpoints (restricted to admin users)
+api_router.include_router(
+    admin_stats.router, prefix="/admin/stats", tags=["admin", "dashboard"]
+)
 api_router.include_router(
     admin_hubs.router, prefix="/admin/hubs", tags=["admin", "hubs"]
 )

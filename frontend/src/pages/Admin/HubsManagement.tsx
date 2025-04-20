@@ -39,40 +39,85 @@ const HubsManagement = () => {
     fetchHubs();
   }, []);
 
+  // Mock data for development
+  const mockHubs = [
+    {
+      id: 1,
+      name: 'Central Station',
+      address: 'Drottningtorget 5',
+      city: 'Gothenburg',
+      postal_code: '41103',
+      latitude: 57.7089,
+      longitude: 11.9746,
+      description: 'Main transportation hub in central Gothenburg',
+      is_active: true,
+    },
+    {
+      id: 2,
+      name: 'Lindholmen',
+      address: 'Lindholmspiren 7',
+      city: 'Gothenburg',
+      postal_code: '41756',
+      latitude: 57.7075,
+      longitude: 11.9386,
+      description: 'Tech hub on Hisingen',
+      is_active: true,
+    },
+    {
+      id: 3,
+      name: 'Landvetter Airport',
+      address: 'Flygplatsvägen 82',
+      city: 'Härryda',
+      postal_code: '43832',
+      latitude: 57.6685,
+      longitude: 12.2955,
+      description: 'International airport serving Gothenburg',
+      is_active: true,
+    },
+  ];
+
   const fetchHubs = async () => {
     setLoading(true);
     setError(null);
+
+    // Check if using mock admin token
+    const token = localStorage.getItem('token');
+    const isMockToken = token && token.startsWith('mock_admin_token_');
+
+    if (isMockToken) {
+      console.log('Using mock admin token - loading mock hubs data');
+      // Use mock data for development with mock token
+      setTimeout(() => {
+        setHubs(mockHubs);
+        setLoading(false);
+      }, 500); // Add a small delay to simulate API call
+      return;
+    }
+
     try {
+      console.log('Fetching hubs from API...');
       const response = await api.get('/admin/hubs');
+      console.log('Hubs data received:', response.data);
       setHubs(response.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching hubs:', err);
-      setError('Failed to load hubs. Please try again later.');
+
+      // Check for specific error types
+      if (err.message.includes('Network Error')) {
+        setError('Network error: Unable to connect to the server. Please check your connection.');
+      } else if (err.response && err.response.status === 401) {
+        setError('Authentication error: Please sign in again.');
+      } else if (err.response && err.response.status === 403) {
+        setError('Access denied: You do not have permission to view hubs.');
+      } else if (err.response && err.response.status === 404) {
+        setError('Endpoint not found: The requested resource does not exist.');
+      } else {
+        setError('Failed to load hubs. Using mock data for development.');
+      }
+
       // Use mock data for development
-      setHubs([
-        {
-          id: 1,
-          name: 'Central Station',
-          address: 'Drottningtorget 5',
-          city: 'Gothenburg',
-          postal_code: '41103',
-          latitude: 57.7089,
-          longitude: 11.9746,
-          description: 'Main transportation hub in central Gothenburg',
-          is_active: true,
-        },
-        {
-          id: 2,
-          name: 'Lindholmen',
-          address: 'Lindholmspiren 7',
-          city: 'Gothenburg',
-          postal_code: '41756',
-          latitude: 57.7075,
-          longitude: 11.9386,
-          description: 'Tech hub on Hisingen',
-          is_active: true,
-        },
-      ]);
+      console.log('Using mock hubs data');
+      setHubs(mockHubs);
     } finally {
       setLoading(false);
     }
@@ -91,6 +136,7 @@ const HubsManagement = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Creating new hub with data:', formData);
       await api.post('/admin/hubs', formData);
       setIsDialogOpen(false);
       setFormData({
@@ -100,10 +146,53 @@ const HubsManagement = () => {
         postal_code: '',
         description: '',
       });
+
+      // Show success message
+      console.log('Hub created successfully');
+
+      // Refresh the hubs list
       fetchHubs();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating hub:', err);
-      setError('Failed to create hub. Please try again.');
+
+      // Check for specific error types
+      if (err.message.includes('Network Error')) {
+        setError('Network error: Unable to connect to the server. Please check your connection.');
+      } else if (err.response && err.response.status === 401) {
+        setError('Authentication error: Please sign in again.');
+      } else if (err.response && err.response.status === 403) {
+        setError('Access denied: You do not have permission to create hubs.');
+      } else if (err.response && err.response.status === 422) {
+        setError('Validation error: Please check your input data.');
+      } else {
+        setError('Failed to create hub. Please try again.');
+      }
+
+      // For development: Simulate successful creation with mock data
+      if (localStorage.getItem('token')?.startsWith('mock_admin_token_')) {
+        console.log('Using mock data: Simulating successful hub creation');
+        setIsDialogOpen(false);
+        setFormData({
+          name: '',
+          address: '',
+          city: '',
+          postal_code: '',
+          description: '',
+        });
+
+        // Add the new hub to the mock data
+        const newHub = {
+          id: mockHubs.length + 1,
+          name: formData.name,
+          address: formData.address,
+          city: formData.city,
+          postal_code: formData.postal_code || '',
+          description: formData.description || '',
+          is_active: true,
+        };
+
+        setHubs([...mockHubs, newHub]);
+      }
     } finally {
       setLoading(false);
     }
