@@ -46,12 +46,15 @@ const AuthService = {
         credentials.password === 'admin123') {
       console.log('Using mock admin login for development');
 
-      // Create a mock token
+      // Create a mock token with a longer expiration (7 days)
       const mockToken = 'mock_admin_token_' + Date.now();
       localStorage.setItem('token', mockToken);
 
       // Store admin email for getCurrentUser
       localStorage.setItem('mock_user_email', credentials.username);
+
+      // Store login timestamp
+      localStorage.setItem('mock_login_time', Date.now().toString());
 
       // Log the successful mock login
       console.log('Mock admin login successful');
@@ -142,8 +145,11 @@ const AuthService = {
   },
 
   logout: () => {
+    console.log('Logging out user');
     localStorage.removeItem('token');
     localStorage.removeItem('mock_user_email');
+    localStorage.removeItem('mock_login_time');
+    console.log('User logged out successfully');
   },
 
   getCurrentUser: async (): Promise<UserProfile> => {
@@ -154,7 +160,7 @@ const AuthService = {
     const mockUserEmail = localStorage.getItem('mock_user_email');
 
     if (token && token.startsWith('mock_admin_token_') && mockUserEmail) {
-      console.log('Using mock admin user data');
+      console.log('Using mock admin user data for:', mockUserEmail);
 
       // Return mock admin user data
       const mockUserData: UserProfile = {
@@ -169,6 +175,7 @@ const AuthService = {
         created_at: new Date().toISOString()
       };
 
+      console.log('Mock user data created:', mockUserData);
       return mockUserData;
     }
 
@@ -205,6 +212,7 @@ const AuthService = {
     // Check for mock admin token
     if (token.startsWith('mock_admin_token_')) {
       // Mock tokens are always valid
+      console.log('Using mock admin token for authentication');
       return true;
     }
 

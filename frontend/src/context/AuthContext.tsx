@@ -29,9 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       try {
         if (AuthService.isAuthenticated()) {
+          console.log('User is authenticated, fetching user data');
           const userData = await AuthService.getCurrentUser();
+          console.log('User data fetched successfully:', userData);
           setUser(userData);
           setIsAuthenticated(true);
+        } else {
+          console.log('User is not authenticated');
         }
       } catch (err) {
         console.error('Failed to fetch user data:', err);
