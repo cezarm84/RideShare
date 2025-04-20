@@ -35,6 +35,17 @@ import FAQ from "./pages/FAQ/FAQ";
 import Contact from "./pages/Contact/Contact";
 import Terms from "./pages/Terms";
 
+// Admin pages
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import HubsManagement from "./pages/Admin/HubsManagement";
+import DestinationsManagement from "./pages/Admin/DestinationsManagement";
+import VehicleTypesManagement from "./pages/Admin/VehicleTypesManagement";
+import EnterprisesManagement from "./pages/Admin/EnterprisesManagement";
+import UsersManagement from "./pages/Admin/UsersManagement";
+import DriversManagement from "./pages/Admin/DriversManagement";
+import RidesManagement from "./pages/Admin/RidesManagement";
+import SystemSettings from "./pages/Admin/SystemSettings";
+
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
 
@@ -92,12 +103,15 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><AppLayout><UserProfiles /></AppLayout></ProtectedRoute>} />
 
           {/* Admin Protected Routes */}
-          <Route path="/admin" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="drivers" element={<Drivers />} />
-            <Route path="enterprises" element={<Enterprises />} />
-            <Route path="form-elements" element={<FormElements />} />
-            <Route path="basic-tables" element={<BasicTables />} />
-          </Route>
+          <Route path="/admin" element={<ProtectedRoute><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/hubs" element={<ProtectedRoute><AppLayout><HubsManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/destinations" element={<ProtectedRoute><AppLayout><DestinationsManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/vehicle-types" element={<ProtectedRoute><AppLayout><VehicleTypesManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/enterprises" element={<ProtectedRoute><AppLayout><EnterprisesManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute><AppLayout><UsersManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/drivers" element={<ProtectedRoute><AppLayout><DriversManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/rides" element={<ProtectedRoute><AppLayout><RidesManagement /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute><AppLayout><SystemSettings /></AppLayout></ProtectedRoute>} />
 
           {/* Documentation Routes */}
           <Route path="/docs" element={<AppLayout><DocumentationPage /></AppLayout>} />

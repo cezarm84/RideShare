@@ -95,8 +95,15 @@ const othersItems: NavItem[] = [
     icon: <ListIcon />,
     name: "Admin",
     subItems: [
-      { name: "Form Elements", path: "/form-elements", pro: false },
-      { name: "Data Tables", path: "/basic-tables", pro: false },
+      { name: "Dashboard", path: "/admin", pro: false },
+      { name: "Hubs", path: "/admin/hubs", pro: false },
+      { name: "Destinations", path: "/admin/destinations", pro: false },
+      { name: "Vehicle Types", path: "/admin/vehicle-types", pro: false },
+      { name: "Enterprises", path: "/admin/enterprises", pro: false },
+      { name: "Users", path: "/admin/users", pro: false },
+      { name: "Drivers", path: "/admin/drivers", pro: false },
+      { name: "Rides", path: "/admin/rides", pro: false },
+      { name: "Settings", path: "/admin/settings", pro: false },
     ],
   },
   {
@@ -121,7 +128,7 @@ const othersItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -194,6 +201,11 @@ const AppSidebar: React.FC = () => {
         {items.map((nav, index) => {
           // Skip the Account menu if user is authenticated
           if (nav.name === "Account" && isAuthenticated) {
+            return null;
+          }
+
+          // Skip the Admin menu if user is not an admin
+          if (nav.name === "Admin" && (!user?.is_admin && !user?.is_superadmin)) {
             return null;
           }
 
