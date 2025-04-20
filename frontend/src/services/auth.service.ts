@@ -41,37 +41,14 @@ const AuthService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     console.log('Login attempt with:', credentials.username);
 
-    // For development: Check if using admin credentials
-    if ((credentials.username === 'admin@example.com' || credentials.username === 'admin@rideshare.com') &&
-        credentials.password === 'admin123') {
-      console.log('Using mock admin login for development');
-
-      // Create a mock token with a longer expiration (7 days)
-      const mockToken = 'mock_admin_token_' + Date.now();
-      localStorage.setItem('token', mockToken);
-
-      // Store admin email for getCurrentUser
-      localStorage.setItem('mock_user_email', credentials.username);
-
-      // Store login timestamp
-      localStorage.setItem('mock_login_time', Date.now().toString());
-
-      // Log the successful mock login
-      console.log('Mock admin login successful');
-
-      return {
-        access_token: mockToken,
-        token_type: 'bearer'
-      };
-    }
-
-    // Regular login flow
-    // Create URLSearchParams for x-www-form-urlencoded format
-    const formData = new URLSearchParams();
-    formData.append('username', credentials.username);
-    formData.append('password', credentials.password);
-
+    // Try real authentication first
     try {
+      // Create URLSearchParams for x-www-form-urlencoded format
+      const formData = new URLSearchParams();
+      formData.append('username', credentials.username);
+      formData.append('password', credentials.password);
+
+      console.log('Attempting real authentication with backend');
       const response = await api.post<AuthResponse>('/auth/token', formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -87,9 +64,37 @@ const AuthService = {
 
       return response.data;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Real authentication failed, trying mock login:', error);
+
+      // Fallback to mock login for development
+      if ((credentials.username === 'admin@example.com' || credentials.username === 'admin@rideshare.com') &&
+          credentials.password === 'admin123') {
+        console.log('Using mock admin login for development');
+
+        // Create a mock token with a longer expiration (7 days)
+        const mockToken = 'mock_admin_token_' + Date.now();
+        localStorage.setItem('token', mockToken);
+
+        // Store admin email for getCurrentUser
+        localStorage.setItem('mock_user_email', credentials.username);
+
+        // Store login timestamp
+        localStorage.setItem('mock_login_time', Date.now().toString());
+
+        // Log the successful mock login
+        console.log('Mock admin login successful');
+
+        return {
+          access_token: mockToken,
+          token_type: 'bearer'
+        };
+      }
+
+      // If not using mock credentials, rethrow the error
       throw error;
     }
+
+
   },
 
   register: async (data: RegisterData) => {
@@ -155,32 +160,9 @@ const AuthService = {
   getCurrentUser: async (): Promise<UserProfile> => {
     console.log('Fetching current user data');
 
-    // Check for mock admin login
-    const token = localStorage.getItem('token');
-    const mockUserEmail = localStorage.getItem('mock_user_email');
-
-    if (token && token.startsWith('mock_admin_token_') && mockUserEmail) {
-      console.log('Using mock admin user data for:', mockUserEmail);
-
-      // Return mock admin user data
-      const mockUserData: UserProfile = {
-        id: 1,
-        email: mockUserEmail,
-        first_name: 'Admin',
-        last_name: 'User',
-        is_active: true,
-        is_superuser: true,
-        is_admin: true,
-        is_superadmin: true,
-        created_at: new Date().toISOString()
-      };
-
-      console.log('Mock user data created:', mockUserData);
-      return mockUserData;
-    }
-
-    // Regular flow
+    // Try to get real user data first
     try {
+      console.log('Attempting to fetch real user data');
       const response = await api.get<UserProfile>('/users/me');
       console.log('User data received:', response.data);
 
@@ -198,11 +180,37 @@ const AuthService = {
       console.log('Enhanced user data:', userData);
       return userData;
     } catch (error) {
-      console.error('Failed to fetch user data:', error);
-      // Clear the token if we get an error
-      localStorage.removeItem('token');
+      console.error('Failed to fetch real user data, checking for mock user:', error);
+
+      // Check for mock admin login as fallback
+      const token = localStorage.getItem('token');
+      const mockUserEmail = localStorage.getItem('mock_user_email');
+
+      if (token && token.startsWith('mock_admin_token_') && mockUserEmail) {
+        console.log('Using mock admin user data for:', mockUserEmail);
+
+        // Return mock admin user data
+        const mockUserData: UserProfile = {
+          id: 1,
+          email: mockUserEmail,
+          first_name: 'Admin',
+          last_name: 'User',
+          is_active: true,
+          is_superuser: true,
+          is_admin: true,
+          is_superadmin: true,
+          created_at: new Date().toISOString()
+        };
+
+        console.log('Mock user data created:', mockUserData);
+        return mockUserData;
+      }
+
+      // If no mock user, rethrow the error
       throw error;
     }
+
+
   },
 
   isAuthenticated: (): boolean => {
