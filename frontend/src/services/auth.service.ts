@@ -150,11 +150,18 @@ const AuthService = {
   },
 
   logout: () => {
-    console.log('Logging out user');
+    console.log('Logging out user from AuthService');
+    // Clear all auth-related items from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('mock_user_email');
     localStorage.removeItem('mock_login_time');
-    console.log('User logged out successfully');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_role');
+
+    // Remove Authorization header from API
+    delete api.defaults.headers.common['Authorization'];
+
+    console.log('User logged out successfully, localStorage cleared');
   },
 
   getCurrentUser: async (): Promise<UserProfile> => {

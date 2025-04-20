@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // Import the real auth service
 import RealAuthService, { SignupCredentials } from '../services/auth.service';
 import { UserProfile } from '../services/auth.service';
+import api from '../services/api';
 
 // Use the real service for production
 const AuthService = RealAuthService;
@@ -126,9 +127,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    AuthService.logout();
+    console.log('Logging out user from AuthContext');
+    // Clear auth state
     setUser(null);
     setIsAuthenticated(false);
+
+    // Clear token and other auth data
+    AuthService.logout();
+
+    // Clear API authorization header
+    delete api.defaults.headers.common['Authorization'];
+
+    console.log('User logged out successfully, auth state cleared');
   };
 
   return (

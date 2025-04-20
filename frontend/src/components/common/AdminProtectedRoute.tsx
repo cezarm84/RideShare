@@ -27,8 +27,11 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   // If authenticated but not admin, redirect to dashboard
   const isAdmin = user?.is_admin || user?.is_superadmin || user?.is_superuser;
   if (!isAdmin) {
+    console.log('User is authenticated but not an admin, redirecting to dashboard');
     return <Navigate to="/" replace />;
   }
+
+  console.log('User is authenticated and has admin privileges, allowing access');
 
   // User is authenticated and has admin privileges
   return <>{children}</>;
