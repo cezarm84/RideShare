@@ -89,11 +89,9 @@ export default function App() {
           <UserProfileProvider>
             <ScrollToTop />
           <Routes>
-          {/* Redirect root to sign-in */}
-          <Route path="/" element={<Navigate to="/signin" replace />} />
-
           {/* Public Routes with App Layout */}
-          <Route path="/dashboard" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
+          <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/rides" element={<PublicLayoutRoute><Rides /></PublicLayoutRoute>} />
           <Route path="/rides/create" element={<PublicLayoutRoute><CreateRide /></PublicLayoutRoute>} />
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
