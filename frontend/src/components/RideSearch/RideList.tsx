@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import RideDetailsMap from '@/components/Map/RideDetailsMap';
 
 export interface Ride {
-  id: string;
+  id: string | number;
   // Support both camelCase and snake_case property names
   rideType?: 'hub_to_hub' | 'hub_to_destination' | 'enterprise';
   ride_type?: string;
@@ -21,6 +21,7 @@ export interface Ride {
     name: string;
     address: string;
   };
+  starting_hub_id?: number;
   destinationHub?: {
     id: number;
     name: string;
@@ -31,6 +32,13 @@ export interface Ride {
     name: string;
     address: string;
   };
+  destination_hub_id?: number;
+  destination?: {
+    id: number;
+    name: string;
+    address: string;
+  };
+  destination_id?: number;
   departureTime?: string;
   departure_time?: string;
   availableSeats?: number;
@@ -53,30 +61,60 @@ export interface Ride {
     name: string;
     capacity: number;
   };
+  vehicle_type_id?: number;
   enterprise?: {
     id: number;
     name: string;
   };
+  enterprise_id?: number;
+  origin_lat?: number;
+  origin_lng?: number;
+  destination_lat?: number;
+  destination_lng?: number;
 }
 
 interface RideListProps {
   rides: Ride[];
   loading: boolean;
   onBookRide: (rideId: string) => void;
+  isAdminView?: boolean;
+  onEditRide?: (rideId: string) => void;
+  onDeleteRide?: (rideId: string) => void;
 }
 
-const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
+const RideList = ({ rides, loading, onBookRide, isAdminView = false, onEditRide, onDeleteRide }: RideListProps) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [expandedRideId, setExpandedRideId] = useState<string | null>(null);
 
-  const handleBookRide = (rideId: string) => {
+  // Debug the rides data
+  useEffect(() => {
+    console.log('RideList received rides:', rides);
+    if (rides.length > 0) {
+      console.log('First ride example:', rides[0]);
+
+      // Check if the rides have the expected structure
+      const firstRide = rides[0];
+      if (!firstRide.startingHub && !firstRide.starting_hub) {
+        console.warn('Ride is missing starting hub information');
+      }
+      if (!firstRide.destinationHub && !firstRide.destination_hub) {
+        console.warn('Ride is missing destination hub information');
+      }
+
+      // Log the structure of the first ride
+      console.log('Ride structure:', Object.keys(firstRide));
+    }
+  }, [rides]);
+
+  const handleBookRide = (rideId: string | number) => {
     // Let the ProtectedRoute component handle authentication
-    onBookRide(rideId);
+    onBookRide(rideId.toString());
   };
 
-  const toggleExpandRide = (rideId: string) => {
-    setExpandedRideId(expandedRideId === rideId ? null : rideId);
+  const toggleExpandRide = (rideId: string | number) => {
+    const rideIdStr = rideId.toString();
+    setExpandedRideId(expandedRideId === rideIdStr ? null : rideIdStr);
   };
 
   if (loading) {
@@ -94,14 +132,16 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
         <p className="text-gray-600 mb-4">
           Try adjusting your search criteria or check back later for more options.
         </p>
-        <div className="flex justify-center">
-          <Button
-            onClick={() => navigate('/rides/create')}
-            className="bg-brand-500 hover:bg-brand-600"
-          >
-            Create a Ride
-          </Button>
-        </div>
+        {isAdminView && (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => navigate('/rides/create')}
+              className="bg-brand-500 hover:bg-brand-600"
+            >
+              Create a Ride
+            </Button>
+          </div>
+        )}
       </Card>
     );
   }
@@ -123,6 +163,7 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
                       className={
                         (ride.rideType || ride.ride_type) === 'hub_to_hub' ? 'bg-blue-100 text-blue-800' :
                         (ride.rideType || ride.ride_type) === 'hub_to_destination' ? 'bg-purple-100 text-purple-800' :
+                        (ride.rideType || ride.ride_type) === 'free_ride' ? 'bg-amber-100 text-amber-800' :
                         'bg-green-100 text-green-800'
                       }
                     >
@@ -146,7 +187,17 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
                   </div>
 
                   <h3 className="text-lg font-semibold">
-                    {(ride.startingHub?.name || ride.starting_hub?.name || 'Unknown')} → {(ride.destinationHub?.name || ride.destination_hub?.name || 'Unknown')}
+                    {(ride.startingHub?.name ||
+                      ride.starting_hub?.name ||
+                      (ride.starting_hub_id ? `Hub ID: ${ride.starting_hub_id}` : '') ||
+                      'Unknown')}
+                    →
+                    {(ride.destinationHub?.name ||
+                      ride.destination_hub?.name ||
+                      ride.destination?.name ||
+                      (ride.destination_hub_id ? `Hub ID: ${ride.destination_hub_id}` : '') ||
+                      (ride.destination_id ? `Destination ID: ${ride.destination_id}` : '') ||
+                      'Unknown')}
                   </h3>
 
                   <p className="text-gray-600 mt-1">
@@ -168,12 +219,13 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
                       e.stopPropagation(); // Prevent the card click event from firing
                       toggleExpandRide(ride.id);
                     }}
+                    data-ride-id={ride.id}
                     className="text-brand-500 hover:text-brand-600 text-sm mt-2 flex items-center"
                   >
-                    {expandedRideId === ride.id ? 'Show less' : 'Show more'}
+                    {expandedRideId === ride.id.toString() ? 'Show less' : 'Show more'}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`h-4 w-4 ml-1 transition-transform ${expandedRideId === ride.id ? 'rotate-180' : ''}`}
+                      className={`h-4 w-4 ml-1 transition-transform ${expandedRideId === ride.id.toString() ? 'rotate-180' : ''}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -182,11 +234,14 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
                     </svg>
                   </button>
 
-                  {expandedRideId === ride.id && (
+                  {expandedRideId === ride.id.toString() && (
                     <div className="mt-4 space-y-2 text-sm text-gray-600 border-t pt-4">
                       <p><span className="font-medium">Starting Address:</span> {ride.startingHub?.address || ride.starting_hub?.address || 'Unknown'}</p>
-                      <p><span className="font-medium">Destination Address:</span> {ride.destinationHub?.address || ride.destination_hub?.address || 'Unknown'}</p>
+                      <p><span className="font-medium">Destination Address:</span> {ride.destinationHub?.address || ride.destination_hub?.address || ride.destination?.address || 'Unknown'}</p>
                       <p><span className="font-medium">Vehicle Capacity:</span> {ride.vehicleType?.capacity || ride.vehicle_type?.capacity || 'Unknown'} passengers</p>
+                      <p><span className="font-medium">Available Seats:</span> {ride.availableSeats || ride.available_seats || 'Unknown'}</p>
+                      <p><span className="font-medium">Price per Seat:</span> {ride.pricePerSeat || ride.price_per_seat || 'Unknown'} SEK</p>
+                      <p><span className="font-medium">Ride ID:</span> {ride.id}</p>
                     </div>
                   )}
                 </div>
@@ -195,31 +250,48 @@ const RideList = ({ rides, loading, onBookRide }: RideListProps) => {
             </div>
 
             <div className="md:col-span-1 h-full">
-              {/* Only render map if we have valid hub names */}
-              {((ride.startingHub?.name || ride.starting_hub?.name) &&
-                (ride.destinationHub?.name || ride.destination_hub?.name)) ? (
-                <RideDetailsMap selectedRide={ride} />
-              ) : (
-                <div className="h-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex flex-col">
-                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                    <p className="text-gray-500 dark:text-gray-400">Route information not available</p>
-                  </div>
-                </div>
-              )}
+              {/* Always render the map component */}
+              <RideDetailsMap selectedRide={ride} />
             </div>
           </div>
 
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent the card click event from firing
-                handleBookRide(ride.id);
-              }}
-              className="bg-brand-500 hover:bg-brand-600 w-full md:w-auto"
-              disabled={(ride.availableSeats || ride.available_seats || 0) < 1 || (ride.status !== 'active' && ride.status !== 'scheduled')}
-            >
-              {(ride.availableSeats || ride.available_seats || 0) < 1 ? 'Fully Booked' : 'Book Now'}
-            </Button>
+          <div className="flex justify-end mt-4 gap-2">
+            {isAdminView ? (
+              <>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditRide && onEditRide(ride.id.toString());
+                  }}
+                  data-ride-id={ride.id}
+                  className="bg-blue-500 hover:bg-blue-600 w-full md:w-auto"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteRide && onDeleteRide(ride.id.toString());
+                  }}
+                  data-ride-id={ride.id}
+                  className="bg-red-500 hover:bg-red-600 w-full md:w-auto"
+                >
+                  Delete
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent the card click event from firing
+                  handleBookRide(ride.id);
+                }}
+                data-ride-id={ride.id}
+                className="bg-brand-500 hover:bg-brand-600 w-full md:w-auto"
+                disabled={(ride.availableSeats || ride.available_seats || 0) < 1 || (ride.status !== 'active' && ride.status !== 'scheduled')}
+              >
+                {(ride.availableSeats || ride.available_seats || 0) < 1 ? 'Fully Booked' : 'Book Now'}
+              </Button>
+            )}
           </div>
         </Card>
       ))}

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BasicSelect } from '@/components/ui/basic-select';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -19,7 +20,7 @@ import VehicleTypeService from '@/services/vehicleType.service';
 
 // Define the form schema with Zod
 const createRideSchema = z.object({
-  rideType: z.enum(['hub_to_hub', 'hub_to_destination', 'enterprise']),
+  rideType: z.enum(['hub_to_hub', 'hub_to_destination', 'free_ride', 'enterprise']),
   startingHubId: z.string().min(1, 'Starting hub is required'),
   destinationHubId: z.string().min(1, 'Destination hub is required'),
   departureDate: z.string().min(1, 'Departure date is required'),
@@ -64,6 +65,7 @@ interface Enterprise {
 
 const CreateRide = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hubs, setHubs] = useState<Hub[]>([]);
@@ -71,6 +73,13 @@ const CreateRide = () => {
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/signin', { state: { from: '/rides/create' } });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Fetch reference data when component mounts
   useEffect(() => {
@@ -87,37 +96,74 @@ const CreateRide = () => {
         if (data.vehicle_types) {
           const vehicleTypesWithIds = data.vehicle_types.map((type, index) => ({
             ...type,
-            uniqueId: `vehicle_${type.id}_${index}`
+            uniqueId: `vehicle_${type.id}_${index}`  // Add index to ensure uniqueness
           }));
           setVehicleTypes(vehicleTypesWithIds);
         }
         if (data.enterprises) {
           const enterprisesWithIds = data.enterprises.map((enterprise, index) => ({
             ...enterprise,
-            uniqueId: `enterprise_${enterprise.id}_${index}`
+            uniqueId: `enterprise_${enterprise.id}_${index}`  // Add index to ensure uniqueness
           }));
           setEnterprises(enterprisesWithIds);
         }
 
         // Create a combined array of all locations (hubs + destinations) with unique keys
-        const hubsWithPrefix = (data.hubs || []).map((hub, index) => ({
-          ...hub,
-          uniqueId: `hub_${hub.id}_${index}`,
-          originalId: hub.id,
-          type: 'hub'
-        }));
+        // Use a prefix in the uniqueId to ensure uniqueness even if hub and destination IDs overlap
+        console.log('Processing hubs and destinations for allLocations');
+        const hubsWithPrefix = (data.hubs || []).map((hub, index) => {
+          console.log(`Processing hub ${index}:`, hub);
+          return {
+            ...hub,
+            uniqueId: `hub_${hub.id}_${index}`,  // Add index to ensure uniqueness
+            originalId: hub.id,
+            type: 'hub'
+          };
+        });
 
-        const destinationsWithPrefix = (data.destinations || []).map((dest, index) => ({
-          ...dest,
-          uniqueId: `dest_${dest.id}_${index}`,
-          originalId: dest.id,
-          type: 'destination'
-        }));
+        const destinationsWithPrefix = (data.destinations || []).map((dest, index) => {
+          console.log(`Processing destination ${index}:`, dest);
+
+          // Add default coordinates if not present
+          const enhancedDest = {
+            ...dest,
+            uniqueId: `dest_${dest.id}_${index}`,  // Add index to ensure uniqueness
+            originalId: dest.id,
+            type: 'destination'
+          };
+
+          // Add default coordinates if not present
+          if (!enhancedDest.latitude || !enhancedDest.longitude) {
+            console.log(`Adding default coordinates for destination ${dest.name}`);
+
+            // Default coordinates based on destination name
+            const defaultCoordinates = {
+              'Volvo Cars Torslanda': { latitude: 57.720890, longitude: 12.025600 },
+              'Volvo Group Lundby': { latitude: 57.715130, longitude: 11.935290 },
+              'AstraZeneca Mölndal': { latitude: 57.660800, longitude: 12.011580 },
+              'Ericsson Lindholmen': { latitude: 57.706130, longitude: 11.938290 },
+              'SKF Gamlestaden': { latitude: 57.728870, longitude: 12.014560 },
+              'Landvetter Airport': { latitude: 57.668799, longitude: 12.292314 }
+            };
+
+            // Use specific coordinates if available, otherwise use Gothenburg central
+            if (defaultCoordinates[dest.name]) {
+              enhancedDest.latitude = defaultCoordinates[dest.name].latitude;
+              enhancedDest.longitude = defaultCoordinates[dest.name].longitude;
+            } else {
+              enhancedDest.latitude = 57.708870; // Gothenburg central
+              enhancedDest.longitude = 11.974560;
+            }
+          }
+
+          return enhancedDest;
+        });
 
         const allLocations = [
           ...hubsWithPrefix,
           ...destinationsWithPrefix
         ];
+        console.log('Final allLocations:', allLocations);
         setAllLocations(allLocations);
 
         setError(null);
@@ -132,7 +178,7 @@ const CreateRide = () => {
     fetchReferenceData();
   }, []);
 
-  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<CreateRideFormValues>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<CreateRideFormValues>({
     resolver: zodResolver(createRideSchema),
     defaultValues: {
       rideType: 'hub_to_hub',
@@ -147,21 +193,67 @@ const CreateRide = () => {
     },
   });
 
+  // Set default values once data is loaded
+  useEffect(() => {
+    if (allLocations.length > 0 && vehicleTypes.length > 0) {
+      console.log('Setting default form values with loaded data');
+
+      // Set default starting hub if available
+      if (allLocations.length > 0) {
+        const firstHub = allLocations.find(loc => loc.type === 'hub');
+        if (firstHub) {
+          console.log('Setting default starting hub:', `${firstHub.type}_${firstHub.originalId}`);
+          setValue('startingHubId', `${firstHub.type}_${firstHub.originalId}`);
+        }
+      }
+
+      // Set default destination hub if available
+      if (allLocations.length > 1) {
+        const secondHub = allLocations.filter(loc => loc.type === 'hub')[1];
+        if (secondHub) {
+          console.log('Setting default destination hub:', `${secondHub.type}_${secondHub.originalId}`);
+          setValue('destinationHubId', `${secondHub.type}_${secondHub.originalId}`);
+        }
+      }
+
+      // Set default vehicle type if available
+      if (vehicleTypes.length > 0) {
+        console.log('Setting default vehicle type:', vehicleTypes[0].id.toString());
+        setValue('vehicleTypeId', vehicleTypes[0].id.toString());
+      }
+    }
+  }, [allLocations, vehicleTypes, setValue]);
+
   const rideType = watch('rideType');
 
   const handleFormSubmit = async (data: CreateRideFormValues) => {
+    console.log('Form submitted with data:', data);
     setLoading(true);
     setError(null);
 
     try {
       // Combine date and time
       const departureDateTime = new Date(`${data.departureDate}T${data.departureTime}`);
+      console.log('Departure date time:', departureDateTime);
+
+      // Parse the hub IDs from the format "type_id"
+      const startingHubParts = data.startingHubId.split('_');
+      const destinationHubParts = data.destinationHubId.split('_');
+
+      const startingHubType = startingHubParts[0];
+      const startingHubId = parseInt(startingHubParts[1]);
+
+      const destinationHubType = destinationHubParts[0];
+      const destinationHubId = parseInt(destinationHubParts[1]);
+
+      console.log('Parsed starting hub:', { type: startingHubType, id: startingHubId });
+      console.log('Parsed destination hub:', { type: destinationHubType, id: destinationHubId });
 
       // Prepare the payload
       const payload = {
         ride_type: data.rideType,
-        starting_hub_id: parseInt(data.startingHubId),
-        destination_hub_id: parseInt(data.destinationHubId),
+        starting_hub_id: startingHubId,
+        destination_hub_id: destinationHubId,
         departure_time: departureDateTime.toISOString(),
         available_seats: parseInt(data.availableSeats),
         price_per_seat: parseFloat(data.pricePerSeat),
@@ -171,38 +263,90 @@ const CreateRide = () => {
         recurrence_pattern: 'one_time'
       };
 
+      console.log('Initial payload:', payload);
+
       // Add additional fields required by the backend
-      if (data.rideType === 'hub_to_destination') {
+      if (data.rideType === 'hub_to_destination' || data.rideType === 'free_ride') {
         // For hub_to_destination, we need to set destination_hub_id to null
         // and provide a destination object
         payload.destination_hub_id = null;
 
+        console.log('Looking for destination location with ID:', destinationHubId);
+        console.log('Available locations:', allLocations);
+
         // Get the destination location from allLocations
         const destinationLocation = allLocations.find(
-          location => location.originalId.toString() === data.destinationHubId
+          location => location.type === destinationHubType && location.originalId === destinationHubId
         );
 
+        console.log('Found destination location:', destinationLocation);
+
+        // Log all properties of the destination location
         if (destinationLocation) {
+          console.log('Destination location properties:', Object.keys(destinationLocation));
+          console.log('Destination location latitude:', destinationLocation.latitude);
+          console.log('Destination location longitude:', destinationLocation.longitude);
+          console.log('Destination location address:', destinationLocation.address);
+        }
+
+        if (destinationLocation) {
+          // Extract city from address if available
+          let city = 'Gothenburg'; // Default city
+          if (destinationLocation.address && destinationLocation.address.includes(',')) {
+            const addressParts = destinationLocation.address.split(',');
+            if (addressParts.length >= 2) {
+              // Try to extract city from address (usually after the first comma)
+              const cityWithPostalCode = addressParts[1].trim();
+              // Extract just the city name if it includes a postal code
+              if (cityWithPostalCode.includes(' ')) {
+                const cityParts = cityWithPostalCode.split(' ');
+                // Assume the last part is the city name
+                city = cityParts[cityParts.length - 1].trim();
+              } else {
+                city = cityWithPostalCode;
+              }
+            }
+          }
+
+          // Use coordinates if available, otherwise use default Gothenburg coordinates
+          const latitude = destinationLocation.latitude || 57.708870;
+          const longitude = destinationLocation.longitude || 11.974560;
+
           payload.destination = {
             name: destinationLocation.name,
             address: destinationLocation.address || '',
+            city: city,
+            latitude: latitude,
+            longitude: longitude
           };
+
+          console.log('Added destination to payload:', payload.destination);
+        } else {
+          console.warn('Could not find destination location with ID:', data.destinationHubId);
         }
       }
 
       // Add enterprise_id if it's an enterprise ride
       if (data.rideType === 'enterprise' && data.enterpriseId) {
+        console.log('Adding enterprise ID to payload:', data.enterpriseId);
         Object.assign(payload, { enterprise_id: parseInt(data.enterpriseId) });
+      } else if (data.rideType === 'enterprise') {
+        console.warn('Enterprise ride type selected but no enterprise ID provided');
       }
 
       console.log('Creating ride with payload:', payload);
 
       // Call the API to create the ride
-      const response = await RideService.createRide(payload);
-      console.log('Ride created successfully:', response);
+      try {
+        const response = await RideService.createRide(payload);
+        console.log('Ride created successfully:', response);
 
-      // Navigate to the rides page
-      navigate('/rides');
+        // Navigate to the rides page
+        navigate('/rides');
+      } catch (apiError) {
+        console.error('API error creating ride:', apiError);
+        throw apiError; // Re-throw to be caught by the outer catch block
+      }
     } catch (error) {
       console.error('Error creating ride:', error);
 
@@ -255,19 +399,18 @@ const CreateRide = () => {
               name="rideType"
               control={control}
               render={({ field }) => (
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <SelectTrigger id="rideType">
-                    <SelectValue placeholder="Select ride type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem key="ride_type_hub_to_hub" value="hub_to_hub">Hub to Hub</SelectItem>
-                    <SelectItem key="ride_type_hub_to_destination" value="hub_to_destination">Hub to Destination</SelectItem>
-                    <SelectItem key="ride_type_enterprise" value="enterprise">Enterprise</SelectItem>
-                  </SelectContent>
-                </Select>
+                <BasicSelect
+                  id="rideType"
+                  options={[
+                    { value: 'hub_to_hub', label: 'Hub to Hub' },
+                    { value: 'hub_to_destination', label: 'Hub to Destination' },
+                    { value: 'free_ride', label: 'Free Ride' },
+                    { value: 'enterprise', label: 'Enterprise' }
+                  ]}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select ride type"
+                />
               )}
             />
             {errors.rideType && (
@@ -282,21 +425,16 @@ const CreateRide = () => {
                 name="startingHubId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="startingHubId">
-                      <SelectValue placeholder="Select starting hub" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={`starting_location_${location.uniqueId}`} value={location.originalId.toString()}>
-                          {location.name} {location.type === 'destination' ? '(Destination)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <BasicSelect
+                    id="startingHubId"
+                    options={allLocations.map(location => ({
+                      value: `${location.type}_${location.originalId}`,
+                      label: `${location.name} ${location.type === 'destination' ? '(Destination)' : ''}`
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select starting hub"
+                  />
                 )}
               />
               {errors.startingHubId && (
@@ -310,21 +448,16 @@ const CreateRide = () => {
                 name="destinationHubId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="destinationHubId">
-                      <SelectValue placeholder="Select destination hub" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={`destination_location_${location.uniqueId}`} value={location.originalId.toString()}>
-                          {location.name} {location.type === 'destination' ? '(Destination)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <BasicSelect
+                    id="destinationHubId"
+                    options={allLocations.map(location => ({
+                      value: `${location.type}_${location.originalId}`,
+                      label: `${location.name} ${location.type === 'destination' ? '(Destination)' : ''}`
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select destination hub"
+                  />
                 )}
               />
               {errors.destinationHubId && (
@@ -340,21 +473,16 @@ const CreateRide = () => {
                 name="enterpriseId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="enterpriseId">
-                      <SelectValue placeholder="Select enterprise" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enterprises.map((enterprise) => (
-                        <SelectItem key={`enterprise_select_${enterprise.uniqueId}`} value={enterprise.id.toString()}>
-                          {enterprise.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <BasicSelect
+                    id="enterpriseId"
+                    options={enterprises.map(enterprise => ({
+                      value: enterprise.id.toString(),
+                      label: enterprise.name
+                    }))}
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    placeholder="Select enterprise"
+                  />
                 )}
               />
               {errors.enterpriseId && (
@@ -424,21 +552,16 @@ const CreateRide = () => {
                 name="vehicleTypeId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="vehicleTypeId">
-                      <SelectValue placeholder="Select vehicle type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehicleTypes.map((type) => (
-                        <SelectItem key={`vehicle_type_select_${type.uniqueId}`} value={type.id.toString()}>
-                          {type.name} (Capacity: {type.capacity})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <BasicSelect
+                    id="vehicleTypeId"
+                    options={vehicleTypes.map(type => ({
+                      value: type.id.toString(),
+                      label: `${type.name} (Capacity: ${type.capacity})`
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select vehicle type"
+                  />
                 )}
               />
               {errors.vehicleTypeId && (

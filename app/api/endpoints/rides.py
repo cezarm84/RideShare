@@ -319,8 +319,25 @@ async def get_rides(
     - future_only: Only include rides in the future
     """
     try:
-        # Pass the current user_id if available, but this endpoint can be used anonymously
-        user_id = current_user.id if current_user else None
+        # Only pass the user_id if the user is not an admin
+        # This ensures admins can see all rides, not just their own
+        user_id = None
+        if current_user:
+            # Check if the user has admin privileges
+            if (
+                hasattr(current_user, "has_admin_privileges")
+                and current_user.has_admin_privileges()
+            ):
+                # Admin users can see all rides, so don't pass user_id
+                user_id = None
+                logger.info(f"Admin user {current_user.id} accessing all rides")
+            else:
+                # Regular users can only see their own rides
+                user_id = current_user.id
+                logger.info(f"Regular user {current_user.id} accessing their rides")
+        else:
+            # Anonymous users can see all rides
+            logger.info("Anonymous user accessing rides")
 
         ride_service = RideService(db)
         rides = ride_service.get_detailed_rides(
@@ -565,7 +582,7 @@ async def create_ride(
             logger.info("No driver_id provided - creating ride without a driver")
 
         # Create a new RideCreate instance with the updated dictionary
-        updated_ride = RideCreate(**ride_dict)
+        RideCreate(**ride_dict)  # Validate the ride data
 
         # Get the driver_id from the updated dictionary if it exists
         # If not provided, it will be None (no driver assigned yet)
@@ -746,7 +763,7 @@ async def get_ride_reference_data(
     """
     try:
         # Get all active hubs
-        hubs = db.query(Hub).filter(Hub.is_active == True).all()
+        hubs = db.query(Hub).filter(Hub.is_active).all()
         hub_list = [
             {
                 "id": hub.id,
@@ -768,7 +785,9 @@ async def get_ride_reference_data(
                 "id": vt.id,
                 "name": vt.name,
                 "description": vt.description,
-                "capacity": getattr(vt, "capacity", 4),  # Use capacity from DB or default to 4
+                "capacity": getattr(
+                    vt, "capacity", 4
+                ),  # Use capacity from DB or default to 4
                 "is_active": True,  # Default value
                 "price_factor": 1.0,  # Default value
             }

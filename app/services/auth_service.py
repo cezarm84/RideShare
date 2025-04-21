@@ -1,6 +1,6 @@
 import logging
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
@@ -40,6 +40,7 @@ class SimpleUser:
         self.is_active = is_active
         self.is_superadmin = is_superadmin
         self.user_type = user_type
+        self.role = "user"  # Default role
 
     @property
     def is_admin(self):
@@ -50,6 +51,14 @@ class SimpleUser:
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.email
+
+    def has_admin_privileges(self):
+        """Check if user has any administrative privileges (superadmin, admin, or manager)"""
+        return (
+            self.is_superadmin
+            or self.role in ["superadmin", "admin", "manager"]
+            or self.user_type == "admin"
+        )
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
@@ -63,7 +72,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[Simple
             text(
                 """
             SELECT id, user_id, email, first_name, last_name, password_hash,
-                   is_active, is_superadmin, user_type
+                   is_active, is_superadmin, user_type, role
             FROM users
             WHERE email = :email
         """
@@ -88,6 +97,10 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[Simple
             user_type=result[8],
         )
 
+        # Set the role if it exists in the result
+        if len(result) > 9 and result[9]:
+            user.role = result[9]
+
         # Verify password
         if not verify_password(password, user.password_hash):
             logger.warning(f"Invalid password for user: {email}")
@@ -104,9 +117,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     """Create a JWT access token"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode.update({"exp": expire})
@@ -179,7 +192,7 @@ async def get_current_user(
             text(
                 """
             SELECT id, user_id, email, first_name, last_name, password_hash,
-                  is_active, is_superadmin, user_type
+                  is_active, is_superadmin, user_type, role
             FROM users
             WHERE email = :email
         """
@@ -203,6 +216,10 @@ async def get_current_user(
             is_superadmin=result[7],
             user_type=result[8],
         )
+
+        # Set the role if it exists in the result
+        if len(result) > 9 and result[9]:
+            user.role = result[9]
 
         if not user.is_active:
             logger.warning(f"User account is inactive: {email}")
@@ -239,7 +256,7 @@ def get_current_user_legacy(
         text(
             """
         SELECT id, user_id, email, first_name, last_name, password_hash,
-               is_active, is_superadmin, user_type
+               is_active, is_superadmin, user_type, role
         FROM users
         WHERE email = :email
     """
@@ -262,6 +279,10 @@ def get_current_user_legacy(
         is_superadmin=result[7],
         user_type=result[8],
     )
+
+    # Set the role if it exists in the result
+    if len(result) > 9 and result[9]:
+        user.role = result[9]
 
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")

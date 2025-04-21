@@ -38,19 +38,27 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
 
     setIsLoading(true);
 
+    // Log the full ride object for debugging
+    console.log('RideDetailsMap - Full ride object:', selectedRide);
+
     // Handle different property naming conventions and ensure properties exist
-    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name || 'Unknown';
-    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name || 'Unknown';
+    const startingHubName = selectedRide.startingHub?.name ||
+                           selectedRide.starting_hub?.name ||
+                           (selectedRide.starting_hub_id ? `Hub ID: ${selectedRide.starting_hub_id}` : '') ||
+                           'Unknown';
+
+    const destinationHubName = selectedRide.destinationHub?.name ||
+                              selectedRide.destination_hub?.name ||
+                              selectedRide.destination?.name ||
+                              (selectedRide.destination_hub_id ? `Hub ID: ${selectedRide.destination_hub_id}` : '') ||
+                              (selectedRide.destination_id ? `Destination ID: ${selectedRide.destination_id}` : '') ||
+                              'Unknown';
 
     // Log the hub names for debugging
     console.log(`Rendering map for ride: ${startingHubName} → ${destinationHubName}`);
 
-    // If either hub name is missing or Unknown, don't proceed with map rendering
-    if (startingHubName === 'Unknown' && destinationHubName === 'Unknown') {
-      console.warn('Both starting and destination hubs are unknown. Skipping map rendering.');
-      setIsLoading(false);
-      return;
-    }
+    // Always proceed with map rendering, even if hub names are unknown
+    // We'll use default coordinates in that case
 
     // Get coordinates for the starting hub and destination hub
     const startCoords = getCoordinates(startingHubName);
@@ -236,6 +244,7 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
     // This would normally come from a geocoding service or database
     // For now, we'll use hardcoded values for demo purposes
     const coordinates: Record<string, { lat: number, lng: number }> = {
+      // Hubs
       'Central Station': { lat: 57.708870, lng: 11.974560 },
       'Lindholmen': { lat: 57.707130, lng: 11.938290 },
       'Mölndal': { lat: 57.655800, lng: 12.013580 },
@@ -244,6 +253,7 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
       'Brunnsparken Hub': { lat: 57.708870, lng: 11.974560 },
       'Lindholmen Hub': { lat: 57.707130, lng: 11.938290 },
       'Mölndal Hub': { lat: 57.655800, lng: 12.013580 },
+      'Mölndal Centrum Hub': { lat: 57.655800, lng: 12.013580 },
       'Landvetter Hub': { lat: 57.668799, lng: 12.292314 },
       'Partille Hub': { lat: 57.739040, lng: 12.106430 },
       'Partille Centrum Hub': { lat: 57.739040, lng: 12.106430 },
@@ -251,21 +261,62 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
       'Lerum Hub': { lat: 57.769720, lng: 12.269840 },
       'Kungälv Hub': { lat: 57.871090, lng: 11.975550 },
       'Frölunda Torg Hub': { lat: 57.651200, lng: 11.911600 },
+      'Backaplan Hub': { lat: 57.720500, lng: 11.952500 },
+      'Angered Centrum Hub': { lat: 57.768700, lng: 12.009500 },
+      'Korsvägen Hub': { lat: 57.697000, lng: 11.989000 },
+
+      // Destinations
       'Volvo Cars Torslanda': { lat: 57.720890, lng: 12.025600 },
       'Volvo Group Lundby': { lat: 57.715130, lng: 11.935290 },
       'AstraZeneca Mölndal': { lat: 57.660800, lng: 12.011580 },
       'Ericsson Lindholmen': { lat: 57.706130, lng: 11.938290 },
       'SKF Gamlestaden': { lat: 57.728870, lng: 12.014560 },
-      // Add more locations as needed
-      'Unknown': { lat: 57.708870, lng: 11.974560 } // Default for unknown locations
+      'Custom Destination': { lat: 57.684799, lng: 12.212314 },
+      'Landvetter': { lat: 57.684799, lng: 12.212314 },
+      'Liseberg': { lat: 57.694799, lng: 11.991314 },
+      'Gothenburg Central Station': { lat: 57.708799, lng: 11.973314 },
+      'Gothenburg University': { lat: 57.688799, lng: 11.979314 },
+      'Gothia Towers': { lat: 57.696799, lng: 11.989314 },
+
+      // Hub IDs
+      'Hub ID: 1': { lat: 57.708870, lng: 11.974560 }, // Central Station
+      'Hub ID: 2': { lat: 57.707130, lng: 11.938290 }, // Lindholmen
+      'Hub ID: 3': { lat: 57.655800, lng: 12.013580 }, // Mölndal
+      'Hub ID: 4': { lat: 57.668799, lng: 12.292314 }, // Landvetter
+      'Hub ID: 5': { lat: 57.739040, lng: 12.106430 }, // Partille
+      'Hub ID: 6': { lat: 57.483730, lng: 12.076040 }, // Kungsbacka
+      'Hub ID: 7': { lat: 57.769720, lng: 12.269840 }, // Lerum
+      'Hub ID: 8': { lat: 57.871090, lng: 11.975550 }, // Kungälv
+
+      // Destination IDs
+      'Destination ID: 1': { lat: 57.720890, lng: 12.025600 }, // Volvo Cars Torslanda
+      'Destination ID: 2': { lat: 57.715130, lng: 11.935290 }, // Volvo Group Lundby
+      'Destination ID: 3': { lat: 57.660800, lng: 12.011580 }, // AstraZeneca Mölndal
+      'Destination ID: 4': { lat: 57.706130, lng: 11.938290 }, // Ericsson Lindholmen
+      'Destination ID: 5': { lat: 57.728870, lng: 12.014560 }, // SKF Gamlestaden
+
+      // Default for unknown locations
+      'Unknown': { lat: 57.708870, lng: 11.974560 }
     };
 
-    // Log if we're missing a location
-    if (!coordinates[locationName]) {
-      console.warn(`Missing coordinates for location: ${locationName}. Using default.`);
+    // Try to find the location in our coordinates map
+    if (coordinates[locationName]) {
+      return coordinates[locationName];
     }
 
-    return coordinates[locationName] || { lat: 57.708870, lng: 11.974560 }; // Default to Central Station
+    // Try to extract coordinates from the name if it's in the format "Name (lat,lng)"
+    const coordsMatch = locationName.match(/\(([-\d.]+),([-\d.]+)\)$/);
+    if (coordsMatch) {
+      const lat = parseFloat(coordsMatch[1]);
+      const lng = parseFloat(coordsMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+
+    // If we still don't have coordinates, log a warning and use default
+    console.warn(`Missing coordinates for location: ${locationName}. Using default.`);
+    return { lat: 57.708870, lng: 11.974560 }; // Default to Gothenburg center
   };
 
   // Calculate estimated travel time and distance
@@ -273,13 +324,20 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
     if (!selectedRide) return { distance: '0.0', time: 0 };
 
     // Handle different property naming conventions and ensure properties exist
-    const startingHubName = selectedRide.startingHub?.name || selectedRide.starting_hub?.name || 'Unknown';
-    const destinationHubName = selectedRide.destinationHub?.name || selectedRide.destination_hub?.name || 'Unknown';
+    const startingHubName = selectedRide.startingHub?.name ||
+                           selectedRide.starting_hub?.name ||
+                           (selectedRide.starting_hub_id ? `Hub ID: ${selectedRide.starting_hub_id}` : '') ||
+                           'Unknown';
 
-    // If both hub names are unknown, return default values
-    if (startingHubName === 'Unknown' && destinationHubName === 'Unknown') {
-      return { distance: '0.0', time: 0 };
-    }
+    const destinationHubName = selectedRide.destinationHub?.name ||
+                              selectedRide.destination_hub?.name ||
+                              selectedRide.destination?.name ||
+                              (selectedRide.destination_hub_id ? `Hub ID: ${selectedRide.destination_hub_id}` : '') ||
+                              (selectedRide.destination_id ? `Destination ID: ${selectedRide.destination_id}` : '') ||
+                              'Unknown';
+
+    // Always calculate route info, even if hub names are unknown
+    // We'll use default coordinates in that case
 
     const startCoords = getCoordinates(startingHubName);
     const destCoords = getCoordinates(destinationHubName);
@@ -321,8 +379,17 @@ const RideDetailsMap: React.FC<RideDetailsMapProps> = ({ selectedRide }) => {
   }
 
   // Get hub names safely
-  const startingHubName = selectedRide?.startingHub?.name || selectedRide?.starting_hub?.name || 'Unknown';
-  const destinationHubName = selectedRide?.destinationHub?.name || selectedRide?.destination_hub?.name || 'Unknown';
+  const startingHubName = selectedRide?.startingHub?.name ||
+                         selectedRide?.starting_hub?.name ||
+                         (selectedRide?.starting_hub_id ? `Hub ID: ${selectedRide.starting_hub_id}` : '') ||
+                         'Unknown';
+
+  const destinationHubName = selectedRide?.destinationHub?.name ||
+                            selectedRide?.destination_hub?.name ||
+                            selectedRide?.destination?.name ||
+                            (selectedRide?.destination_hub_id ? `Hub ID: ${selectedRide.destination_hub_id}` : '') ||
+                            (selectedRide?.destination_id ? `Destination ID: ${selectedRide.destination_id}` : '') ||
+                            'Unknown';
 
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex flex-col">

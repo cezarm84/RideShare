@@ -46,6 +46,7 @@ import UsersManagement from "./pages/Admin/UsersManagement";
 import DriversManagement from "./pages/Admin/DriversManagement";
 import RidesManagement from "./pages/Admin/RidesManagement";
 import SystemSettings from "./pages/Admin/SystemSettings";
+import AdminRides from "./pages/Admin/AdminRides";
 
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
@@ -96,7 +97,7 @@ export default function App() {
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/rides" element={<PublicLayoutRoute><Rides /></PublicLayoutRoute>} />
-          <Route path="/rides/create" element={<PublicLayoutRoute><CreateRide /></PublicLayoutRoute>} />
+          <Route path="/rides/create" element={<ProtectedRoute><AppLayout><CreateRide /></AppLayout></ProtectedRoute>} />
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
           <Route path="/faq" element={<PublicLayoutRoute><FAQ /></PublicLayoutRoute>} />
           <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
@@ -117,7 +118,8 @@ export default function App() {
           <Route path="/admin/enterprises" element={<AdminProtectedRoute><AppLayout><EnterprisesManagement /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/users" element={<AdminProtectedRoute><AppLayout><UsersManagement /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/drivers" element={<AdminProtectedRoute><AppLayout><DriversManagement /></AppLayout></AdminProtectedRoute>} />
-          <Route path="/admin/rides" element={<AdminProtectedRoute><AppLayout><RidesManagement /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/rides" element={<AdminProtectedRoute><AppLayout><AdminRides /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/rides-management" element={<AdminProtectedRoute><AppLayout><RidesManagement /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/settings" element={<AdminProtectedRoute><AppLayout><SystemSettings /></AppLayout></AdminProtectedRoute>} />
 
           {/* Documentation Routes */}

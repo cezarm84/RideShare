@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
@@ -21,7 +21,10 @@ export default function SignInForm() {
   // Get the redirect path from the location state or default to dashboard
   const from = location.state?.from?.pathname || "/";
 
-  console.log('Redirect path after login will be:', from);
+  // Log the redirect path only once when the component mounts or the path changes
+  useEffect(() => {
+    console.log('Redirect path after login will be:', from);
+  }, [from]);
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -102,12 +105,19 @@ export default function SignInForm() {
 
               setIsSubmitting(true);
               try {
-                await login(email, password);
-                // Redirect to the page they were trying to access or home
-                console.log('Login successful, redirecting to:', from);
-                navigate(from, { replace: true });
+                // The login function now returns a boolean indicating success/failure
+                const loginSuccessful = await login(email, password);
+
+                if (loginSuccessful) {
+                  // Login was successful, redirect to the intended destination
+                  console.log('Login successful, redirecting to:', from);
+                  navigate(from, { replace: true });
+                } else {
+                  // Login failed, error message is already set in the AuthContext
+                  console.error('Login failed, not redirecting');
+                }
               } catch (err) {
-                console.error('Login failed:', err);
+                console.error('Login failed with exception:', err);
               } finally {
                 setIsSubmitting(false);
               }

@@ -11,7 +11,7 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   signup: (credentials: SignupCredentials) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -103,8 +103,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await AuthService.getCurrentUser();
       setUser(userData);
       setIsAuthenticated(true);
+      return true; // Return success status
     } catch (err) {
+      console.error('Login error in AuthContext:', err);
       setError('Invalid credentials. Please try again.');
+      return false; // Return failure status
     } finally {
       setLoading(false);
     }

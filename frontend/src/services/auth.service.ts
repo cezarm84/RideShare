@@ -60,38 +60,29 @@ const AuthService = {
       // Store token in localStorage
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
+        console.log('Token stored in localStorage:', response.data.access_token.substring(0, 10) + '...');
+
+        // Set the token in the API client
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+        console.log('Authorization header set in API client');
+      } else {
+        console.warn('No access_token received from API');
       }
 
       return response.data;
     } catch (error) {
       console.error('Real authentication failed, trying mock login:', error);
 
-      // Fallback to mock login for development
-      if ((credentials.username === 'admin@example.com' || credentials.username === 'admin@rideshare.com') &&
-          credentials.password === 'admin123') {
-        console.log('Using mock admin login for development');
-
-        // Create a mock token with a longer expiration (7 days)
-        const mockToken = 'mock_admin_token_' + Date.now();
-        localStorage.setItem('token', mockToken);
-
-        // Store admin email for getCurrentUser
-        localStorage.setItem('mock_user_email', credentials.username);
-
-        // Store login timestamp
-        localStorage.setItem('mock_login_time', Date.now().toString());
-
-        // Log the successful mock login
-        console.log('Mock admin login successful');
-
-        return {
-          access_token: mockToken,
-          token_type: 'bearer'
-        };
+      // Fallback to mock login for development - but only if not using admin credentials
+      // For admin credentials, we want to show the real error
+      if (!(credentials.username === 'admin@example.com' || credentials.username === 'admin@rideshare.com')) {
+        console.log('Not using admin credentials, could try mock login for development');
+        // We're not implementing mock login for non-admin users to ensure real backend integration
       }
 
-      // If not using mock credentials, rethrow the error
-      throw error;
+      // If not using mock credentials or credentials are incorrect, throw a more specific error
+      console.error('Login failed - invalid credentials');
+      throw new Error('Invalid credentials');
     }
 
 
@@ -189,29 +180,12 @@ const AuthService = {
     } catch (error) {
       console.error('Failed to fetch real user data, checking for mock user:', error);
 
-      // Check for mock admin login as fallback
-      const token = localStorage.getItem('token');
-      const mockUserEmail = localStorage.getItem('mock_user_email');
+      // We're not using mock admin login anymore
+      console.log('No fallback to mock user - requiring real backend authentication');
 
-      if (token && token.startsWith('mock_admin_token_') && mockUserEmail) {
-        console.log('Using mock admin user data for:', mockUserEmail);
-
-        // Return mock admin user data
-        const mockUserData: UserProfile = {
-          id: 1,
-          email: mockUserEmail,
-          first_name: 'Admin',
-          last_name: 'User',
-          is_active: true,
-          is_superuser: true,
-          is_admin: true,
-          is_superadmin: true,
-          created_at: new Date().toISOString()
-        };
-
-        console.log('Mock user data created:', mockUserData);
-        return mockUserData;
-      }
+      // Clean up any old mock data that might be in localStorage
+      localStorage.removeItem('mock_user_email');
+      localStorage.removeItem('mock_login_time');
 
       // If no mock user, rethrow the error
       throw error;
@@ -224,11 +198,11 @@ const AuthService = {
     const token = localStorage.getItem('token');
     if (!token) return false;
 
-    // Check for mock admin token
+    // We're not using mock tokens anymore
     if (token.startsWith('mock_admin_token_')) {
-      // Mock tokens are always valid
-      console.log('Using mock admin token for authentication');
-      return true;
+      console.log('Found old mock token - removing it');
+      localStorage.removeItem('token');
+      return false;
     }
 
     // Check if token is expired (if it's a JWT)
@@ -258,11 +232,12 @@ const AuthService = {
   },
 
   verifySession: async () => {
-    // Check for mock admin token
+    // We're not using mock tokens anymore
     const token = localStorage.getItem('token');
     if (token && token.startsWith('mock_admin_token_')) {
-      // Mock tokens are always valid
-      return { valid: true };
+      console.log('Found old mock token during session verification - removing it');
+      localStorage.removeItem('token');
+      return { valid: false };
     }
 
     try {

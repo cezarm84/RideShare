@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BasicSelect } from '@/components/ui/basic-select';
 import { Card } from '@/components/ui/card';
 import RideService from '@/services/ride.service';
 import { DatePickerWithPreview } from '@/components/ui/date-picker-with-preview';
@@ -25,6 +25,7 @@ interface Hub {
   id: number;
   name: string;
   address: string;
+  locationId?: string;  // Optional property for unique identification
 }
 
 interface RideSearchFormProps {
@@ -40,8 +41,8 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<SearchFormValues>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
-      startLocation: '1', // Default to Brunnsparken Hub
-      destination: '2',   // Default to Lindholmen Hub
+      startLocation: 'hub_1', // Default to Brunnsparken Hub
+      destination: 'hub_2',   // Default to Lindholmen Hub
       date: new Date().toISOString().split('T')[0],
       rideType: 'hub_to_hub',
       passengers: 1,
@@ -61,31 +62,42 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
         if (data.destinations) setDestinations(data.destinations);
 
         // Create a combined array of all locations (hubs + destinations)
+        // Make sure to create unique IDs for each location
+        const hubsWithIds = (data.hubs || []).map(hub => ({
+          ...hub,
+          locationId: `hub_${hub.id}`  // Add a unique identifier
+        }));
+
+        const destinationsWithIds = (data.destinations || []).map(dest => ({
+          ...dest,
+          locationId: `dest_${dest.id}`  // Add a unique identifier
+        }));
+
         const allLocations = [
-          ...(data.hubs || []),
-          ...(data.destinations || [])
+          ...hubsWithIds,
+          ...destinationsWithIds
         ];
         setAllLocations(allLocations);
       } catch (err) {
         console.error('Error fetching reference data:', err);
         // Use default data if API fails - with 8 hubs and 5 destinations (total 13)
         const defaultHubs = [
-          { id: 1, name: 'Brunnsparken Hub', address: 'Brunnsparken, 411 03 Göteborg', city: 'Göteborg' },
-          { id: 2, name: 'Lindholmen Hub', address: 'Lindholmspiren 5, 417 56 Göteborg', city: 'Göteborg' },
-          { id: 3, name: 'Mölndal Hub', address: 'Göteborgsvägen 97, 431 30 Mölndal', city: 'Mölndal' },
-          { id: 4, name: 'Landvetter Hub', address: 'Flygplatsvägen 90, 438 80 Landvetter', city: 'Landvetter' },
-          { id: 5, name: 'Partille Hub', address: 'Partille Centrum, 433 38 Partille', city: 'Partille' },
-          { id: 6, name: 'Kungsbacka Hub', address: 'Kungsbacka Station, 434 30 Kungsbacka', city: 'Kungsbacka' },
-          { id: 7, name: 'Lerum Hub', address: 'Lerum Station, 443 30 Lerum', city: 'Lerum' },
-          { id: 8, name: 'Kungälv Hub', address: 'Kungälv Resecentrum, 442 30 Kungälv', city: 'Kungälv' },
+          { id: 1, name: 'Brunnsparken Hub', address: 'Brunnsparken, 411 03 Göteborg', city: 'Göteborg', locationId: 'hub_1' },
+          { id: 2, name: 'Lindholmen Hub', address: 'Lindholmspiren 5, 417 56 Göteborg', city: 'Göteborg', locationId: 'hub_2' },
+          { id: 3, name: 'Mölndal Hub', address: 'Göteborgsvägen 97, 431 30 Mölndal', city: 'Mölndal', locationId: 'hub_3' },
+          { id: 4, name: 'Landvetter Hub', address: 'Flygplatsvägen 90, 438 80 Landvetter', city: 'Landvetter', locationId: 'hub_4' },
+          { id: 5, name: 'Partille Hub', address: 'Partille Centrum, 433 38 Partille', city: 'Partille', locationId: 'hub_5' },
+          { id: 6, name: 'Kungsbacka Hub', address: 'Kungsbacka Station, 434 30 Kungsbacka', city: 'Kungsbacka', locationId: 'hub_6' },
+          { id: 7, name: 'Lerum Hub', address: 'Lerum Station, 443 30 Lerum', city: 'Lerum', locationId: 'hub_7' },
+          { id: 8, name: 'Kungälv Hub', address: 'Kungälv Resecentrum, 442 30 Kungälv', city: 'Kungälv', locationId: 'hub_8' },
         ];
 
         const defaultDestinations = [
-          { id: 101, name: 'Volvo Cars Torslanda', address: 'Torslandavägen 1, 405 31 Göteborg', city: 'Göteborg' },
-          { id: 102, name: 'Volvo Group Lundby', address: 'Gropegårdsgatan 2, 417 15 Göteborg', city: 'Göteborg' },
-          { id: 103, name: 'AstraZeneca Mölndal', address: 'Pepparedsleden 1, 431 83 Mölndal', city: 'Mölndal' },
-          { id: 104, name: 'Ericsson Lindholmen', address: 'Lindholmspiren 11, 417 56 Göteborg', city: 'Göteborg' },
-          { id: 105, name: 'SKF Gamlestaden', address: 'Hornsgatan 1, 415 50 Göteborg', city: 'Göteborg' },
+          { id: 101, name: 'Volvo Cars Torslanda', address: 'Torslandavägen 1, 405 31 Göteborg', city: 'Göteborg', locationId: 'dest_101' },
+          { id: 102, name: 'Volvo Group Lundby', address: 'Gropegårdsgatan 2, 417 15 Göteborg', city: 'Göteborg', locationId: 'dest_102' },
+          { id: 103, name: 'AstraZeneca Mölndal', address: 'Pepparedsleden 1, 431 83 Mölndal', city: 'Mölndal', locationId: 'dest_103' },
+          { id: 104, name: 'Ericsson Lindholmen', address: 'Lindholmspiren 11, 417 56 Göteborg', city: 'Göteborg', locationId: 'dest_104' },
+          { id: 105, name: 'SKF Gamlestaden', address: 'Hornsgatan 1, 415 50 Göteborg', city: 'Göteborg', locationId: 'dest_105' },
         ];
 
         setHubs(defaultHubs);
@@ -104,12 +116,14 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
     // Ensure all required fields are present
     const validatedData = {
       ...data,
-      startLocation: data.startLocation || '1',
-      destination: data.destination || '2',
+      startLocation: data.startLocation || 'hub_1',
+      destination: data.destination || 'hub_2',
       date: data.date || new Date().toISOString().split('T')[0],
       rideType: data.rideType || 'hub_to_hub',
       passengers: data.passengers || 1
     };
+
+    console.log('Validated search form data:', validatedData);
     onSearch(validatedData);
   };
 
@@ -131,22 +145,17 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
                 name="startLocation"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
+                  <BasicSelect
+                    id="startLocation"
+                    options={allLocations.map(location => ({
+                      value: location.locationId || location.id.toString(),
+                      label: location.name
+                    }))}
                     value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select starting location"
                     disabled={loading}
-                  >
-                    <SelectTrigger id="startLocation" className="w-full">
-                      <SelectValue placeholder="Select starting location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 )}
               />
               {errors.startLocation && (
@@ -162,22 +171,17 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
                 name="destination"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
+                  <BasicSelect
+                    id="destination"
+                    options={allLocations.map(location => ({
+                      value: location.locationId || location.id.toString(),
+                      label: location.name
+                    }))}
                     value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select destination location"
                     disabled={loading}
-                  >
-                    <SelectTrigger id="destination" className="w-full">
-                      <SelectValue placeholder="Select destination location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allLocations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 )}
               />
               {errors.destination && (
@@ -235,19 +239,17 @@ const RideSearchForm = ({ onSearch }: RideSearchFormProps) => {
                   name="rideType"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
+                    <BasicSelect
+                      id="rideType"
+                      options={[
+                        { value: 'hub_to_hub', label: 'Hub to Hub' },
+                        { value: 'hub_to_destination', label: 'Hub to Destination' },
+                        { value: 'enterprise', label: 'Enterprise' }
+                      ]}
                       value={field.value}
-                    >
-                      <SelectTrigger id="rideType" className="w-full">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hub_to_hub">Hub to Hub</SelectItem>
-                        <SelectItem value="hub_to_destination">Hub to Destination</SelectItem>
-                        <SelectItem value="enterprise">Enterprise</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={field.onChange}
+                      placeholder="Select type"
+                    />
                   )}
                 />
                 {errors.rideType && (
