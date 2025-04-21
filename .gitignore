@@ -141,3 +141,7 @@ frontend/cypress/
 frontend/frontend/
 frontend/tsconfig.tsbuildinfo
 frontend/vite.config.d.ts
+
+# Temporary - remove after cleaning up
+.github/tatus
+.github/\: update README.md with current project status and features\" --no-verify
