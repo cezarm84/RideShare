@@ -30,6 +30,7 @@ class SimpleUser:
         is_active,
         is_superadmin,
         user_type,
+        is_verified=False,
     ):
         self.id = id
         self.user_id = user_id
@@ -40,6 +41,7 @@ class SimpleUser:
         self.is_active = is_active
         self.is_superadmin = is_superadmin
         self.user_type = user_type
+        self.is_verified = is_verified
         self.role = "user"  # Default role
 
     @property
@@ -51,6 +53,10 @@ class SimpleUser:
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.email
+
+    @property
+    def is_driver(self):
+        return self.user_type == "driver"
 
     def has_admin_privileges(self):
         """Check if user has any administrative privileges (superadmin, admin, or manager)"""
@@ -72,7 +78,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[Simple
             text(
                 """
             SELECT id, user_id, email, first_name, last_name, password_hash,
-                   is_active, is_superadmin, user_type, role
+                   is_active, is_superadmin, user_type, role, is_verified
             FROM users
             WHERE email = :email
         """
@@ -95,6 +101,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[Simple
             is_active=result[6],
             is_superadmin=result[7],
             user_type=result[8],
+            is_verified=result[10] if len(result) > 10 else False,
         )
 
         # Set the role if it exists in the result
@@ -192,7 +199,7 @@ async def get_current_user(
             text(
                 """
             SELECT id, user_id, email, first_name, last_name, password_hash,
-                  is_active, is_superadmin, user_type, role
+                  is_active, is_superadmin, user_type, role, is_verified
             FROM users
             WHERE email = :email
         """
@@ -215,6 +222,7 @@ async def get_current_user(
             is_active=result[6],
             is_superadmin=result[7],
             user_type=result[8],
+            is_verified=result[10] if len(result) > 10 else False,
         )
 
         # Set the role if it exists in the result
@@ -256,7 +264,7 @@ def get_current_user_legacy(
         text(
             """
         SELECT id, user_id, email, first_name, last_name, password_hash,
-               is_active, is_superadmin, user_type, role
+               is_active, is_superadmin, user_type, role, is_verified
         FROM users
         WHERE email = :email
     """
@@ -278,6 +286,7 @@ def get_current_user_legacy(
         is_active=result[6],
         is_superadmin=result[7],
         user_type=result[8],
+        is_verified=result[10] if len(result) > 10 else False,
     )
 
     # Set the role if it exists in the result

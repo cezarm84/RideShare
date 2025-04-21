@@ -1,6 +1,6 @@
-import datetime
 import enum
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
@@ -44,10 +44,18 @@ class User(Base):
     is_superadmin = Column(Boolean, default=False)
     user_type = Column(String, default=UserType.PRIVATE)
     role = Column(String, default=UserRole.USER)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    # Email verification fields
+    verification_token = Column(String, nullable=True)
+    verification_token_expires = Column(DateTime, nullable=True)
+    password_reset_token = Column(String, nullable=True)
+    password_reset_token_expires = Column(DateTime, nullable=True)
 
     # Simple address strings
     home_address = Column(String, nullable=True)
@@ -90,6 +98,9 @@ class User(Base):
 
     # Payment methods relationship
     payment_methods = relationship("PaymentMethod", back_populates="user")
+
+    # Test emails relationship
+    test_emails = relationship("TestEmail", back_populates="user")
 
     # Use a single relationship for locations to avoid overlap warnings
     saved_locations = relationship(

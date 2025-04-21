@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Union
 
 from fastapi import Depends, HTTPException, status
@@ -32,6 +32,7 @@ class SimpleUser:
         is_active,
         is_superadmin,
         user_type,
+        is_verified=False,
     ):
         self.id = id
         self.user_id = user_id
@@ -42,6 +43,7 @@ class SimpleUser:
         self.is_active = is_active
         self.is_superadmin = is_superadmin
         self.user_type = user_type
+        self.is_verified = is_verified
 
     @property
     def is_admin(self):
@@ -52,6 +54,18 @@ class SimpleUser:
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.email
+
+    @property
+    def is_driver(self):
+        return self.user_type == "driver"
+
+    def has_admin_privileges(self):
+        """Check if user has any administrative privileges (superadmin, admin, or manager)"""
+        return (
+            self.is_superadmin
+            or getattr(self, "role", "") in ["superadmin", "admin", "manager"]
+            or self.user_type == "admin"
+        )
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -73,9 +87,9 @@ def create_access_token(
 ) -> str:
     """Create a JWT access token"""
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
@@ -94,7 +108,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[SimpleUser]:
             text(
                 """
             SELECT id, user_id, email, first_name, last_name, password_hash,
-                   is_active, is_superadmin, user_type
+                   is_active, is_superadmin, user_type, is_verified
             FROM users
             WHERE email = :email
         """
@@ -116,6 +130,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[SimpleUser]:
             is_active=result[6],
             is_superadmin=result[7],
             user_type=result[8],
+            is_verified=result[9] if len(result) > 9 else False,
         )
 
         return user

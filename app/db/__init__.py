@@ -30,6 +30,17 @@ def configure_relationships():
         # Import all models that might define relationships
         from app.models.address import Address
         from app.models.attachment import MessageAttachment
+
+        # Import driver-related models
+        from app.models.driver import (
+            DriverDocument,
+            DriverProfile,
+            DriverReview,
+            DriverSchedule,
+            DriverVehicle,
+        )
+        from app.models.driver_issue import DriverIssueReport, IssuePhoto
+        from app.models.driver_time_off import DriverTimeOffRequest
         from app.models.faq import FAQ, FAQCategory
         from app.models.geocoding_cache import GeocodingCache
         from app.models.hub import Hub

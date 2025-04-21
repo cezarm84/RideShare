@@ -107,6 +107,41 @@ class Settings(BaseSettings):
     RECAPTCHA_SITE_KEY: str = os.getenv("RECAPTCHA_SITE_KEY", "")
     RECAPTCHA_SECRET_KEY: str = os.getenv("RECAPTCHA_SECRET_KEY", "")
 
+    # Email settings
+    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "True").lower() in (
+        "true",
+        "1",
+        "t",
+    )
+    EMAIL_SENDER_NAME: str = os.getenv("EMAIL_SENDER_NAME", "RideShare")
+    EMAIL_SENDER_EMAIL: str = os.getenv("EMAIL_SENDER_EMAIL", "noreply@rideshare.com")
+    EMAIL_SMTP_SERVER: str = os.getenv("EMAIL_SMTP_SERVER", "smtp.gmail.com")
+    EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "587"))
+    EMAIL_SMTP_USER: str = os.getenv("EMAIL_SMTP_USER", "")
+    EMAIL_SMTP_PASSWORD: str = os.getenv("EMAIL_SMTP_PASSWORD", "")
+    EMAIL_USE_TLS: bool = os.getenv("EMAIL_USE_TLS", "True").lower() in (
+        "true",
+        "1",
+        "t",
+    )
+    EMAIL_USE_SSL: bool = os.getenv("EMAIL_USE_SSL", "False").lower() in (
+        "true",
+        "1",
+        "t",
+    )
+    EMAIL_VERIFICATION_REQUIRED: bool = os.getenv(
+        "EMAIL_VERIFICATION_REQUIRED", "True"
+    ).lower() in (
+        "true",
+        "1",
+        "t",
+    )
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = int(
+        os.getenv("EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS", "48")
+    )
+    EMAIL_TEMPLATES_DIR: str = os.getenv("EMAIL_TEMPLATES_DIR", "app/templates/email")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
     class Config:
         env_file = ".env"
         case_sensitive = True

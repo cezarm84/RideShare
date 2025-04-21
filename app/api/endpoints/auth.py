@@ -1,17 +1,19 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
+from app.models.user import User
 from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     get_current_user,
 )
+from app.services.email_service import email_service
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -21,7 +23,9 @@ router = APIRouter()
 
 @router.post("/token")
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    background_tasks: BackgroundTasks = None,
+    db: Session = Depends(get_db),
 ):
     """
     OAuth2 compatible token login, get an access token for future requests
@@ -34,6 +38,29 @@ async def login_for_access_token(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Check if email verification is required and user is not verified
+        if settings.EMAIL_VERIFICATION_REQUIRED and not user.is_verified:
+            # Get the full user object from the database
+            full_user = db.query(User).filter(User.id == user.id).first()
+
+            if full_user and background_tasks:
+                # Send verification email in background
+                token = email_service.generate_verification_token()
+                full_user.verification_token = token
+                full_user.verification_token_expires = datetime.now(
+                    timezone.utc
+                ) + timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS)
+                db.commit()
+
+                background_tasks.add_task(
+                    email_service.send_verification_email, full_user, token
+                )
+
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email not verified. A verification email has been sent to your email address.",
             )
 
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -50,6 +77,7 @@ async def login_for_access_token(
             "email": user.email,
             "full_name": user.full_name,
             "is_admin": user.is_admin,
+            "is_verified": user.is_verified,
         }
     except Exception as e:
         logger.error(f"Error during authentication: {str(e)}")

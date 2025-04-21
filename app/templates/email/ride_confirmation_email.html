@@ -1,0 +1,34 @@
+{% extends "base_email.html" %}
+
+{% block title %}Ride Confirmation{% endblock %}
+
+{% block header %}Ride Confirmation{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user_name }},</h2>
+
+<p>Your ride has been successfully booked! Here are the details:</p>
+
+<div class="info">
+    <p><strong>Ride ID:</strong> {{ ride_id }}</p>
+    <p><strong>Date:</strong> {{ ride_date }}</p>
+    <p><strong>Time:</strong> {{ ride_time }}</p>
+    <p><strong>From:</strong> {{ origin }}</p>
+    <p><strong>To:</strong> {{ destination }}</p>
+</div>
+
+<p>You can view your booking details and track your ride by clicking the button below:</p>
+
+<div style="text-align: center;">
+    <a href="{{ booking_link }}" class="button" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Booking</a>
+</div>
+
+<p>Need to make changes to your booking? You can cancel or modify your ride up to 2 hours before the scheduled departure time.</p>
+
+<p>If you have any questions or need assistance, please contact our support team at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+
+<p>Thank you for choosing {{ company_name }}!</p>
+
+<p>Best regards,<br>
+The {{ company_name }} Team</p>
+{% endblock %}

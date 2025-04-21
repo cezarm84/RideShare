@@ -1,9 +1,10 @@
 import logging
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -20,6 +21,7 @@ from app.api.dependencies import (
     get_current_user,
     get_current_user_optional,
 )
+from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.driver import (
@@ -45,6 +47,7 @@ from app.schemas.driver import (
     DriverVehicleResponse,
     DriverWithUserCreate,
 )
+from app.services.email_service import email_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -264,6 +267,7 @@ async def create_driver_with_user(
 )
 async def create_driver(
     driver_data: DriverProfileCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ):
@@ -315,6 +319,28 @@ async def create_driver(
         db.add(new_user)
         db.flush()  # Flush to get the user ID
         user_id = new_user.id
+
+        # Handle email verification
+        if settings.EMAIL_VERIFICATION_REQUIRED:
+            # Generate verification token
+            token = email_service.generate_verification_token()
+
+            # Set token expiration
+            expires = datetime.now(timezone.utc) + timedelta(
+                hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS
+            )
+
+            # Update user with verification token
+            new_user.verification_token = token
+            new_user.verification_token_expires = expires
+
+            # Send verification email in background
+            background_tasks.add_task(
+                email_service.send_verification_email, new_user, token
+            )
+        else:
+            # If verification is not required, mark user as verified
+            new_user.is_verified = True
     else:
         # Check if driver profile already exists for this user
         existing_profile = (

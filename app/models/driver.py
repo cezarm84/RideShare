@@ -133,6 +133,12 @@ class DriverProfile(Base):
     documents = relationship(
         "DriverDocument", back_populates="driver", cascade="all, delete-orphan"
     )
+    time_off_requests = relationship(
+        "DriverTimeOffRequest", back_populates="driver", cascade="all, delete-orphan"
+    )
+    issue_reports = relationship(
+        "DriverIssueReport", back_populates="driver", cascade="all, delete-orphan"
+    )
 
     @property
     def ride_type_permissions(self):

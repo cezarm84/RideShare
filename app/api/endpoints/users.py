@@ -1,15 +1,18 @@
 import logging
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.geocoding import geocode_address
 from app.core.security import get_current_admin_user, get_current_user
 from app.db.session import get_db
 from app.models.user import EnterpriseUser, User
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.services.email_service import email_service
 from app.services.user_service import (
     create_user_async,
     get_all_users,
@@ -52,7 +55,11 @@ def generate_unique_user_id():
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_new_user(user_data: UserCreate, db: Session = Depends(get_db)):
+async def create_new_user(
+    user_data: UserCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Create a new user with automatic geocoding for addresses.
     """
@@ -240,6 +247,33 @@ async def create_new_user(user_data: UserCreate, db: Session = Depends(get_db)):
         else:
             full_name = "Unknown"
 
+        # Send verification email if email verification is required
+        if settings.EMAIL_VERIFICATION_REQUIRED:
+            # Generate verification token
+            token = email_service.generate_verification_token()
+
+            # Set token expiration
+            expires = datetime.now(timezone.utc) + timedelta(
+                hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS
+            )
+
+            # Update user with verification token
+            user.verification_token = token
+            user.verification_token_expires = expires
+            db.commit()
+
+            # Send verification email in background
+            background_tasks.add_task(
+                email_service.send_verification_email, user, token
+            )
+        else:
+            # If verification is not required, mark user as verified
+            user.is_verified = True
+            db.commit()
+
+            # Send welcome email in background
+            background_tasks.add_task(email_service.send_welcome_email, user)
+
         # Convert the user model to a dictionary that matches the UserResponse model
         # This prevents ResponseValidationError: value is not a valid dict
         response_data = {
@@ -252,6 +286,7 @@ async def create_new_user(user_data: UserCreate, db: Session = Depends(get_db)):
             "phone_number": user.phone_number,
             "user_type": user.user_type,
             "is_active": user.is_active,
+            "is_verified": user.is_verified,
             "created_at": user.created_at if hasattr(user, "created_at") else None,
             "updated_at": user.updated_at if hasattr(user, "updated_at") else None,
         }
