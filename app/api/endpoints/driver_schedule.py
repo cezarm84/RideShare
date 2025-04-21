@@ -71,13 +71,13 @@ async def get_driver_schedule(
     if start_date:
         query = query.filter(
             (DriverSchedule.specific_date >= start_date)
-            | (DriverSchedule.specific_date == None)
+            | (DriverSchedule.specific_date is None)
         )
 
     if end_date:
         query = query.filter(
             (DriverSchedule.specific_date <= end_date)
-            | (DriverSchedule.specific_date == None)
+            | (DriverSchedule.specific_date is None)
         )
 
     schedules = query.all()

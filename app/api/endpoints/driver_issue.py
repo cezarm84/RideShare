@@ -24,7 +24,6 @@ from app.schemas.driver_issue import (
     IssueReportCreate,
     IssueReportResponse,
     IssueReportUpdate,
-    IssueStatus,
 )
 
 router = APIRouter()

@@ -541,7 +541,7 @@ async def add_vehicle_to_driver(
         existing_primary = (
             db.query(DriverVehicle)
             .filter(
-                DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary == True
+                DriverVehicle.driver_id == driver_id, DriverVehicle.is_primary
             )
             .all()
         )
@@ -763,7 +763,7 @@ async def get_driver_schedules(
 
     # Apply active filter if requested
     if active_only:
-        query = query.filter(DriverSchedule.is_active == True)
+        query = query.filter(DriverSchedule.is_active)
 
     schedules = query.all()
 

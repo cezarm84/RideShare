@@ -207,7 +207,7 @@ async def get_unverified_count(
     Admin only endpoint.
     """
     try:
-        count = db.query(User).filter(User.is_verified == False).count()
+        count = db.query(User).filter(not User.is_verified).count()
         return {"count": count}
 
     except Exception as e:

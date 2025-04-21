@@ -16,7 +16,6 @@ from app.models.user import User
 from app.schemas.driver_time_off import (
     TimeOffRequestCreate,
     TimeOffRequestResponse,
-    TimeOffRequestStatus,
     TimeOffRequestUpdate,
 )
 
