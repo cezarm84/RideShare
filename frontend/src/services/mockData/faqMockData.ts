@@ -167,6 +167,26 @@ export const mockFAQData: FAQListResponse = {
   ],
   uncategorized: [
     {
+      id: 13,
+      question: 'How do I verify my email address?',
+      answer: '<p>Email verification is an important security step to ensure your account is protected. Here\'s how to verify your email address:</p><ol><li>After creating your account, check your email inbox for a verification message from RideShare</li><li>Click on the "Verify Email Address" button in the email</li><li>You\'ll be redirected to the RideShare website where your email will be verified</li></ol><p>If you don\'t receive the verification email:</p><ul><li>Check your spam or junk folder</li><li>Go to the sign-in page and click "Resend verification email"</li><li>Ensure you entered the correct email address during registration</li></ul><p>You must verify your email address before you can book rides or access certain features of the platform.</p>',
+      category_id: null,
+      display_order: 3,
+      is_active: true,
+      created_at: '2023-01-01T00:00:00Z',
+      updated_at: '2023-01-01T00:00:00Z',
+    },
+    {
+      id: 14,
+      question: 'I forgot my password. How do I reset it?',
+      answer: '<p>If you\'ve forgotten your password, you can easily reset it:</p><ol><li>Go to the sign-in page</li><li>Click on the "Forgot password?" link below the password field</li><li>Enter your email address and click "Send Reset Link"</li><li>Check your email for a password reset link from RideShare</li><li>Click the link in the email</li><li>Enter your new password and confirm it</li><li>Click "Reset Password" to save your new password</li></ol><p>For security reasons, password reset links expire after 24 hours. If your link has expired, simply request a new one by following the same steps.</p>',
+      category_id: null,
+      display_order: 4,
+      is_active: true,
+      created_at: '2023-01-01T00:00:00Z',
+      updated_at: '2023-01-01T00:00:00Z',
+    },
+    {
       id: 11,
       question: 'Is RideShare available in my city?',
       answer: '<p>RideShare is currently available in Gothenburg (Göteborg) and surrounding municipalities (kommuner) in Västra Götaland, Sweden. We are perfecting our collective mobility platform in this region before expanding nationwide.</p><p>Our current service area includes:</p><ul><li>Göteborg (Gothenburg)</li><li>Mölndal</li><li>Partille</li><li>Kungälv</li><li>Öckerö</li><li>Ale</li></ul><p>Within these areas, we connect all major transportation hubs, business districts, residential areas, and educational institutions. We\'re focused on creating an exceptional mobility experience in the Gothenburg region before expanding to other parts of Sweden. If you\'re interested in bringing RideShare to your municipality, you can sign up for notifications to be alerted about our expansion plans.</p>',

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 // Assume these icons are imported from an icon library
 import {
@@ -55,11 +56,7 @@ const navItems: NavItem[] = [
     name: "Bookings",
     path: "/bookings",
   },
-  {
-    icon: <UserCircleIcon />,
-    name: "Drivers",
-    path: "/drivers",
-  },
+
   {
     icon: <BoxCubeIcon />,
     name: "Hubs",
@@ -84,6 +81,18 @@ const navItems: NavItem[] = [
 
 const othersItems: NavItem[] = [
   {
+    icon: <UserCircleIcon />,
+    name: "Driver",
+    subItems: [
+      { name: "Dashboard", path: "/driver", pro: false },
+      { name: "Schedule", path: "/driver/schedule", pro: false },
+      { name: "Time Off", path: "/driver/time-off", pro: false },
+      { name: "Report Issue", path: "/driver/issues/new", pro: false },
+      { name: "Profile", path: "/driver/profile", pro: false },
+      { name: "Documents", path: "/driver/documents", pro: false },
+    ],
+  },
+  {
     icon: <PieChartIcon />,
     name: "Analytics",
     subItems: [
@@ -103,6 +112,9 @@ const othersItems: NavItem[] = [
       { name: "Users", path: "/admin/users", pro: false },
       { name: "Drivers", path: "/admin/drivers", pro: false },
       { name: "Rides", path: "/admin/rides", pro: false },
+      { name: "Email Verification", path: "/admin/email-verification", pro: false },
+      { name: "Test Emails", path: "/admin/test-emails", pro: false },
+      { name: "Fake Enterprise Users", path: "/admin/fake-enterprise-users", pro: false },
       { name: "Settings", path: "/admin/settings", pro: false },
     ],
   },
@@ -129,6 +141,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { isAuthenticated, user } = useAuth();
+  const { theme } = useTheme();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -354,7 +367,7 @@ const AppSidebar: React.FC = () => {
           {isExpanded || isHovered || isMobileOpen ? (
             <img
               className="h-8 w-auto"
-              src="/images/logo/rideshare-logo-dark.svg"
+              src={theme === 'dark' ? "/images/logo/rideshare-logo-light.svg" : "/images/logo/rideshare-logo-dark.svg"}
               alt="RideShare Logo"
             />
           ) : (

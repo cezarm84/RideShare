@@ -19,6 +19,7 @@ interface DashboardStats {
   totalDestinations: number;
   activeRides: number;
   totalUsers: number;
+  unverifiedUsers: number;
   recentActivity: string[];
   systemStatus: {
     api: string;
@@ -35,6 +36,7 @@ const AdminDashboard = () => {
     totalDestinations: 0,
     activeRides: 0,
     totalUsers: 0,
+    unverifiedUsers: 0,
     recentActivity: [],
     systemStatus: {
       api: 'Online',
@@ -55,6 +57,15 @@ const AdminDashboard = () => {
 
       if (isMockToken) {
         console.log('Using mock admin token - loading mock dashboard data');
+        // Fetch unverified users count
+        let unverifiedCount = 0;
+        try {
+          const response = await api.get('/admin/email/unverified-count');
+          unverifiedCount = response.data.count;
+        } catch (err) {
+          console.error('Error fetching unverified count:', err);
+        }
+
         // Use mock data for development with mock token
         setTimeout(() => {
           setStats({
@@ -62,6 +73,7 @@ const AdminDashboard = () => {
             totalDestinations: 12,
             activeRides: 24,
             totalUsers: 156,
+            unverifiedUsers: unverifiedCount,
             recentActivity: [
               'User John D. created a new ride',
               'Hub "Lindholmen" updated',
@@ -97,6 +109,15 @@ const AdminDashboard = () => {
           console.error('Endpoint not found - using mock data');
         }
 
+        // Fetch unverified users count
+        let unverifiedCount = 0;
+        try {
+          const response = await api.get('/admin/email/unverified-count');
+          unverifiedCount = response.data.count;
+        } catch (err) {
+          console.error('Error fetching unverified count:', err);
+        }
+
         // Use mock data for development
         console.log('Using mock dashboard stats');
         setStats({
@@ -104,6 +125,7 @@ const AdminDashboard = () => {
           totalDestinations: 12,
           activeRides: 24,
           totalUsers: 156,
+          unverifiedUsers: unverifiedCount,
           recentActivity: [
             'User John D. created a new ride',
             'Hub "Lindholmen" updated',
@@ -170,6 +192,18 @@ const AdminDashboard = () => {
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-600">Total Users</h3>
                 <p className="text-3xl font-bold mt-2">{loading ? '...' : stats.totalUsers}</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold text-gray-600">Unverified Users</h3>
+                <p className="text-3xl font-bold mt-2 text-amber-600">{loading ? '...' : stats.unverifiedUsers}</p>
+                {stats.unverifiedUsers > 0 && (
+                  <a
+                    href="/admin/email-verification"
+                    className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block"
+                  >
+                    Manage verification →
+                  </a>
+                )}
               </Card>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

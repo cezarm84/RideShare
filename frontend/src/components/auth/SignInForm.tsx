@@ -10,8 +10,8 @@ import Button from "../ui/button/Button";
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@rideshare.com");
+  const [password, setPassword] = useState("admin123");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login, error } = useAuth();
@@ -126,6 +126,16 @@ export default function SignInForm() {
                 {error && (
                   <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
                     {error}
+                    {error.includes('Email not verified') && (
+                      <div className="mt-2">
+                        <Link
+                          to="/verify-email"
+                          className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                        >
+                          Resend verification email
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div>
@@ -171,7 +181,7 @@ export default function SignInForm() {
                     </span>
                   </div>
                   <Link
-                    to="/reset-password"
+                    to="/forgot-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
                     Forgot password?

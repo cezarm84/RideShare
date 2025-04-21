@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
@@ -10,6 +11,7 @@ import UserDropdown from "../components/header/UserDropdown";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -88,7 +90,7 @@ const AppHeader: React.FC = () => {
           <Link to="/" className="lg:hidden">
             <img
               className="h-8 w-auto"
-              src="/images/logo/rideshare-logo-dark.svg"
+              src={theme === 'dark' ? "/images/logo/rideshare-logo-light.svg" : "/images/logo/rideshare-logo-dark.svg"}
               alt="RideShare Logo"
             />
           </Link>

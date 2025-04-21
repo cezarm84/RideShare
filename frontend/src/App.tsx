@@ -21,6 +21,9 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import TestPage from "./pages/TestPage";
 import TestRedirect from "./pages/TestRedirect";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import EmailVerification from "./pages/EmailVerification";
 
 // RideShare specific pages
 import Rides from "./pages/RideShare/Rides";
@@ -36,6 +39,15 @@ import FAQ from "./pages/FAQ/FAQ";
 import Contact from "./pages/Contact/Contact";
 import Terms from "./pages/Terms";
 
+// Driver pages
+import DriverLayout from "./pages/RideShare/Driver";
+import DriverDashboard from "./pages/RideShare/Driver/DriverDashboard";
+import DriverSchedule from "./pages/RideShare/Driver/DriverSchedule";
+import TimeOffRequests from "./pages/RideShare/Driver/TimeOffRequests";
+import ReportIssue from "./pages/RideShare/Driver/ReportIssue";
+import DriverProfile from "./pages/RideShare/Driver/DriverProfile";
+import DriverDocuments from "./pages/RideShare/Driver/DriverDocuments";
+
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import HubsManagement from "./pages/Admin/HubsManagement";
@@ -47,6 +59,9 @@ import DriversManagement from "./pages/Admin/DriversManagement";
 import RidesManagement from "./pages/Admin/RidesManagement";
 import SystemSettings from "./pages/Admin/SystemSettings";
 import AdminRides from "./pages/Admin/AdminRides";
+import EmailVerificationAdmin from "./pages/Admin/EmailVerification";
+import TestEmailsPage from "./pages/Admin/TestEmails";
+import FakeEnterpriseUsersPage from "./pages/Admin/FakeEnterpriseUsers";
 
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
@@ -60,18 +75,26 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
+  console.log('ProtectedRoute check - Path:', location.pathname);
+  console.log('ProtectedRoute check - Auth state:', { isAuthenticated, loading, user });
+
   if (loading) {
+    console.log('ProtectedRoute - Still loading, showing spinner');
     return <LoadingSpinner fullScreen size="lg" message="Loading your profile..." />;
   }
 
   // Only redirect to sign-in if the user is trying to access a protected route
   // and is not authenticated
-  return isAuthenticated ?
-    <>{children}</> :
-    <Navigate to="/signin" state={{ from: location }} replace />;
+  if (isAuthenticated) {
+    console.log('ProtectedRoute - User is authenticated, rendering children');
+    return <>{children}</>;
+  } else {
+    console.log('ProtectedRoute - User is NOT authenticated, redirecting to signin');
+    return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
 };
 
 // Import the AdminProtectedRoute component
@@ -110,6 +133,18 @@ export default function App() {
           <Route path="/calendar" element={<ProtectedRoute><AppLayout><RideShareCalendar /></AppLayout></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><AppLayout><UserProfiles /></AppLayout></ProtectedRoute>} />
 
+          {/* Driver Protected Routes */}
+          <Route path="/driver" element={<ProtectedRoute><AppLayout><DriverLayout /></AppLayout></ProtectedRoute>}>
+            <Route index element={<DriverDashboard />} />
+            <Route path="schedule" element={<DriverSchedule />} />
+            <Route path="time-off" element={<TimeOffRequests />} />
+            <Route path="time-off/new" element={<TimeOffRequests />} />
+            <Route path="issues" element={<ReportIssue />} />
+            <Route path="issues/new" element={<ReportIssue />} />
+            <Route path="profile" element={<DriverProfile />} />
+            <Route path="documents" element={<DriverDocuments />} />
+          </Route>
+
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<AdminProtectedRoute><AppLayout><AdminDashboard /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/hubs" element={<AdminProtectedRoute><AppLayout><HubsManagement /></AppLayout></AdminProtectedRoute>} />
@@ -121,6 +156,9 @@ export default function App() {
           <Route path="/admin/rides" element={<AdminProtectedRoute><AppLayout><AdminRides /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/rides-management" element={<AdminProtectedRoute><AppLayout><RidesManagement /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/settings" element={<AdminProtectedRoute><AppLayout><SystemSettings /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/email-verification" element={<AdminProtectedRoute><AppLayout><EmailVerificationAdmin /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/test-emails" element={<AdminProtectedRoute><AppLayout><TestEmailsPage /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/fake-enterprise-users" element={<AdminProtectedRoute><AppLayout><FakeEnterpriseUsersPage /></AppLayout></AdminProtectedRoute>} />
 
           {/* Documentation Routes */}
           <Route path="/docs" element={<AppLayout><DocumentationPage /></AppLayout>} />
@@ -129,6 +167,9 @@ export default function App() {
           {/* Auth Layout - Public Routes */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
 
           {/* Test Pages */}
           <Route path="/test" element={<TestPage />} />

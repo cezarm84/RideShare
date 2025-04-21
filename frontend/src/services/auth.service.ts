@@ -168,8 +168,7 @@ const AuthService = {
       const userData = { ...response.data };
 
       // Set admin flags based on email or superuser status
-      if (userData.email === 'admin@example.com' ||
-          userData.email === 'admin@rideshare.com' ||
+      if (userData.email === 'admin@rideshare.com' ||
           userData.is_superuser) {
         userData.is_admin = true;
         userData.is_superadmin = userData.is_superuser;
@@ -195,8 +194,14 @@ const AuthService = {
   },
 
   isAuthenticated: (): boolean => {
+    console.log('Checking if user is authenticated');
     const token = localStorage.getItem('token');
-    if (!token) return false;
+    console.log('Token from localStorage:', token ? `${token.substring(0, 10)}...` : 'not found');
+
+    if (!token) {
+      console.log('No token found, user is not authenticated');
+      return false;
+    }
 
     // We're not using mock tokens anymore
     if (token.startsWith('mock_admin_token_')) {
@@ -208,7 +213,10 @@ const AuthService = {
     // Check if token is expired (if it's a JWT)
     try {
       const base64Url = token.split('.')[1];
-      if (!base64Url) return true; // Not a JWT token
+      if (!base64Url) {
+        console.log('Token is not a JWT, assuming it is valid');
+        return true; // Not a JWT token
+      }
 
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
@@ -216,18 +224,25 @@ const AuthService = {
       }).join(''));
 
       const { exp } = JSON.parse(jsonPayload);
+      console.log('Token expiration timestamp:', exp);
+      console.log('Current timestamp:', Math.floor(Date.now() / 1000));
+
       const expired = exp ? Date.now() >= exp * 1000 : false;
 
       if (expired) {
         console.log('Token is expired, removing it');
         localStorage.removeItem('token');
         return false;
+      } else {
+        console.log('Token is valid and not expired');
       }
     } catch (e) {
       console.error('Error checking token expiration:', e);
       // If we can't parse the token, assume it's valid
+      console.log('Could not parse token, assuming it is valid');
     }
 
+    console.log('User is authenticated');
     return true;
   },
 

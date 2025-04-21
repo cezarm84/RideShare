@@ -16,6 +16,8 @@ Welcome to the RideShare API documentation. This documentation provides detailed
 - [Ride Creation Examples](ride_creation_examples.md) - Detailed examples for creating different types of rides
 - [Payment Methods](payment_methods.md) - Payment processing and management
 - [User Preferences](user_preferences.md) - User preference system documentation
+- [Email System](email_system.md) - Email verification and communication system
+- [Email Testing](email_testing.md) - Testing email functionality
 
 ### Administration
 
@@ -39,6 +41,13 @@ For a complete list of endpoints with detailed request/response examples, see th
 - `POST /api/v1/auth/token` - User login
 - `POST /api/v1/auth/register` - User registration
 - `POST /api/v1/auth/refresh-token` - Refresh authentication token
+
+### Email Verification
+
+- `POST /api/v1/email/request-verification` - Request email verification
+- `POST /api/v1/email/verify` - Verify email with token
+- `POST /api/v1/email/request-password-reset` - Request password reset
+- `POST /api/v1/email/reset-password` - Reset password with token
 
 ### Users
 

@@ -1,6 +1,6 @@
 /**
  * Mock Authentication Service
- * 
+ *
  * This service provides mock authentication functionality for testing purposes.
  * It simulates a backend authentication service without requiring an actual backend.
  */
@@ -27,9 +27,9 @@ const mockUsers: Record<string, UserProfile> = {
     is_superuser: false,
     created_at: new Date().toISOString(),
   },
-  'admin@example.com': {
+  'admin@rideshare.com': {
     id: 3,
-    email: 'admin@example.com',
+    email: 'admin@rideshare.com',
     first_name: 'Admin',
     last_name: 'User',
     is_active: true,
@@ -50,10 +50,10 @@ const MockAuthService = {
         if (credentials.username && credentials.password) {
           // Store token in localStorage
           localStorage.setItem('token', MOCK_TOKEN);
-          
+
           // Store the email for getCurrentUser
           localStorage.setItem('currentUserEmail', credentials.username);
-          
+
           resolve({
             access_token: MOCK_TOKEN,
             token_type: 'bearer',
@@ -75,7 +75,7 @@ const MockAuthService = {
       // Simulate API delay
       setTimeout(() => {
         const email = localStorage.getItem('currentUserEmail');
-        
+
         if (email && mockUsers[email]) {
           resolve(mockUsers[email]);
         } else if (email) {
@@ -89,7 +89,7 @@ const MockAuthService = {
             is_superuser: false,
             created_at: new Date().toISOString(),
           };
-          
+
           resolve(newUser);
         } else {
           reject(new Error('User not found'));
