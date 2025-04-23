@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.attachment import MessageAttachment
+from app.models.message import ConversationMessage as Message
 
 
 class FileService:

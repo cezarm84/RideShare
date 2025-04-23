@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,6 +14,7 @@ from app.core.geocoding import get_coordinates_for_address
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.hub import Hub
+from app.models.messaging import ChannelType, Message as EnhancedMessage, MessageChannel, MessageType, channel_members
 from app.models.ride import Ride, RideBooking
 from app.models.user import User
 from app.schemas.hub import HubResponse
@@ -597,6 +599,56 @@ async def create_ride(
 
         logger.info(f"Successfully created ride with ID {parent_ride.id}")
 
+        # Create a chat channel for the ride
+        try:
+            # Create channel
+            channel = MessageChannel(
+                name=f"Ride #{parent_ride.id}",
+                channel_type=ChannelType.RIDE,
+                ride_id=parent_ride.id
+            )
+
+            db.add(channel)
+            db.flush()  # Get channel ID
+
+            # Add driver if assigned
+            if parent_ride.driver_id:
+                db.execute(
+                    channel_members.insert().values(
+                        channel_id=channel.id,
+                        user_id=parent_ride.driver_id,
+                        is_admin=True
+                    )
+                )
+
+            # Add admin (creator)
+            db.execute(
+                channel_members.insert().values(
+                    channel_id=channel.id,
+                    user_id=current_user.id,
+                    is_admin=True
+                )
+            )
+
+            # Add initial message
+            message_content = f"Welcome to the chat for ride #{parent_ride.id}. Use this channel to communicate with other passengers and the driver."
+            message = EnhancedMessage(
+                channel_id=channel.id,
+                sender_id=current_user.id,
+                message_type=MessageType.SYSTEM,
+                content=message_content
+            )
+            db.add(message)
+
+            # Update ride with channel ID
+            parent_ride.chat_channel_id = channel.id
+
+            db.commit()
+            logger.info(f"Created chat channel {channel.id} for ride {parent_ride.id}")
+        except Exception as e:
+            logger.error(f"Error creating chat channel for ride {parent_ride.id}: {str(e)}")
+            # Continue even if chat channel creation fails
+
         # Convert the new ride ORM object to dictionary with proper hub handling
         ride_dict = ride_to_schema(parent_ride, include_passengers=False)
 
@@ -667,8 +719,55 @@ async def update_ride(
     Update a ride (admin, manager, or driver only).
     """
     try:
+        # Get the original ride to check for driver assignment
+        original_ride = db.query(Ride).filter(Ride.id == ride_id).first()
+        if not original_ride:
+            raise HTTPException(status_code=404, detail=f"Ride with ID {ride_id} not found")
+
+        original_driver_id = original_ride.driver_id
+
         ride_service = RideService(db)
         updated_ride = ride_service.update_ride(db, ride_id, ride_update)
+
+        # Check if a driver was assigned or changed
+        new_driver_id = updated_ride.driver_id
+        if new_driver_id and new_driver_id != original_driver_id:
+            logger.info(f"Driver {new_driver_id} assigned to ride {ride_id}")
+
+            # Add the driver to the ride's chat channel if it exists
+            if updated_ride.chat_channel_id:
+                try:
+                    # Check if driver is already a member of the channel
+                    is_member = db.query(channel_members).filter(
+                        channel_members.c.channel_id == updated_ride.chat_channel_id,
+                        channel_members.c.user_id == new_driver_id
+                    ).first() is not None
+
+                    if not is_member:
+                        # Add driver to the channel
+                        db.execute(
+                            channel_members.insert().values(
+                                channel_id=updated_ride.chat_channel_id,
+                                user_id=new_driver_id,
+                                is_admin=True  # Drivers are admins in ride channels
+                            )
+                        )
+
+                        # Add a system message
+                        driver = db.query(User).filter(User.id == new_driver_id).first()
+                        if driver:
+                            driver_name = f"{driver.first_name} {driver.last_name}"
+                            driver_message = EnhancedMessage(
+                                channel_id=updated_ride.chat_channel_id,
+                                message_type=MessageType.SYSTEM,
+                                content=f"Driver {driver_name} has been assigned to this ride."
+                            )
+                            db.add(driver_message)
+                            db.commit()
+                            logger.info(f"Added driver {new_driver_id} to chat channel for ride {ride_id}")
+                except Exception as e:
+                    logger.error(f"Error adding driver to chat channel: {str(e)}")
+                    # Continue even if adding to chat fails
 
         # Convert the updated ride ORM object to dictionary with proper hub handling
         ride_dict = ride_to_schema(updated_ride, include_passengers=False)

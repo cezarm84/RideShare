@@ -22,7 +22,7 @@ class MessageAttachment(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Back reference to the parent message
-    message = relationship("Message", back_populates="attachments")
+    message = relationship("ConversationMessage", back_populates="attachments")
 
     def __repr__(self):
         return f"<MessageAttachment(id={self.id}, message_id={self.message_id}, file_name={self.file_name})>"

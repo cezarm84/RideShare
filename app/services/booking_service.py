@@ -1,15 +1,19 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.booking_passenger import BookingPassenger
+from app.models.messaging import Message as EnhancedMessage, MessageType, channel_members
 from app.models.payment import Payment
 from app.models.ride import Ride, RideBooking
 from app.models.user import User
 from app.schemas.booking import BookingCreate, PaymentCreate
 from app.services.notification_service import NotificationService
 from app.services.payment_service import PaymentService
+
+logger = logging.getLogger(__name__)
 
 
 class BookingService:
@@ -155,6 +159,41 @@ class BookingService:
             self.db.add(db_passenger)
 
         self.db.commit()
+
+        # Add passenger to the ride's chat channel if it exists
+        if ride.chat_channel_id:
+            try:
+                # Check if passenger is already a member of the channel
+                is_member = self.db.query(channel_members).filter(
+                    channel_members.c.channel_id == ride.chat_channel_id,
+                    channel_members.c.user_id == user_id
+                ).first() is not None
+
+                if not is_member:
+                    # Add passenger to the channel
+                    self.db.execute(
+                        channel_members.insert().values(
+                            channel_id=ride.chat_channel_id,
+                            user_id=user_id,
+                            is_admin=False  # Passengers are not admins in ride channels
+                        )
+                    )
+
+                    # Add a system message
+                    passenger = self.db.query(User).filter(User.id == user_id).first()
+                    if passenger:
+                        passenger_name = f"{passenger.first_name} {passenger.last_name}"
+                        passenger_message = EnhancedMessage(
+                            channel_id=ride.chat_channel_id,
+                            message_type=MessageType.SYSTEM,
+                            content=f"Passenger {passenger_name} has joined the ride."
+                        )
+                        self.db.add(passenger_message)
+                        self.db.commit()
+                        logger.info(f"Added passenger {user_id} to chat channel for ride {ride.id}")
+            except Exception as e:
+                logger.error(f"Error adding passenger to chat channel: {str(e)}")
+                # Continue even if adding to chat fails
 
         # Try to send confirmation notification, but don't fail if it doesn't work
         try:

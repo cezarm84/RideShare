@@ -139,6 +139,13 @@ class User(Base):
         "VehicleType", foreign_keys=[preferred_vehicle_type_id]
     )
 
+    # Notifications relationship
+    notifications = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     @property
     def full_name(self):
         """Generate full name from first and last name"""

@@ -2,7 +2,7 @@
 
 from typing import Generator, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
@@ -100,3 +100,38 @@ def get_admin_user(
             detail="The user doesn't have enough privileges",
         )
     return current_user
+
+
+async def get_current_user_ws(websocket: WebSocket, db: Session = Depends(get_db)) -> User:
+    """
+    Get current user from WebSocket connection.
+    """
+    try:
+        # Get token from query parameters
+        token = websocket.query_params.get("token")
+        if not token:
+            await websocket.close(code=1008, reason="Missing authentication token")
+            raise WebSocketDisconnect(code=1008)
+
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (jwt.JWTError, ValidationError):
+        await websocket.close(code=1008, reason="Invalid authentication token")
+        raise WebSocketDisconnect(code=1008)
+
+    # Check if sub is an email or an ID
+    if isinstance(token_data.sub, str) and '@' in token_data.sub:
+        user = db.query(User).filter(User.email == token_data.sub).first()
+    else:
+        user = db.query(User).filter(User.id == token_data.sub).first()
+    if not user:
+        await websocket.close(code=1008, reason="User not found")
+        raise WebSocketDisconnect(code=1008)
+
+    if not user.is_active:
+        await websocket.close(code=1008, reason="Inactive user")
+        raise WebSocketDisconnect(code=1008)
+
+    return user

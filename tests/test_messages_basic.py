@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models.message import Message
+from app.models.message import ConversationMessage as Message
 from app.models.user import User
 from app.schemas.message import ConversationCreate, MessageCreate
 from app.services.message_service import MessageService

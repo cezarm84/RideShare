@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Float, Integer, String
+from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
 
@@ -21,6 +22,7 @@ class Enterprise(Base):
 
     # Relationships
     # We don't define a relationship to Ride here since Ride uses a property for enterprise_id
+    chat_channels = relationship("MessageChannel", back_populates="enterprise")
 
     def __repr__(self):
         return f"<Enterprise(id={self.id}, name={self.name})>"

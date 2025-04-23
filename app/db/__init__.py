@@ -47,7 +47,8 @@ def configure_relationships():
         from app.models.location import Location
 
         # Import message-related models last to avoid circular imports
-        from app.models.message import Conversation, Message, UserMessageSettings
+        from app.models.message import Conversation, ConversationMessage, UserMessageSettings
+        from app.models.messaging import MessageChannel, Message as EnhancedMessage, MessageRead
         from app.models.payment import Payment
         from app.models.ride import Ride, RideBooking
         from app.models.user import User

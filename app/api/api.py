@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import bookings, payment_methods, test_rides, user_preferences
+from app.api.endpoints import (admin_enhanced_messaging, bookings, enhanced_messaging,
+                          payment_methods, test_rides, user_preferences)
 from app.api.routes import (
     admin_hubs,
     admin_routes,
@@ -24,6 +25,10 @@ api_router.include_router(rides.router, prefix="/rides", tags=["rides"])
 
 # Message routes
 api_router.include_router(messages.router, prefix="/messages", tags=["messages"])
+
+# Enhanced messaging routes
+api_router.include_router(enhanced_messaging.router, prefix="/chat", tags=["chat"])
+api_router.include_router(admin_enhanced_messaging.router, prefix="/admin/chat", tags=["admin", "chat"])
 
 # Admin routes
 api_router.include_router(

@@ -62,6 +62,16 @@ import AdminRides from "./pages/Admin/AdminRides";
 import EmailVerificationAdmin from "./pages/Admin/EmailVerification";
 import TestEmailsPage from "./pages/Admin/TestEmails";
 import FakeEnterpriseUsersPage from "./pages/Admin/FakeEnterpriseUsers";
+import EmailDomainTestingPage from "./pages/Admin/EmailDomainTesting";
+import EmailInboxPage from "./pages/Admin/EmailInbox";
+
+// Chat pages
+import DriverMessaging from "./pages/Driver/DriverMessaging";
+import PassengerMessaging from "./pages/Passenger/PassengerMessaging";
+import AdminMessaging from "./pages/Admin/AdminMessaging";
+import CommunityForums from "./pages/Community/CommunityForums";
+import ForumDetail from "./pages/Community/ForumDetail";
+import NotificationsPage from "./pages/Notifications/NotificationsPage";
 
 // Documentation pages
 import { DocumentationPage } from "./pages/Documentation";
@@ -69,6 +79,7 @@ import { DocumentationPage } from "./pages/Documentation";
 // Context providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { UserProfileProvider } from "./context/UserProfileContext";
+import NotificationProvider from "./contexts/NotificationContext";
 
 // Import the LoadingSpinner component
 import LoadingSpinner from "./components/common/LoadingSpinner";
@@ -114,7 +125,8 @@ export default function App() {
       <AuthProvider>
         <Router>
           <UserProfileProvider>
-            <ScrollToTop />
+            <NotificationProvider>
+              <ScrollToTop />
           <Routes>
           {/* Public Routes with App Layout */}
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
@@ -143,7 +155,18 @@ export default function App() {
             <Route path="issues/new" element={<ReportIssue />} />
             <Route path="profile" element={<DriverProfile />} />
             <Route path="documents" element={<DriverDocuments />} />
+            <Route path="messages" element={<DriverMessaging />} />
           </Route>
+
+          {/* Passenger Routes */}
+          <Route path="/passenger/messages" element={<ProtectedRoute><AppLayout><PassengerMessaging /></AppLayout></ProtectedRoute>} />
+
+          {/* Notifications Route */}
+          <Route path="/notifications" element={<ProtectedRoute><AppLayout><NotificationsPage /></AppLayout></ProtectedRoute>} />
+
+          {/* Community Routes */}
+          <Route path="/community/forums" element={<ProtectedRoute><AppLayout><CommunityForums /></AppLayout></ProtectedRoute>} />
+          <Route path="/community/forums/:forumId" element={<ProtectedRoute><AppLayout><ForumDetail /></AppLayout></ProtectedRoute>} />
 
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<AdminProtectedRoute><AppLayout><AdminDashboard /></AppLayout></AdminProtectedRoute>} />
@@ -159,6 +182,9 @@ export default function App() {
           <Route path="/admin/email-verification" element={<AdminProtectedRoute><AppLayout><EmailVerificationAdmin /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/test-emails" element={<AdminProtectedRoute><AppLayout><TestEmailsPage /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/fake-enterprise-users" element={<AdminProtectedRoute><AppLayout><FakeEnterpriseUsersPage /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/email-domains" element={<AdminProtectedRoute><AppLayout><EmailDomainTestingPage /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/email-inbox" element={<AdminProtectedRoute><AppLayout><EmailInboxPage /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/messaging" element={<AdminProtectedRoute><AppLayout><AdminMessaging /></AppLayout></AdminProtectedRoute>} />
 
           {/* Documentation Routes */}
           <Route path="/docs" element={<AppLayout><DocumentationPage /></AppLayout>} />
@@ -179,6 +205,7 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+            </NotificationProvider>
           </UserProfileProvider>
         </Router>
       </AuthProvider>

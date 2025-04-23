@@ -3,6 +3,8 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     admin_destinations,
     admin_email,
+    admin_email_domains,
+    admin_enhanced_messaging,
     admin_enterprises,
     admin_hubs,
     admin_stats,
@@ -16,11 +18,14 @@ from app.api.endpoints import (
     driver_schedule,
     driver_time_off,
     drivers,
+    email_inbox,
     email_verification,
+    enhanced_messaging,
     faqs,
     matching,
     matching_preferences,
     messaging,
+    notifications,
     payment_methods,
     reference_data,
     rides,
@@ -65,6 +70,9 @@ api_router.include_router(
 # Analytics, Messaging, FAQs, and Contact
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
+api_router.include_router(enhanced_messaging.router, prefix="/chat", tags=["chat"])
+api_router.include_router(admin_enhanced_messaging.router, prefix="/admin/chat", tags=["admin", "chat"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(faqs.router, prefix="/faqs", tags=["faqs"])
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
 
@@ -115,4 +123,14 @@ api_router.include_router(
     admin_test_emails.router,
     prefix="/admin/test-emails",
     tags=["admin", "email", "testing"],
+)
+api_router.include_router(
+    admin_email_domains.router,
+    prefix="/admin/email-domains",
+    tags=["admin", "email", "testing"],
+)
+api_router.include_router(
+    email_inbox.router,
+    prefix="/email",
+    tags=["email", "testing"],
 )

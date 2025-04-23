@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.message import (
     Conversation,
-    Message,
+    ConversationMessage as Message,
     UserMessageSettings,
     conversation_participants,
 )

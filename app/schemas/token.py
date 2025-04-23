@@ -15,5 +15,5 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     """Token payload schema."""
 
-    sub: Optional[int] = None
+    sub: Optional[str] = None
     exp: Optional[int] = None

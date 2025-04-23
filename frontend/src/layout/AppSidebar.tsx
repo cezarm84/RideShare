@@ -19,6 +19,7 @@ import {
   TableIcon,
   UserCircleIcon,
   UserIcon,
+  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -77,6 +78,11 @@ const navItems: NavItem[] = [
     name: "Contact Us",
     path: "/contact",
   },
+  {
+    icon: <ChatIcon />,
+    name: "Community",
+    path: "/community/forums",
+  },
 ];
 
 const othersItems: NavItem[] = [
@@ -90,6 +96,7 @@ const othersItems: NavItem[] = [
       { name: "Report Issue", path: "/driver/issues/new", pro: false },
       { name: "Profile", path: "/driver/profile", pro: false },
       { name: "Documents", path: "/driver/documents", pro: false },
+      { name: "Messages", path: "/driver/messages", pro: false },
     ],
   },
   {
@@ -114,7 +121,10 @@ const othersItems: NavItem[] = [
       { name: "Rides", path: "/admin/rides", pro: false },
       { name: "Email Verification", path: "/admin/email-verification", pro: false },
       { name: "Test Emails", path: "/admin/test-emails", pro: false },
+      { name: "Email Domains", path: "/admin/email-domains", pro: false },
+      { name: "Email Inbox", path: "/admin/email-inbox", pro: false },
       { name: "Fake Enterprise Users", path: "/admin/fake-enterprise-users", pro: false },
+      { name: "Messaging", path: "/admin/messaging", pro: false },
       { name: "Settings", path: "/admin/settings", pro: false },
     ],
   },

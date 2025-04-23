@@ -43,12 +43,13 @@ class Conversation(Base):
         "User", secondary=conversation_participants, backref="conversations"
     )
     messages = relationship(
-        "Message", back_populates="conversation", cascade="all, delete-orphan"
+        "ConversationMessage", back_populates="conversation", cascade="all, delete-orphan",
+        foreign_keys="[ConversationMessage.conversation_id]"
     )
     ride = relationship("Ride", backref="conversations")
 
 
-class Message(Base):
+class ConversationMessage(Base):
     """Model for individual messages within a conversation"""
 
     __tablename__ = "messages"
@@ -65,7 +66,7 @@ class Message(Base):
     is_system_message = Column(Boolean, default=False)  # For system notifications
 
     # Relationships
-    conversation = relationship("Conversation", back_populates="messages")
+    conversation = relationship("Conversation", back_populates="messages", foreign_keys=[conversation_id])
     # Relationships with overlaps parameter to silence warnings
     sender = relationship("User", foreign_keys=[sender_id], overlaps="sent_messages")
     recipient = relationship(

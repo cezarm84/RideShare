@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.driver import DriverProfile, DriverVehicle
-from app.models.message import Conversation, Message, UserMessageSettings
+from app.models.message import Conversation, ConversationMessage as Message, UserMessageSettings
 from app.models.ride import RideBooking
 from app.models.user import User, UserRole
 from app.models.vehicle import Vehicle

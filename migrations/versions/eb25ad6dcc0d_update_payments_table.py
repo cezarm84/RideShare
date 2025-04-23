@@ -2,7 +2,7 @@
 update payments table for new payment methods
 
 Revision ID: eb25ad6dcc0d
-Revises: eb25ad6dcc0d
+Revises: 93dc3498f79f
 Create Date: 2025-04-10T00:45:57.156094
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "eb25ad6dcc0d"
-down_revision = "eb25ad6dcc0d"
+down_revision = "93dc3498f79f"
 branch_labels = None
 depends_on = None
 

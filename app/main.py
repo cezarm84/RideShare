@@ -4,7 +4,7 @@ import time
 from contextlib import asynccontextmanager
 
 import sqlalchemy as sa
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -22,10 +22,16 @@ from app.db.base_class import Base
 # Order matters to avoid circular imports
 
 # Configure logging
-logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.WARNING))
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.WARNING),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Set SQLAlchemy logging to WARNING to reduce query logs
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
+# Set WebSocket service logging to INFO
+logging.getLogger("app.services.websocket_service").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -112,12 +118,14 @@ if settings.ENVIRONMENT == "production":
         return await call_next(request)
 
 
-# Add middleware for request timing
+# Add middleware for request timing and logging
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
+    logger.info(f"Request: {request.method} {request.url.path}")
     response = await call_next(request)
     process_time = time.time() - start_time
+    logger.info(f"Response: {request.method} {request.url.path} - {response.status_code} in {process_time:.4f}s")
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
@@ -335,3 +343,36 @@ async def metrics():
         "python": {"gc_counts": gc_counts},
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
+
+
+@app.websocket("/ws/chat")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time chat"""
+    from app.services.websocket_service import handle_websocket_connection
+    from app.api.deps import get_current_user_ws, get_db
+
+    # Get database session
+    db = next(get_db())
+
+    try:
+        # Get current user from token
+        logger.info("WebSocket connection attempt - authenticating user")
+        user = await get_current_user_ws(websocket, db)
+        logger.info(f"WebSocket authenticated user: {user.id} ({user.email})")
+
+        # Handle the WebSocket connection
+        await handle_websocket_connection(websocket, user, db)
+    except WebSocketDisconnect:
+        # Client disconnected
+        logger.info("WebSocket client disconnected")
+        pass
+    except Exception as e:
+        # Log other errors
+        logger.error(f"WebSocket error: {e}")
+        try:
+            await websocket.close(code=1011, reason="Internal server error")
+        except:
+            pass
+    finally:
+        # Close database session
+        db.close()

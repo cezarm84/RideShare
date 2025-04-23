@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.attachment import MessageAttachment
-from app.models.message import Message
+from app.models.message import ConversationMessage as Message
 from app.models.user import User
 
 router = APIRouter()

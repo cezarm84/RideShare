@@ -11,6 +11,7 @@ import EnterprisesManagement from './EnterprisesManagement';
 import UsersManagement from './UsersManagement';
 import DriversManagement from './DriversManagement';
 import RidesManagement from './RidesManagement';
+import AdminMessaging from './AdminMessaging';
 import SystemSettings from './SystemSettings';
 import api from '@/services/api';
 
@@ -164,7 +165,7 @@ const AdminDashboard = () => {
 
       <Card className="p-6">
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-6">
+          <TabsList className="grid grid-cols-4 md:grid-cols-9 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="hubs">Hubs</TabsTrigger>
             <TabsTrigger value="destinations">Destinations</TabsTrigger>
@@ -173,6 +174,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="drivers">Drivers</TabsTrigger>
             <TabsTrigger value="rides">Rides</TabsTrigger>
+            <TabsTrigger value="messaging">Messaging</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -269,6 +271,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="rides">
             <RidesManagement />
+          </TabsContent>
+
+          <TabsContent value="messaging">
+            <AdminMessaging />
           </TabsContent>
         </Tabs>
       </Card>

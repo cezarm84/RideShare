@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Set
 from fastapi import HTTPException, WebSocket
 from sqlalchemy.orm import Session
 
-from app.models.message import Conversation, Message
+from app.models.message import Conversation, ConversationMessage as Message
 from app.models.ride import Ride, RideBooking
 from app.models.user import User
 from app.schemas.message import ConversationCreate, MessageCreate

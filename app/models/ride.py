@@ -193,6 +193,9 @@ class Ride(Base):
     # Parent ride reference for recurring rides
     parent_ride_id = Column(Integer, ForeignKey("rides.id"), nullable=True)
 
+    # Chat channel reference
+    chat_channel_id = Column(Integer, ForeignKey("message_channels.id"), nullable=True)
+
     # Flag to indicate if this is a recurring ride
     # is_recurring is not in the database schema, so we'll use a property
     _is_recurring = False
@@ -237,6 +240,9 @@ class Ride(Base):
     parent_ride = relationship(
         "Ride", remote_side=[id], backref="child_rides", foreign_keys=[parent_ride_id]
     )
+
+    # Chat channel relationship
+    chat_channel = relationship("MessageChannel", back_populates="ride", foreign_keys="MessageChannel.ride_id")
 
     def __repr__(self):
         if self.destination_hub_id:

@@ -59,19 +59,22 @@ For detailed documentation, see [Email System Documentation](docs/email_system.m
 
 ### Email Testing System
 
-RideShare includes a robust email testing system for development and testing:
+RideShare includes a comprehensive email testing system for development and testing:
 
 - **Mailhog Integration**: Capture all outgoing emails in a web interface during development
 - **Database Storage**: Store emails in the database for easy access through the admin interface
+- **Domain Simulation**: Test sending and receiving emails between different domains (@rideshare.com, @driver.rideshare.com, @enterprise.rideshare.com)
+- **Email Inbox**: Simulated inbox for viewing, replying to, and managing received emails
 - **Test Email Viewer**: View all emails sent by the system, including HTML and plain text content
-- **Fake Enterprise User Generator**: Create realistic enterprise users with domain-specific email addresses
+- **User Generation**: Create realistic users with domain-specific email addresses for drivers and enterprises
 
 To set up the email testing system:
 
-1. Run the setup script: `python scripts/setup_mailhog.py`
-2. Apply database migrations: `python scripts/apply_email_system_migrations.py`
-3. Access the test email viewer at `/admin/test-emails`
-4. Generate fake enterprise users at `/admin/fake-enterprise-users`
+1. Run the setup script: `python scripts/setup_email_testing.py`
+2. Access the Mailhog web interface at http://localhost:8025
+3. Access the email domain testing page at http://localhost:8000/admin/email-domains
+4. Access the email inbox at http://localhost:8000/admin/email-inbox
+5. Access the test email viewer at http://localhost:8000/admin/test-emails
 
 For detailed documentation, see [Email Testing Documentation](frontend/public/docs/email_testing.md).
 
