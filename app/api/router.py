@@ -8,11 +8,13 @@ from app.api.endpoints import (
     admin_enterprises,
     admin_hubs,
     admin_stats,
+    admin_support_tickets,
     admin_test_emails,
     admin_vehicle_types,
     analytics,
     auth,
     bookings,
+    chatbot,
     contact,
     driver_issue,
     driver_schedule,
@@ -72,6 +74,7 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
 api_router.include_router(enhanced_messaging.router, prefix="/chat", tags=["chat"])
 api_router.include_router(admin_enhanced_messaging.router, prefix="/admin/chat", tags=["admin", "chat"])
+api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(faqs.router, prefix="/faqs", tags=["faqs"])
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
@@ -128,6 +131,11 @@ api_router.include_router(
     admin_email_domains.router,
     prefix="/admin/email-domains",
     tags=["admin", "email", "testing"],
+)
+api_router.include_router(
+    admin_support_tickets.router,
+    prefix="/admin/support-tickets",
+    tags=["admin", "support"],
 )
 api_router.include_router(
     email_inbox.router,

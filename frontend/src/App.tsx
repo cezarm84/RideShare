@@ -80,9 +80,13 @@ import { DocumentationPage } from "./pages/Documentation";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { UserProfileProvider } from "./context/UserProfileContext";
 import NotificationProvider from "./contexts/NotificationContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 // Import the LoadingSpinner component
 import LoadingSpinner from "./components/common/LoadingSpinner";
+
+// Import the ChatbotWidget component
+import ChatbotWidget from "./components/ChatbotWidget";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -124,10 +128,12 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <UserProfileProvider>
-            <NotificationProvider>
-              <ScrollToTop />
-          <Routes>
+          <ThemeProvider>
+            <UserProfileProvider>
+              <NotificationProvider>
+                <ScrollToTop />
+                <ChatbotWidget />
+            <Routes>
           {/* Public Routes with App Layout */}
           <Route path="/" element={<PublicLayoutRoute><Dashboard /></PublicLayoutRoute>} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
@@ -205,8 +211,9 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-            </NotificationProvider>
-          </UserProfileProvider>
+              </NotificationProvider>
+            </UserProfileProvider>
+          </ThemeProvider>
         </Router>
       </AuthProvider>
     </ErrorBoundary>

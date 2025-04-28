@@ -146,6 +146,14 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    # Support tickets relationship
+    support_tickets = relationship(
+        "SupportTicket",
+        foreign_keys="SupportTicket.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     @property
     def full_name(self):
         """Generate full name from first and last name"""

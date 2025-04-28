@@ -17,6 +17,7 @@ class MessageType(str, Enum):
     GROUP = "group"    # Group messages
     SYSTEM = "system"  # System notifications
     RIDE = "ride"      # Ride-specific messages
+    TEXT = "text"      # Legacy text messages
 
 
 class ChannelType(str, Enum):

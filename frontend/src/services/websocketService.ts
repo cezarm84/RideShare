@@ -41,8 +41,8 @@ class WebSocketService {
 
     this.token = token;
     // Use a direct WebSocket URL to the backend
-    // The WebSocket endpoint is at /ws/chat on the backend server
-    const wsUrl = `ws://localhost:8000/ws/chat?token=${token}`;
+    // The WebSocket endpoint is at /api/v1/messaging/ws on the backend server
+    const wsUrl = `ws://localhost:8000/api/v1/messaging/ws?token=${token}`;
     console.log('Connecting to WebSocket URL:', wsUrl);
 
     try {
@@ -103,8 +103,8 @@ class WebSocketService {
     try {
       console.log(`Subscribing to channel ${channelId}`);
       this.socket!.send(JSON.stringify({
-        type: 'subscribe',
-        channel_id: channelId
+        type: 'join_conversation',
+        conversation_id: channelId
       }));
 
       this.subscribedChannels.add(channelId);
@@ -125,8 +125,8 @@ class WebSocketService {
     }
 
     this.socket!.send(JSON.stringify({
-      type: 'unsubscribe',
-      channel_id: channelId
+      type: 'leave_conversation',
+      conversation_id: channelId
     }));
 
     this.subscribedChannels.delete(channelId);
@@ -308,8 +308,8 @@ class WebSocketService {
       try {
         console.log(`Sending subscription request for channel ${channelId}`);
         this.socket!.send(JSON.stringify({
-          type: 'subscribe',
-          channel_id: channelId
+          type: 'join_conversation',
+          conversation_id: channelId
         }));
       } catch (error) {
         console.error(`Error resubscribing to channel ${channelId}:`, error);

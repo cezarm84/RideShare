@@ -4,6 +4,9 @@ dev_tools/
 tmp/
 temp/
 
+# Email testing tools
+tools/mailhog/mailhog.exe
+
 # Python cache files
 __pycache__/
 *.pyc
@@ -21,6 +24,9 @@ htmlcov/
 .egg-info/
 .installed.cfg
 *.egg
+
+# Pandas core tools
+@venv\Lib\site-packages\pandas\core\tools/
 
 # Virtual environments
 .venv/
