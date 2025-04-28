@@ -45,7 +45,7 @@ class ChatbotService {
       messages: [
         {
           id: `welcome-${Date.now()}`,
-          content: 'Hello! I\'m RideShare Assistant. How can I help you today?',
+          content: 'Hi! I\'m RideShare Assistant. How can I help you?',
           sender: 'bot',
           timestamp: new Date().toISOString(),
         }
@@ -173,18 +173,18 @@ class ChatbotService {
         const wantsHumanAgent = /agent|human|person|talk to|speak to|support|help/i.test(content);
         console.log('User wants human agent (based on keywords):', wantsHumanAgent);
 
-        let fallbackContent = "I'm sorry, I couldn't find a specific answer to your question.";
+        let fallbackContent = "I don't have a specific answer for that.";
 
         if (wantsHumanAgent) {
           if (isWithinSupportHours) {
-            fallbackContent = "I'd be happy to connect you with a human agent. Would you like me to do that now?";
+            fallbackContent = "Connect to a human agent?";
           } else {
-            fallbackContent = "Our support team is currently offline. They're available from 8 AM to 8 PM. Would you like me to create a support ticket for you instead?";
+            fallbackContent = "Support offline (8AM-8PM). Create a ticket instead?";
           }
         } else if (isWithinSupportHours) {
-          fallbackContent += " Would you like me to connect you with a human agent?";
+          fallbackContent += " Connect to a human agent?";
         } else {
-          fallbackContent += " Our support team is currently offline. They're available from 8 AM to 8 PM. Would you like me to create a support ticket for you?";
+          fallbackContent += " Support offline (8AM-8PM). Create a ticket?";
         }
 
         const fallbackResponse: ChatbotMessage = {
@@ -206,7 +206,7 @@ class ChatbotService {
 
       const errorResponse: ChatbotMessage = {
         id: `error-${Date.now()}`,
-        content: "I'm sorry, I'm having trouble processing your request right now. Please try again later.",
+        content: "Sorry, I'm having trouble right now. Please try again later.",
         sender: 'system',
         timestamp: new Date().toISOString(),
       };
@@ -236,9 +236,9 @@ class ChatbotService {
     try {
       console.log('Attempting to connect to human agent...');
 
-      // Create a new support channel using the public endpoint
+      // Create a new temporary support channel using the public endpoint
       const response = await api.post('/chatbot/public/support/channel', {
-        initial_message: 'This conversation was transferred from the chatbot. A support agent will assist you shortly.'
+        initial_message: 'This conversation was transferred from the chatbot. This is a temporary channel that will be deleted after 1 hour.'
       });
 
       console.log('Channel creation response:', response.data);
@@ -258,7 +258,7 @@ class ChatbotService {
         // Add a system message
         const systemMessage: ChatbotMessage = {
           id: `system-${Date.now()}`,
-          content: 'You have been connected to a human agent. Please wait while they review your conversation.',
+          content: 'You have been connected to a human agent in a temporary chat channel. This channel will be automatically deleted after 1 hour.',
           sender: 'system',
           timestamp: new Date().toISOString(),
         };
@@ -293,7 +293,7 @@ class ChatbotService {
         // Add an error message
         const errorMessage: ChatbotMessage = {
           id: `error-${Date.now()}`,
-          content: "I'm sorry, I couldn't connect you to a human agent right now. Please try again later.",
+          content: "Couldn't connect to an agent. Please try again later.",
           sender: 'system',
           timestamp: new Date().toISOString(),
         };
@@ -324,7 +324,7 @@ class ChatbotService {
         // Add a confirmation message
         const confirmationMessage: ChatbotMessage = {
           id: `system-${Date.now()}`,
-          content: `Your support ticket #${response.data.ticket_id} has been created. Our team will contact you during business hours.`,
+          content: `Ticket #${response.data.ticket_id} created. We'll contact you during business hours.`,
           sender: 'system',
           timestamp: new Date().toISOString(),
         };
@@ -340,7 +340,7 @@ class ChatbotService {
         // Add an error message with more helpful information
         const errorMessage: ChatbotMessage = {
           id: `error-${Date.now()}`,
-          content: "I'm sorry, I couldn't create a support ticket right now. Please try again later or email support@rideshare.com directly with your issue.",
+          content: "Couldn't create a ticket. Try again or email support@rideshare.com.",
           sender: 'system',
           timestamp: new Date().toISOString(),
         };

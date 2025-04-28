@@ -2,13 +2,12 @@
 
 import logging
 import re
-from datetime import datetime, time, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from datetime import datetime, time, timezone, timedelta
+from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.faq import FAQ
 from app.models.messaging import ChannelType, Message, MessageChannel, MessageType
 from app.models.notification import NotificationType
 from app.models.user import User
@@ -189,7 +188,7 @@ class ChatbotService:
 
     def _handle_intent(self, intent: str, content: str) -> str:
         """
-        Handle a detected intent.
+        Handle a detected intent with concise responses.
 
         Args:
             intent: The detected intent
@@ -199,32 +198,32 @@ class ChatbotService:
             The response message
         """
         if intent == "greeting":
-            return "Hi there! How can I help you today?"
+            return "Hi! How can I help you today?"
 
         elif intent == "farewell":
             return "Thanks for chatting! Have a great day!"
 
         elif intent == "help":
-            return "I can help with booking rides, account management, payments, and finding ride options. What do you need help with?"
+            return "I can help with bookings, account, payments, and finding rides. What do you need?"
 
         elif intent == "booking":
-            return "To book a ride, go to the Rides page and click 'Book a Ride'. Select your pickup location, destination, and preferred time. Need more help with booking?"
+            return "Go to Rides → Book a Ride. Select pickup, destination, and time. Need more help?"
 
         elif intent == "account":
-            return "For account help, visit your Profile page. You can update your info, change payment methods, or reset your password there. What specific account help do you need?"
+            return "Visit Profile to update info, change payment methods, or reset password. What do you need help with?"
 
         elif intent == "human_agent":
             is_within_support_hours = self._is_within_support_hours()
 
             if is_within_support_hours:
-                return "I'll connect you with an agent now. One moment please."
+                return "Connecting you with an agent now."
             else:
-                return "Our support team is offline (8 AM to 8 PM). Create a support ticket instead?"
+                return "Support offline (8AM-8PM). Create a ticket instead?"
 
         elif intent == "support_ticket":
-            return "Click 'Create support ticket' below and our team will contact you soon."
+            return "Click 'Create support ticket' below."
 
-        return "I'm not sure I understand. Could you please rephrase your question?"
+        return "Could you rephrase that?"
 
     def _is_within_support_hours(self) -> bool:
         """
@@ -242,7 +241,7 @@ class ChatbotService:
         self, user_id: Optional[int], initial_message: str
     ) -> Tuple[MessageChannel, Message]:
         """
-        Create a support channel for a user.
+        Create a temporary support channel for a user that will be auto-deleted after one hour.
 
         Args:
             user_id: The ID of the user (can be None for anonymous users)
@@ -266,20 +265,24 @@ class ChatbotService:
                     )
 
             # Create the channel
-            channel_name = "Anonymous Support Request"
-            channel_description = "Support channel for anonymous user"
+            channel_name = "Temp: Anonymous Support Request"
+            channel_description = "Temporary support channel (auto-deletes after 1 hour)"
 
             if user:
-                channel_name = f"Support - {user.first_name} {user.last_name}"
-                channel_description = f"Support channel for {user.email}"
+                channel_name = f"Temp: Support - {user.first_name} {user.last_name}"
+                channel_description = f"Temporary support channel for {user.email} (auto-deletes after 1 hour)"
 
             try:
+                # Set expiration time to 1 hour from now
+                expiration_time = datetime.now(timezone.utc) + timedelta(hours=1)
+
                 channel = MessageChannel(
                     name=channel_name,
                     channel_type=ChannelType.ADMIN_DRIVER,  # Using admin_driver type for support
                     description=channel_description,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc),
+                    metadata={"temporary": True, "expires_at": expiration_time.isoformat()},
                 )
 
                 self.db.add(channel)
@@ -307,7 +310,7 @@ class ChatbotService:
                 system_message = Message(
                     channel_id=channel.id,
                     sender_id=None,  # System message
-                    content="This conversation was transferred from the chatbot. A support agent will assist you shortly.",
+                    content="This is a temporary conversation from the chatbot. It will be automatically deleted after 1 hour. A support agent will assist you shortly.",
                     message_type=MessageType.SYSTEM,
                     created_at=datetime.now(timezone.utc),
                 )
@@ -317,15 +320,15 @@ class ChatbotService:
 
                 # Notify admins about the new support channel
                 for admin in admin_users:
-                    notification_content = "New support request from anonymous user"
+                    notification_content = "New temporary support request from anonymous user"
                     if user:
-                        notification_content = f"New support request from {user.first_name} {user.last_name}"
+                        notification_content = f"New temporary support request from {user.first_name} {user.last_name}"
 
                     try:
                         await self.notification_service.create_notification(
                             user_id=admin.id,
                             type=NotificationType.SYSTEM,
-                            title="New Support Request",
+                            title="New Temporary Support Request",
                             content=notification_content,
                             link_to=f"/messages/{channel.id}",
                             source_id=channel.id,
@@ -364,7 +367,8 @@ class ChatbotService:
                     'id': 1,
                     'name': channel_name,
                     'description': channel_description,
-                    'created_at': datetime.now(timezone.utc)
+                    'created_at': datetime.now(timezone.utc),
+                    'metadata': {"temporary": True, "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()}
                 })
 
                 mock_message = type('MockMessage', (), {

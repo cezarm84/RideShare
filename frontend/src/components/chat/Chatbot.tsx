@@ -105,41 +105,32 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
   const handleFeedback = (messageId: string, isHelpful: boolean) => {
     setShowFeedback(messageId);
 
-    // In a real implementation, you would send this feedback to the server
+    // Log feedback for analytics
     console.log(`Feedback for message ${messageId}: ${isHelpful ? 'helpful' : 'not helpful'}`);
 
-    // If not helpful, show options but don't automatically create a ticket
-    if (!isHelpful) {
-      // Add a message offering options
-      const isWithinSupportHours = new Date().getHours() >= 8 && new Date().getHours() < 20;
+    // If feedback is helpful, just show thank you message
+    if (isHelpful) {
+      return;
+    }
 
-      if (isWithinSupportHours) {
-        // Add a message offering to connect to an agent
-        if (session) {
-          const systemMessage: ChatbotMessage = {
-            id: `system-${Date.now()}`,
-            content: "Would you like to chat with a human agent?",
-            sender: 'bot',
-            timestamp: new Date().toISOString(),
-          };
+    // If not helpful, show options to connect with support
+    const isWithinSupportHours = new Date().getHours() >= 8 && new Date().getHours() < 20;
 
-          chatbotService.getSession().messages.push(systemMessage);
-          setSession({ ...chatbotService.getSession() });
-        }
-      } else {
-        // Add a message offering to create a ticket
-        if (session) {
-          const systemMessage: ChatbotMessage = {
-            id: `system-${Date.now()}`,
-            content: "Our support team is offline (8 AM to 8 PM). Create a support ticket instead?",
-            sender: 'bot',
-            timestamp: new Date().toISOString(),
-          };
+    // Add appropriate follow-up message based on support hours
+    if (session) {
+      setTimeout(() => {
+        const systemMessage: ChatbotMessage = {
+          id: `system-${Date.now()}`,
+          content: isWithinSupportHours
+            ? "I'm sorry that wasn't helpful. Would you like to chat with a human agent?"
+            : "I'm sorry that wasn't helpful. Our support team is offline (8AM-8PM). Create a support ticket instead?",
+          sender: 'bot',
+          timestamp: new Date().toISOString(),
+        };
 
-          chatbotService.getSession().messages.push(systemMessage);
-          setSession({ ...chatbotService.getSession() });
-        }
-      }
+        chatbotService.getSession().messages.push(systemMessage);
+        setSession({ ...chatbotService.getSession() });
+      }, 500); // Small delay for better UX
     }
   };
 
@@ -228,28 +219,30 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
                   </div>
 
                   {/* Feedback buttons for bot answers */}
-                  {msg.sender === 'bot' && !msg.isLoading && msg.content.includes('Was this helpful?') && showFeedback !== msg.id && (
+                  {msg.sender === 'bot' && !msg.isLoading && !msg.content.includes('Would you like to chat with a human agent?') && !msg.content.includes('Create a support ticket') && showFeedback !== msg.id && (
                     <div className="flex items-center space-x-2 mt-2">
                       <button
                         onClick={() => handleFeedback(msg.id, true)}
                         className="flex items-center space-x-1 text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded transition-colors"
+                        aria-label="This was helpful"
                       >
                         <ThumbsUp size={12} />
-                        <span>Yes</span>
+                        <span>Helpful</span>
                       </button>
                       <button
                         onClick={() => handleFeedback(msg.id, false)}
                         className="flex items-center space-x-1 text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition-colors"
+                        aria-label="This was not helpful"
                       >
                         <ThumbsDown size={12} />
-                        <span>No</span>
+                        <span>Not helpful</span>
                       </button>
                     </div>
                   )}
 
                   {/* Feedback confirmation */}
                   {showFeedback === msg.id && (
-                    <div className="text-xs mt-2 text-green-500">
+                    <div className="text-xs mt-2 text-green-500 font-medium">
                       Thank you for your feedback!
                     </div>
                   )}
