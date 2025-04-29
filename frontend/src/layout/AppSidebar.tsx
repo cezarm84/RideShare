@@ -119,6 +119,7 @@ const othersItems: NavItem[] = [
       { name: "Users", path: "/admin/users", pro: false },
       { name: "Drivers", path: "/admin/drivers", pro: false },
       { name: "Rides", path: "/admin/rides", pro: false },
+      { name: "Feedback", path: "/admin/feedback", pro: false },
       { name: "Email Verification", path: "/admin/email-verification", pro: false },
       { name: "Test Emails", path: "/admin/test-emails", pro: false },
       { name: "Email Domains", path: "/admin/email-domains", pro: false },

@@ -27,6 +27,10 @@ faker==37.1.0             # Latest
 psutil==5.9.8             # For system metrics
 alembic==1.13.1           # For database migrations
 
+# AI and NLP
+sentence-transformers==2.6.0  # For text embeddings
+faiss-cpu==1.8.0             # For vector similarity search
+
 # Testing
 pytest==8.3.5             # Latest
 httpx==0.27.2             # Latest
@@ -35,3 +39,5 @@ httpx==0.27.2             # Latest
 websockets==15.0.1        # Latest
 requests==2.32.3          # Latest
 alembic>=1.7.5
+markdown==3.6             # For documentation processing
+aiohttp==3.9.5            # For async HTTP requests

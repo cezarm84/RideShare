@@ -17,21 +17,43 @@ import { apiClient } from './apiClient';
  * @returns Array of matching FAQs
  */
 const searchInMockData = (query: string): FAQ[] => {
-  const searchTerm = query.toLowerCase();
+  const searchTerm = query.toLowerCase().trim();
 
-  // Search in mock categories
-  const categoryResults = mockFAQData.categories.flatMap(category =>
+  // Skip very short search terms or common greetings
+  if (searchTerm.length < 2 ||
+      searchTerm === "hi" ||
+      searchTerm === "hello" ||
+      searchTerm === "hey") {
+    return [];
+  }
+
+  // Search in mock categories - prioritize question matches
+  let categoryResults = mockFAQData.categories.flatMap(category =>
     category.faqs.filter(faq =>
-      faq.question.toLowerCase().includes(searchTerm) ||
-      faq.answer.toLowerCase().includes(searchTerm)
+      faq.question.toLowerCase().includes(searchTerm)
     )
   );
 
-  // Search in mock uncategorized
-  const uncategorizedResults = mockFAQData.uncategorized.filter(faq =>
-    faq.question.toLowerCase().includes(searchTerm) ||
-    faq.answer.toLowerCase().includes(searchTerm)
+  // If no matches in questions, try answers
+  if (categoryResults.length === 0) {
+    categoryResults = mockFAQData.categories.flatMap(category =>
+      category.faqs.filter(faq =>
+        faq.answer.toLowerCase().includes(` ${searchTerm} `) // Match whole words only
+      )
+    );
+  }
+
+  // Search in mock uncategorized - prioritize question matches
+  let uncategorizedResults = mockFAQData.uncategorized.filter(faq =>
+    faq.question.toLowerCase().includes(searchTerm)
   );
+
+  // If no matches in questions, try answers
+  if (uncategorizedResults.length === 0) {
+    uncategorizedResults = mockFAQData.uncategorized.filter(faq =>
+      faq.answer.toLowerCase().includes(` ${searchTerm} `) // Match whole words only
+    );
+  }
 
   // Combine and return results
   return [...categoryResults, ...uncategorizedResults];

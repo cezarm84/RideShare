@@ -137,6 +137,14 @@ api_router.include_router(
     prefix="/admin/support-tickets",
     tags=["admin", "support"],
 )
+
+# Import and include chatbot feedback endpoints
+from app.api.endpoints.admin.chatbot_feedback import router as chatbot_feedback_router
+api_router.include_router(
+    chatbot_feedback_router,
+    prefix="/admin/chatbot",
+    tags=["admin", "chatbot", "feedback"],
+)
 api_router.include_router(
     email_inbox.router,
     prefix="/email",

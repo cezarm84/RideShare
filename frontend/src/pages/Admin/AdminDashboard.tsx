@@ -13,6 +13,7 @@ import DriversManagement from './DriversManagement';
 import RidesManagement from './RidesManagement';
 import AdminMessaging from './AdminMessaging';
 import SystemSettings from './SystemSettings';
+import ChatbotFeedback from './ChatbotFeedback';
 import api from '@/services/api';
 
 interface DashboardStats {
@@ -165,7 +166,7 @@ const AdminDashboard = () => {
 
       <Card className="p-6">
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 md:grid-cols-9 mb-6">
+          <TabsList className="grid grid-cols-4 md:grid-cols-10 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="hubs">Hubs</TabsTrigger>
             <TabsTrigger value="destinations">Destinations</TabsTrigger>
@@ -175,6 +176,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="drivers">Drivers</TabsTrigger>
             <TabsTrigger value="rides">Rides</TabsTrigger>
             <TabsTrigger value="messaging">Messaging</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -275,6 +277,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="messaging">
             <AdminMessaging />
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <ChatbotFeedback />
           </TabsContent>
         </Tabs>
       </Card>

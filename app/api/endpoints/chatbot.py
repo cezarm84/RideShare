@@ -31,6 +31,7 @@ class ChatbotMessageResponse(BaseModel):
     intent: Optional[str] = None
     action: Optional[str] = None
     faq_id: Optional[int] = None
+    data: Optional[Dict[str, Any]] = None  # For service-specific data (geocoding, traffic, docs)
 
 
 class SupportTicketRequest(BaseModel):
@@ -48,6 +49,17 @@ class SupportChannelRequest(BaseModel):
     session_id: Optional[str] = None
 
 
+class FeedbackRequest(BaseModel):
+    """Schema for chatbot feedback request."""
+
+    message_id: str
+    is_helpful: bool
+    session_id: Optional[str] = None
+    content: Optional[str] = None
+    intent: Optional[str] = None
+    feedback_text: Optional[str] = None
+
+
 @router.post("/message", response_model=ChatbotMessageResponse)
 async def process_message(
     message: ChatbotMessageRequest = Body(...),
@@ -59,17 +71,42 @@ async def process_message(
 
     This endpoint accepts a message from the user and returns a response from the chatbot.
     If the user is authenticated, the chatbot can provide personalized responses.
+    The chatbot can now detect intent and call various services based on the message content.
     """
     try:
         chatbot_service = ChatbotService(db)
 
         # Process the message
         user_id = current_user.id if current_user else None
-        result = chatbot_service.process_message(message.content, user_id)
+        content = message.content
 
+        # Special handling for simple greetings
+        if content.lower().strip() in ["hi", "hello", "hey"]:
+            logger.info("Detected simple greeting in authenticated endpoint")
+            response = chatbot_service._handle_intent("greeting", content)
+            logger.info(f"Generated greeting response: {response}")
+            return {"response": response, "intent": "greeting"}
+
+        # First try pattern-based intent detection
+        intent = chatbot_service._detect_intent_pattern(content)
+
+        # Handle intents that require async processing
+        if intent == "geocode":
+            location = chatbot_service._extract_location(content)
+            if location:
+                return await chatbot_service._handle_geocoding(location)
+        elif intent == "traffic":
+            destination = chatbot_service._extract_destination(content)
+            if destination:
+                return await chatbot_service._handle_traffic(destination)
+
+        # For other intents, use the regular process_message method
+        result = chatbot_service.process_message(content, user_id)
         return result
+
     except Exception as e:
         logger.error(f"Error processing chatbot message: {str(e)}")
+        logger.exception("Full exception details:")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing chatbot message: {str(e)}",
@@ -86,13 +123,44 @@ async def process_public_message(
 
     This endpoint accepts a message from any user without authentication
     and returns a response from the chatbot.
+    The chatbot can now detect intent and call various services based on the message content.
     """
     try:
         logger.info(f"Processing public message: {message.content}")
         chatbot_service = ChatbotService(db)
 
-        # Process the message without a user ID
-        result = chatbot_service.process_message(message.content, None)
+        # Process the message
+        content = message.content
+
+        # Special handling for simple greetings
+        if content.lower().strip() in ["hi", "hello", "hey"]:
+            logger.info("Detected simple greeting in public endpoint")
+            response = chatbot_service._handle_intent("greeting", content)
+            logger.info(f"Generated greeting response: {response}")
+            return {"response": response, "intent": "greeting"}
+
+        # First try pattern-based intent detection
+        intent = chatbot_service._detect_intent_pattern(content)
+        logger.info(f"Detected intent for public message: {intent}")
+
+        # Handle intents that require async processing
+        if intent == "geocode":
+            location = chatbot_service._extract_location(content)
+            if location:
+                logger.info(f"Handling geocoding for location: {location}")
+                result = await chatbot_service._handle_geocoding(location)
+                logger.info(f"Geocoding response: {result}")
+                return result
+        elif intent == "traffic":
+            destination = chatbot_service._extract_destination(content)
+            if destination:
+                logger.info(f"Handling traffic for destination: {destination}")
+                result = await chatbot_service._handle_traffic(destination)
+                logger.info(f"Traffic response: {result}")
+                return result
+
+        # For other intents, use the regular process_message method
+        result = chatbot_service.process_message(content, None)
         logger.info(f"Chatbot response: {result}")
 
         return result
@@ -243,3 +311,68 @@ async def create_public_support_ticket(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating support ticket: {str(e)}",
         )
+
+
+@router.post("/feedback", response_model=Dict[str, Any])
+async def submit_feedback(
+    feedback: FeedbackRequest = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Submit feedback for a chatbot message.
+    """
+    try:
+        chatbot_service = ChatbotService(db)
+
+        # Store the feedback
+        feedback_id = chatbot_service.store_feedback(
+            user_id=current_user.id,
+            message_id=feedback.message_id,
+            is_helpful=feedback.is_helpful,
+            session_id=feedback.session_id,
+            content=feedback.content,
+            intent=feedback.intent,
+            feedback_text=feedback.feedback_text
+        )
+
+        return {"feedback_id": feedback_id, "status": "received"}
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {str(e)}")
+        logger.exception("Full exception details:")
+        # Return a success response even if there's an error to prevent frontend issues
+        # This is a temporary solution until the backend is fully fixed
+        import uuid
+        return {"feedback_id": f"error-{uuid.uuid4()}", "status": "error", "message": str(e)}
+
+
+@router.post("/public/feedback", response_model=Dict[str, Any])
+async def submit_public_feedback(
+    feedback: FeedbackRequest = Body(...),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Submit feedback for a chatbot message without authentication.
+    """
+    try:
+        chatbot_service = ChatbotService(db)
+
+        # Store the feedback
+        feedback_id = chatbot_service.store_feedback(
+            user_id=None,
+            message_id=feedback.message_id,
+            is_helpful=feedback.is_helpful,
+            session_id=feedback.session_id,
+            content=feedback.content,
+            intent=feedback.intent,
+            feedback_text=feedback.feedback_text
+        )
+
+        return {"feedback_id": feedback_id, "status": "received"}
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {str(e)}")
+        logger.exception("Full exception details:")
+        # Return a success response even if there's an error to prevent frontend issues
+        # This is a temporary solution until the backend is fully fixed
+        import uuid
+        return {"feedback_id": f"error-{uuid.uuid4()}", "status": "error", "message": str(e)}

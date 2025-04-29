@@ -1,0 +1,13 @@
+[33mcommit 0035f93350fc0ab2c6e4913f82781c2b7a488574[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: cezar <cezarmh@gmail.com>
+Date:   Tue Apr 29 22:39:37 2025 +0200
+
+    fix(chatbot): improve UI and fix scrolling issues
+    
+    - Simplify feedback popup to show only thumbs without text
+    - Fix auto-scrolling to always show latest messages
+    - Improve send button functionality
+    - Enhance feedback UI with colored thumbs and better visibility
+    - Add multiple scroll triggers for better reliability
+
+frontend/src/components/chat/Chatbot.tsx

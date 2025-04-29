@@ -30,6 +30,7 @@ import Rides from "./pages/RideShare/Rides";
 import CreateRide from "./pages/RideShare/CreateRide";
 import CreateBooking from "./pages/RideShare/CreateBooking";
 import BookingConfirmation from "./pages/RideShare/BookingConfirmation";
+import BookingProgress from "./pages/RideShare/BookingProgress";
 import Bookings from "./pages/RideShare/Bookings";
 import RideShareCalendar from "./pages/RideShare/Calendar";
 import Drivers from "./pages/RideShare/Drivers";
@@ -60,6 +61,7 @@ import RidesManagement from "./pages/Admin/RidesManagement";
 import SystemSettings from "./pages/Admin/SystemSettings";
 import AdminRides from "./pages/Admin/AdminRides";
 import EmailVerificationAdmin from "./pages/Admin/EmailVerification";
+import ChatbotFeedback from "./pages/Admin/ChatbotFeedback";
 import TestEmailsPage from "./pages/Admin/TestEmails";
 import FakeEnterpriseUsersPage from "./pages/Admin/FakeEnterpriseUsers";
 import EmailDomainTestingPage from "./pages/Admin/EmailDomainTesting";
@@ -144,10 +146,11 @@ export default function App() {
           <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
           <Route path="/terms" element={<PublicLayoutRoute><Terms /></PublicLayoutRoute>} />
 
-          {/* Protected Routes with App Layout */}
-          <Route path="/bookings" element={<ProtectedRoute><AppLayout><Bookings /></AppLayout></ProtectedRoute>} />
-          <Route path="/bookings/create" element={<ProtectedRoute><AppLayout><CreateBooking /></AppLayout></ProtectedRoute>} />
+          {/* Booking Routes - Public until payment */}
+          <Route path="/bookings" element={<PublicLayoutRoute><Bookings /></PublicLayoutRoute>} />
+          <Route path="/bookings/create" element={<PublicLayoutRoute><CreateBooking /></PublicLayoutRoute>} />
           <Route path="/bookings/confirmation" element={<ProtectedRoute><AppLayout><BookingConfirmation /></AppLayout></ProtectedRoute>} />
+          <Route path="/bookings/progress" element={<PublicLayoutRoute><BookingProgress /></PublicLayoutRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><AppLayout><RideShareCalendar /></AppLayout></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><AppLayout><UserProfiles /></AppLayout></ProtectedRoute>} />
 
@@ -185,6 +188,7 @@ export default function App() {
           <Route path="/admin/rides" element={<AdminProtectedRoute><AppLayout><AdminRides /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/rides-management" element={<AdminProtectedRoute><AppLayout><RidesManagement /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/settings" element={<AdminProtectedRoute><AppLayout><SystemSettings /></AppLayout></AdminProtectedRoute>} />
+          <Route path="/admin/feedback" element={<AdminProtectedRoute><AppLayout><ChatbotFeedback /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/email-verification" element={<AdminProtectedRoute><AppLayout><EmailVerificationAdmin /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/test-emails" element={<AdminProtectedRoute><AppLayout><TestEmailsPage /></AppLayout></AdminProtectedRoute>} />
           <Route path="/admin/fake-enterprise-users" element={<AdminProtectedRoute><AppLayout><FakeEnterpriseUsersPage /></AppLayout></AdminProtectedRoute>} />

@@ -154,6 +154,14 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    # Chatbot feedback relationship - using string reference to avoid circular imports
+    chatbot_feedback = relationship(
+        "ChatbotFeedback",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic"
+    )
+
     @property
     def full_name(self):
         """Generate full name from first and last name"""

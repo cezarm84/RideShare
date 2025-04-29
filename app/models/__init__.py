@@ -1,2 +1,5 @@
-# Leave this file empty to avoid circular imports
-# Models should be imported directly when needed
+# Import models here to make them available to SQLAlchemy
+# Be careful with circular imports
+
+# Import chatbot models
+from app.models.chatbot import ChatbotFeedback, ChatbotIntentStats

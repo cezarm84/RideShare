@@ -57,6 +57,12 @@ class Settings(BaseSettings):
         "OPENCAGE_API_URL", "https://api.opencagedata.com/geocode/v1/json"
     )
 
+    # Weather API settings
+    WEATHER_API_KEY: str = os.getenv("WEATHER_API_KEY", "dummy_key")
+
+    # Map API settings
+    MAP_API_KEY: str = os.getenv("MAP_API_KEY", "dummy_key")
+
     # Environment settings
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     AUTO_MIGRATE: bool = os.getenv("AUTO_MIGRATE", "False").lower() in (

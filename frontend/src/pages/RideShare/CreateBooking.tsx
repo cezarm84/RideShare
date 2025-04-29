@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { apiClient } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import PageMeta from '@/components/common/PageMeta';
+import { LogIn } from 'lucide-react';
 
 // Define the form schema with Zod
 const createBookingSchema = z.object({
@@ -140,6 +141,29 @@ const CreateBooking = () => {
   const handleFormSubmit = async (data: CreateBookingFormValues) => {
     if (!ride) return;
 
+    // Check if user is authenticated before proceeding with payment
+    if (!isAuthenticated) {
+      // Save booking details to session storage
+      const bookingDetails = {
+        ride_id: ride.id,
+        number_of_seats: parseInt(data.numberOfSeats),
+        payment_method: data.paymentMethod,
+        special_requests: data.specialRequests || '',
+        total_price: ride.pricePerSeat * parseInt(data.numberOfSeats),
+        ride_details: {
+          starting_hub: ride.startingHub.name,
+          destination_hub: ride.destinationHub.name,
+          departure_time: ride.departureTime
+        }
+      };
+
+      sessionStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+
+      // Redirect to sign in page with return URL
+      navigate('/signin', { state: { from: location } });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -212,6 +236,15 @@ const CreateBooking = () => {
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Booking Details</h2>
                 <p className="text-gray-600">Please complete the information below to book your ride.</p>
+                {!isAuthenticated && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm">
+                    <div className="flex items-center">
+                      <LogIn className="h-4 w-4 mr-2" />
+                      <span className="font-medium">You'll need to sign in to complete your booking</span>
+                    </div>
+                    <p className="mt-1">You can browse and select options now, and sign in when you're ready to pay.</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -340,6 +373,11 @@ const CreateBooking = () => {
                     <>
                       <span className="mr-2">Processing...</span>
                       <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    </>
+                  ) : !isAuthenticated ? (
+                    <>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign in to Complete
                     </>
                   ) : (
                     'Complete Booking'
