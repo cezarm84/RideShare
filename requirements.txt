@@ -33,7 +33,7 @@ faiss-cpu==1.8.0             # For vector similarity search
 
 # Testing
 pytest==8.3.5             # Latest
-httpx==0.27.2             # Latest
+httpx==0.28.1             # Latest
 
 # Additional
 websockets==15.0.1        # Latest
