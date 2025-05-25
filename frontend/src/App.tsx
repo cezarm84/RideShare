@@ -142,6 +142,7 @@ export default function App() {
           <Route path="/rides" element={<PublicLayoutRoute><Rides /></PublicLayoutRoute>} />
           <Route path="/rides/create" element={<ProtectedRoute><AppLayout><CreateRide /></AppLayout></ProtectedRoute>} />
           <Route path="/hubs" element={<PublicLayoutRoute><Hubs /></PublicLayoutRoute>} />
+          <Route path="/enterprises" element={<PublicLayoutRoute><Enterprises /></PublicLayoutRoute>} />
           <Route path="/faq" element={<PublicLayoutRoute><FAQ /></PublicLayoutRoute>} />
           <Route path="/contact" element={<PublicLayoutRoute><Contact /></PublicLayoutRoute>} />
           <Route path="/terms" element={<PublicLayoutRoute><Terms /></PublicLayoutRoute>} />

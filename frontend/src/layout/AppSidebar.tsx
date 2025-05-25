@@ -11,6 +11,7 @@ import {
   DocsIcon,
   EnvelopeIcon,
   GridIcon,
+  GroupIcon,
   HorizontaLDots,
   ListIcon,
   PageIcon,
@@ -64,7 +65,7 @@ const navItems: NavItem[] = [
     path: "/hubs",
   },
   {
-    icon: <PageIcon />,
+    icon: <GroupIcon />,
     name: "Enterprises",
     path: "/enterprises",
   },

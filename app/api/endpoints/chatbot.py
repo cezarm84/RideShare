@@ -101,7 +101,7 @@ async def process_message(
                 return await chatbot_service._handle_traffic(destination)
 
         # For other intents, use the regular process_message method
-        result = chatbot_service.process_message(content, user_id)
+        result = await chatbot_service.process_message(content, user_id)
         return result
 
     except Exception as e:
@@ -160,7 +160,7 @@ async def process_public_message(
                 return result
 
         # For other intents, use the regular process_message method
-        result = chatbot_service.process_message(content, None)
+        result = await chatbot_service.process_message(content, None)
         logger.info(f"Chatbot response: {result}")
 
         return result

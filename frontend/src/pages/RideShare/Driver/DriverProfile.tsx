@@ -257,7 +257,7 @@ const DriverProfile = () => {
             <div className="flex flex-col md:flex-row gap-6">
               <div className="md:w-1/3">
                 <div className="mb-4">
-                  <Label htmlFor="profile-photo">Profile Photo</Label>
+                  <Label htmlFor="photo-upload">Profile Photo</Label>
                   <div className="mt-1">
                     <div className="flex items-center">
                       <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -338,16 +338,16 @@ const DriverProfile = () => {
                     <Label htmlFor="license_expiry">License Expiry</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
+                        <button
+                          type="button"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "flex h-10 w-full items-center justify-start rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                             !formData.license_expiry && "text-muted-foreground"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {formData.license_expiry ? format(formData.license_expiry, "PPP") : <span>Pick a date</span>}
-                        </Button>
+                        </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar

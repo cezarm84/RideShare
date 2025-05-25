@@ -97,7 +97,7 @@ class ChatbotService {
       content.toLowerCase().trim() === "how much does it cost?" ||
       content.toLowerCase().trim() === "do you serve landvetter airport?" ||
       content.toLowerCase().trim() === "what payment methods do you accept?" ||
-      content.toLowerCase().trim() === "how do i cancel a booking?" ||
+
       content.toLowerCase().trim() === "are there any discounts available?" ||
       content.toLowerCase().trim() === "how early should i book?" ||
       content.toLowerCase().trim() === "tell me more about corporate rates" ||
@@ -252,12 +252,10 @@ class ChatbotService {
       // Add a direct ride types response
       const rideTypesResponse: ChatbotMessage = {
         id: `bot-${Date.now()}`,
-        content: "RideShare offers several ride types to meet your needs:\n\n" +
+        content: "RideShare offers three main ride types to meet your needs:\n\n" +
                  "1. **Hub-to-Hub**: Travel between our designated mobility hubs at fixed times with shared rides.\n\n" +
-                 "2. **Free Ride**: Travel from any hub to your chosen destination or from your location to a hub.\n\n" +
-                 "3. **Enterprise**: Special services for businesses with customized pickup/dropoff locations and schedules.\n\n" +
-                 "4. **Express**: Direct, non-stop rides between popular destinations with fewer stops.\n\n" +
-                 "5. **Scheduled**: Book rides in advance for regular commuting or planned trips.",
+                 "2. **Hub-to-Destination** (also called 'Free Ride'): Travel from any hub to your chosen destination.\n\n" +
+                 "3. **Enterprise**: Special services for businesses with customized pickup/dropoff locations and schedules.",
         sender: 'bot',
         timestamp: new Date().toISOString(),
         intent: 'ride_types',
@@ -296,10 +294,8 @@ class ChatbotService {
         id: `bot-${Date.now()}`,
         content: "RideShare pricing varies by ride type and distance:\n\n" +
                  "• **Hub-to-Hub**: Fixed prices starting at 39 SEK for short distances\n\n" +
-                 "• **Free Ride**: Base fare of 49 SEK + 12 SEK/km\n\n" +
+                 "• **Hub-to-Destination** (Free Ride): Base fare of 49 SEK + 12 SEK/km\n\n" +
                  "• **Enterprise**: Custom pricing based on contract and volume\n\n" +
-                 "• **Express**: Premium pricing with 25% surcharge over Free Ride rates\n\n" +
-                 "• **Scheduled**: Standard rates with 10% discount for advance booking\n\n" +
                  "We also offer subscription plans for frequent riders with significant savings. Prices may vary during peak hours or special events.",
         sender: 'bot',
         timestamp: new Date().toISOString(),
@@ -402,51 +398,7 @@ class ChatbotService {
       return paymentMethodsResponse;
     }
 
-    // Special handling for "How do I cancel a booking?" query
-    if (content.toLowerCase().trim() === "how do i cancel a booking?") {
-      console.log('Detected cancellation query, bypassing API call');
 
-      // First, add the user message to the session
-      const userMessage: ChatbotMessage = {
-        id: `user-${Date.now()}`,
-        content: content,
-        sender: 'user',
-        timestamp: new Date().toISOString()
-      };
-
-      // Add a direct cancellation response
-      const cancellationResponse: ChatbotMessage = {
-        id: `bot-${Date.now()}`,
-        content: "To cancel a booking:\n\n" +
-                 "1. Go to 'My Bookings' in your account dashboard\n" +
-                 "2. Find the booking you want to cancel\n" +
-                 "3. Click the 'Cancel' button\n" +
-                 "4. Confirm the cancellation\n\n" +
-                 "Cancellation policy:\n" +
-                 "• Free cancellation up to 1 hour before scheduled pickup\n" +
-                 "• 50% refund for cancellations between 1 hour and 15 minutes before pickup\n" +
-                 "• No refund for cancellations less than 15 minutes before pickup\n\n" +
-                 "Refunds are processed within 3-5 business days to your original payment method.",
-        sender: 'bot',
-        timestamp: new Date().toISOString(),
-        intent: 'cancellation',
-        suggestions: [
-          "Can I modify my booking instead?",
-          "What if my flight is delayed?",
-          "How do I get a refund?",
-          "Can someone else cancel for me?"
-        ]
-      };
-
-      // Only add the user message if it's not already in the session
-      const lastMessage = this.session!.messages[this.session!.messages.length - 1];
-      if (!lastMessage || lastMessage.sender !== 'user' || lastMessage.content !== content) {
-        this.session!.messages.push(userMessage);
-      }
-
-      this.session!.messages.push(cancellationResponse);
-      return cancellationResponse;
-    }
 
     // Special handling for "Are there any discounts available?" query
     if (content.toLowerCase().trim() === "are there any discounts available?") {
@@ -681,16 +633,16 @@ class ChatbotService {
           content: "I'd be happy to help you plan a ride based on the current weather conditions. For rainy or cold days, I recommend:\n\n" +
                    "1. Booking a ride with extra waiting time (just add a note when booking)\n" +
                    "2. Choosing pickup points with shelter when available\n" +
-                   "3. Using our 'Door-to-Door' option for maximum comfort\n\n" +
+                   "3. Using our Hub-to-Destination service for direct rides to your location\n\n" +
                    "Would you like me to help you book a ride now?",
           sender: 'bot',
           timestamp: new Date().toISOString(),
           intent: 'weather_ride_planning',
           suggestions: [
-            "Book a Door-to-Door ride",
+            "Book a Hub-to-Destination ride",
             "Show sheltered pickup points",
             "Not now, thanks",
-            "Tell me more about Door-to-Door"
+            "Tell me more about ride types"
           ]
         };
       } else {
@@ -786,59 +738,7 @@ class ChatbotService {
       return thankYouResponse;
     }
 
-    // Special handling for booking-related queries
-    const bookingRegex = /book|booking|ride|reservation|show me how|need help with book/i;
-    if (bookingRegex.test(content.toLowerCase())) {
-      console.log('Detected booking-related query, prioritizing booking response');
 
-      // For "show me how" specific queries
-      if (/show me how/i.test(content.toLowerCase())) {
-        const bookingGuideResponse: ChatbotMessage = {
-          id: `bot-${Date.now()}`,
-          content: "Here's a step-by-step guide to booking a ride:\n\n" +
-                   "1. Click on 'Book a Ride' in the navigation menu\n" +
-                   "2. Select your starting point from the dropdown of available hubs\n" +
-                   "3. Select your destination\n" +
-                   "4. Choose the date and time you want to travel\n" +
-                   "5. Enter the number of passengers\n" +
-                   "6. Review the ride details and price\n" +
-                   "7. Click 'Continue to Payment'\n" +
-                   "8. Sign in if prompted\n" +
-                   "9. Enter payment details and confirm your booking\n\n" +
-                   "You'll receive a confirmation email with your booking details.",
-          sender: 'bot',
-          timestamp: new Date().toISOString(),
-          intent: 'booking'
-        };
-
-        this.session!.messages.push(bookingGuideResponse);
-        return bookingGuideResponse;
-      }
-
-      // For general booking help
-      const bookingResponse: ChatbotMessage = {
-        id: `bot-${Date.now()}`,
-        content: "To book a ride:\n\n" +
-                 "1. Go to the 'Bookings' page or click 'Book a Ride' in the navigation\n" +
-                 "2. Select your pickup location and destination\n" +
-                 "3. Choose your preferred date and time\n" +
-                 "4. Select the number of passengers\n" +
-                 "5. Review the details and proceed to payment\n\n" +
-                 "You can browse and select options without signing in, but you'll need to sign in to complete the payment step. Need more specific help?",
-        sender: 'bot',
-        timestamp: new Date().toISOString(),
-        intent: 'booking',
-        suggestions: [
-          "What payment methods do you accept?",
-          "How do I cancel a booking?",
-          "Are there any discounts available?",
-          "How early should I book?"
-        ]
-      };
-
-      this.session!.messages.push(bookingResponse);
-      return bookingResponse;
-    }
 
     // Add a loading message
     const loadingMessage: ChatbotMessage = {
@@ -910,33 +810,39 @@ class ChatbotService {
         let formattedContent = response.data.response;
         let suggestions: string[] = [];
 
-        // Handle special formatting for service-specific responses
-        if (response.data.intent === 'geocode' && response.data.data) {
-          console.log('Formatting geocoding response with data:', response.data.data);
-          // The backend already formats the response, but we could enhance it here if needed
-        }
-        else if (response.data.intent === 'traffic' && response.data.data) {
-          console.log('Formatting traffic response with data:', response.data.data);
-          // The backend already formats the response, but we could enhance it here if needed
-        }
-        else if (response.data.intent === 'company_info') {
-          console.log('Handling company_info intent');
-          suggestions = [
-            "How do I book a ride?",
-            "What areas do you serve?",
-            "What ride types do you offer?",
-            "How much does it cost?"
-          ];
-        }
-        else if (response.data.intent === 'docs' && response.data.data) {
-          console.log('Formatting documentation response with data:', response.data.data);
-          // Add documentation-specific suggestions
-          suggestions = [
-            "Show me more examples",
-            "How do I implement this?",
-            "Are there any tutorials?",
-            "Show me related documentation"
-          ];
+        // Prioritize AI-generated suggestions from the backend
+        if (response.data.suggestions && response.data.suggestions.length > 0) {
+          suggestions = response.data.suggestions;
+          console.log('Using AI-generated suggestions:', suggestions);
+        } else {
+          // Fallback to hardcoded suggestions for specific intents
+          if (response.data.intent === 'geocode' && response.data.data) {
+            console.log('Formatting geocoding response with data:', response.data.data);
+            // The backend already formats the response, but we could enhance it here if needed
+          }
+          else if (response.data.intent === 'traffic' && response.data.data) {
+            console.log('Formatting traffic response with data:', response.data.data);
+            // The backend already formats the response, but we could enhance it here if needed
+          }
+          else if (response.data.intent === 'company_info') {
+            console.log('Handling company_info intent');
+            suggestions = [
+              "How do I book a ride?",
+              "What areas do you serve?",
+              "What ride types do you offer?",
+              "How much does it cost?"
+            ];
+          }
+          else if (response.data.intent === 'docs' && response.data.data) {
+            console.log('Formatting documentation response with data:', response.data.data);
+            // Add documentation-specific suggestions
+            suggestions = [
+              "Show me more examples",
+              "How do I implement this?",
+              "Are there any tutorials?",
+              "Show me related documentation"
+            ];
+          }
         }
 
         // Replace the loading message with the bot response

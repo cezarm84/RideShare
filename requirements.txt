@@ -30,6 +30,8 @@ alembic==1.13.1           # For database migrations
 # AI and NLP
 sentence-transformers==2.6.0  # For text embeddings
 faiss-cpu==1.8.0             # For vector similarity search
+openai==1.54.3               # OpenAI API client for GPT integration
+tiktoken==0.8.0              # Token counting for OpenAI models
 
 # Testing
 pytest==8.3.5             # Latest

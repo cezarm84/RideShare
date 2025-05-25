@@ -539,103 +539,99 @@ class DriverService {
   // Driver rides methods
   async getDriverRides(driverId: number, params?: { startDate?: string; endDate?: string; status?: string }): Promise<DriverRide[]> {
     try {
-      try {
-        // For now, we'll use the /rides/me endpoint since there's no specific driver rides endpoint
-        const response = await api.get<DriverRide[]>('/rides/me', { params });
-        return response.data;
-      } catch (apiError) {
-        console.warn('API call failed, using mock data:', apiError);
-        // If API call fails, return mock data
-        return [
-          {
-            id: 101,
-            ride_type: 'hub_to_destination',
-            starting_hub_id: 1,
-            destination_hub_id: 2,
-            departure_time: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
-            arrival_time: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(),
-            status: 'scheduled',
-            available_seats: 4,
-            driver_id: driverId,
-            price_per_seat: 50,
-            vehicle_type_id: 1,
-            starting_hub: {
-              id: 1,
-              name: 'Central Station',
-              address: 'Drottningtorget 1, 411 03 Göteborg',
-              city: 'Gothenburg'
-            },
-            destination_hub: {
-              id: 2,
-              name: 'Lindholmen',
-              address: 'Lindholmspiren 7, 417 56 Göteborg',
-              city: 'Gothenburg'
-            },
-            total_passengers: 2,
-            is_recurring: false,
-            bookings: []
+      // For now, return mock data since the driver rides endpoint is not properly implemented
+      console.log('Using mock driver rides data for driver:', driverId, 'with params:', params);
+      // If API call fails, return mock data
+      return [
+        {
+          id: 101,
+          ride_type: 'hub_to_destination',
+          starting_hub_id: 1,
+          destination_hub_id: 2,
+          departure_time: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+          arrival_time: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(),
+          status: 'scheduled',
+          available_seats: 4,
+          driver_id: driverId,
+          price_per_seat: 150,
+          vehicle_type_id: 1,
+          starting_hub: {
+            id: 1,
+            name: 'Brunnsparken Hub',
+            address: 'Brunnsparken, 411 03 Göteborg',
+            city: 'Göteborg'
           },
-          {
-            id: 102,
-            ride_type: 'hub_to_destination',
-            starting_hub_id: 2,
-            destination_hub_id: 1,
-            departure_time: new Date(new Date().setHours(16, 0, 0, 0)).toISOString(),
-            arrival_time: new Date(new Date().setHours(17, 0, 0, 0)).toISOString(),
-            status: 'scheduled',
-            available_seats: 4,
-            driver_id: driverId,
-            price_per_seat: 50,
-            vehicle_type_id: 1,
-            starting_hub: {
-              id: 2,
-              name: 'Lindholmen',
-              address: 'Lindholmspiren 7, 417 56 Göteborg',
-              city: 'Gothenburg'
-            },
-            destination_hub: {
-              id: 1,
-              name: 'Central Station',
-              address: 'Drottningtorget 1, 411 03 Göteborg',
-              city: 'Gothenburg'
-            },
-            total_passengers: 3,
-            is_recurring: false,
-            bookings: []
+          destination_hub: {
+            id: 2,
+            name: 'Lindholmen Hub',
+            address: 'Lindholmspiren 5, 417 56 Göteborg',
+            city: 'Göteborg'
           },
-          {
-            id: 103,
-            ride_type: 'hub_to_destination',
-            starting_hub_id: 1,
-            destination_hub_id: 3,
-            departure_time: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
-            arrival_time: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
-            status: 'scheduled',
-            available_seats: 4,
-            driver_id: driverId,
-            price_per_seat: 70,
-            vehicle_type_id: 1,
-            starting_hub: {
-              id: 1,
-              name: 'Central Station',
-              address: 'Drottningtorget 1, 411 03 Göteborg',
-              city: 'Gothenburg'
-            },
-            destination_hub: {
-              id: 3,
-              name: 'Mölndal',
-              address: 'Göteborgsvägen 97, 431 30 Mölndal',
-              city: 'Mölndal'
-            },
-            total_passengers: 0,
-            is_recurring: false,
-            bookings: []
-          }
-        ];
-      }
+          total_passengers: 2,
+          is_recurring: false,
+          bookings: []
+        },
+        {
+          id: 102,
+          ride_type: 'hub_to_destination',
+          starting_hub_id: 2,
+          destination_hub_id: 1,
+          departure_time: new Date(new Date().setHours(16, 0, 0, 0)).toISOString(),
+          arrival_time: new Date(new Date().setHours(17, 0, 0, 0)).toISOString(),
+          status: 'scheduled',
+          available_seats: 4,
+          driver_id: driverId,
+          price_per_seat: 150,
+          vehicle_type_id: 1,
+          starting_hub: {
+            id: 2,
+            name: 'Lindholmen Hub',
+            address: 'Lindholmspiren 5, 417 56 Göteborg',
+            city: 'Göteborg'
+          },
+          destination_hub: {
+            id: 1,
+            name: 'Brunnsparken Hub',
+            address: 'Brunnsparken, 411 03 Göteborg',
+            city: 'Göteborg'
+          },
+          total_passengers: 3,
+          is_recurring: false,
+          bookings: []
+        },
+        {
+          id: 103,
+          ride_type: 'hub_to_destination',
+          starting_hub_id: 1,
+          destination_hub_id: 3,
+          departure_time: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
+          arrival_time: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
+          status: 'scheduled',
+          available_seats: 4,
+          driver_id: driverId,
+          price_per_seat: 180,
+          vehicle_type_id: 1,
+          starting_hub: {
+            id: 1,
+            name: 'Brunnsparken Hub',
+            address: 'Brunnsparken, 411 03 Göteborg',
+            city: 'Göteborg'
+          },
+          destination_hub: {
+            id: 3,
+            name: 'Frölunda Torg Hub',
+            address: 'Frölunda Torg, 421 42 Göteborg',
+            city: 'Göteborg'
+          },
+          total_passengers: 0,
+          is_recurring: false,
+          bookings: []
+        }
+      ];
     } catch (error) {
       console.error('Error fetching driver rides:', error);
-      throw error;
+      // Return empty array instead of throwing error to prevent UI crashes
+      return [];
     }
   }
 

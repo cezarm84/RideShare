@@ -30,6 +30,27 @@ import {
 import PageMeta from '@/components/common/PageMeta';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import api from '@/services/api';
+
+// Vehicle Type interface
+interface VehicleType {
+  id: number;
+  name: string;
+  description?: string;
+  capacity: number;
+  is_active: boolean;
+  price_factor: number;
+}
+
+// Hub interface
+interface Hub {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  latitude?: number;
+  longitude?: number;
+}
 
 const BookingProgress = () => {
   const navigate = useNavigate();
@@ -42,8 +63,8 @@ const BookingProgress = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  const [pickup, setPickup] = useState('Central Station');
-  const [dropoff, setDropoff] = useState('Lindholmen');
+  const [pickup, setPickup] = useState('Göteborg Central Station');
+  const [dropoff, setDropoff] = useState('Lindholmen Science Park');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [bookedSeats] = useState<string[]>(["3", "7", "12", "15", "21", "25", "30", "34"]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit_card');
@@ -55,6 +76,49 @@ const BookingProgress = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [passengerDetails, setPassengerDetails] = useState<any[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // Real data from API
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [hubs, setHubs] = useState<Hub[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch reference data on component mount
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        const response = await api.get('/reference-data/ride-reference-data');
+        console.log('Reference data:', response.data);
+
+        setVehicleTypes(response.data.vehicle_types || []);
+        setHubs(response.data.hubs || []);
+
+        // Set default pickup/dropoff from hubs if available
+        if (response.data.hubs && response.data.hubs.length > 0) {
+          const brunnsparken = response.data.hubs.find((hub: Hub) =>
+            hub.name.toLowerCase().includes('brunnsparken')
+          );
+          const lindholmen = response.data.hubs.find((hub: Hub) =>
+            hub.name.toLowerCase().includes('lindholmen')
+          );
+
+          if (brunnsparken) setPickup(brunnsparken.name);
+          if (lindholmen) setDropoff(lindholmen.name);
+        }
+      } catch (error) {
+        console.error('Error fetching reference data:', error);
+        // Fallback to default vehicle types if API fails
+        setVehicleTypes([
+          { id: 1, name: 'Sedan', description: 'Standard car', capacity: 4, is_active: true, price_factor: 1.0 },
+          { id: 2, name: 'Van', description: 'Medium capacity vehicle', capacity: 6, is_active: true, price_factor: 1.2 },
+          { id: 3, name: 'Bus', description: 'Large capacity vehicle', capacity: 40, is_active: true, price_factor: 0.8 },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReferenceData();
+  }, []);
 
   // Handle tab change with authentication check for payment
   const handleTabChange = (value: string) => {
@@ -159,35 +223,148 @@ const BookingProgress = () => {
 
   const getSeatPrice = (seatId: string) => {
     const seatNum = parseInt(seatId, 10);
+    const selectedVehicleType = vehicleTypes.find(vt => vt.name.toLowerCase() === selectedVehicle);
+
+    // Base price calculation based on vehicle type and capacity
+    let basePrice = 150; // Default base price in SEK
+
+    if (selectedVehicleType) {
+      // Price based on capacity and price factor from database
+      const capacityFactor = selectedVehicleType.capacity <= 4 ? 1.2 :
+                            selectedVehicleType.capacity <= 8 ? 1.0 : 0.6;
+      basePrice = Math.round(150 * selectedVehicleType.price_factor * capacityFactor);
+    }
+
+    // Seat position premium/discount
+    let seatMultiplier = 1.0;
 
     switch (selectedVehicle) {
       case 'bus':
-        // Window seats cost more
+        // Window seats (positions 1 and 4 in each row of 4) cost more
         if (seatNum % 4 === 1 || seatNum % 4 === 0) {
-          return 25.99;
+          seatMultiplier = 1.15; // 15% premium for window seats
+        } else {
+          seatMultiplier = 1.0; // Standard price for aisle seats
         }
-        return 19.99;
+        break;
+      case 'sedan':
       case 'car':
-        // Front seats cost more
+        // Front seats cost more due to better view and comfort
         if (seatNum <= 2) {
-          return 15.99;
+          seatMultiplier = 1.1; // 10% premium for front seats
+        } else {
+          seatMultiplier = 0.95; // 5% discount for back seats
         }
-        return 12.99;
-      case 'truck':
-        // Middle seat costs less
-        if (seatNum === 2) {
-          return 10.99;
+        break;
+      case 'van':
+        // Front row costs more, middle row standard, back row slightly less
+        if (seatNum <= 2) {
+          seatMultiplier = 1.1; // 10% premium for front row
+        } else if (seatNum <= 4) {
+          seatMultiplier = 1.0; // Standard price for middle row
+        } else {
+          seatMultiplier = 0.95; // 5% discount for back row
         }
-        return 12.99;
+        break;
       default:
-        return 15.00;
+        seatMultiplier = 1.0;
     }
+
+    return Math.round(basePrice * seatMultiplier);
   };
 
   const calculateTotalPrice = () => {
     return selectedSeats.reduce((total, seatId) => {
       return total + getSeatPrice(seatId);
     }, 0);
+  };
+
+  // Helper function to format currency in SEK
+  const formatSEK = (amount: number) => {
+    return `${Math.round(amount)} SEK`;
+  };
+
+  // Get base price for a vehicle type (used for estimates)
+  const getBasePrice = (vehicleTypeName: string) => {
+    const vehicleType = vehicleTypes.find(vt => vt.name.toLowerCase() === vehicleTypeName.toLowerCase());
+    if (vehicleType) {
+      const capacityFactor = vehicleType.capacity <= 4 ? 1.2 :
+                            vehicleType.capacity <= 8 ? 1.0 : 0.6;
+      return Math.round(150 * vehicleType.price_factor * capacityFactor);
+    }
+    return 150; // Default base price
+  };
+
+  // Calculate real distance between two points using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  };
+
+  // Get route information based on selected pickup and dropoff
+  const getRouteInfo = () => {
+    if (!pickup || !dropoff) {
+      return null;
+    }
+
+    const pickupHub = hubs.find(hub => hub.name === pickup);
+    const dropoffHub = hubs.find(hub => hub.name === dropoff);
+
+    if (!pickupHub || !dropoffHub || !pickupHub.latitude || !pickupHub.longitude || !dropoffHub.latitude || !dropoffHub.longitude) {
+      return {
+        distance: 'N/A',
+        time: 'N/A',
+        route: 'Route information not available'
+      };
+    }
+
+    const distance = calculateDistance(
+      pickupHub.latitude,
+      pickupHub.longitude,
+      dropoffHub.latitude,
+      dropoffHub.longitude
+    );
+
+    // Estimate travel time (assuming average speed of 30 km/h in city traffic)
+    const estimatedTime = Math.round((distance / 30) * 60); // in minutes
+
+    // Generate route description based on actual hub locations
+    const getRouteDescription = (from: string, to: string) => {
+      const routes: { [key: string]: string } = {
+        'Brunnsparken Hub-Lindholmen Hub': 'via Göta älvbron and Lindholmsallén',
+        'Lindholmen Hub-Brunnsparken Hub': 'via Lindholmsallén and Göta älvbron',
+        'Brunnsparken Hub-Frölunda Torg Hub': 'via Kungsportsavenyn and Frölundavägen',
+        'Frölunda Torg Hub-Brunnsparken Hub': 'via Frölundavägen and Kungsportsavenyn',
+        'Brunnsparken Hub-Angered Centrum Hub': 'via Göteborgsvägen and Angeredsbron',
+        'Angered Centrum Hub-Brunnsparken Hub': 'via Angeredsbron and Göteborgsvägen',
+        'Lindholmen Hub-Frölunda Torg Hub': 'via Göta älvbron and Frölundavägen',
+        'Frölunda Torg Hub-Lindholmen Hub': 'via Frölundavägen and Göta älvbron',
+        'Brunnsparken Hub-Korsvägen Hub': 'via Kungsportsavenyn',
+        'Korsvägen Hub-Brunnsparken Hub': 'via Kungsportsavenyn',
+        'Brunnsparken Hub-Backaplan Hub': 'via Göteborgsvägen',
+        'Backaplan Hub-Brunnsparken Hub': 'via Göteborgsvägen',
+        'Brunnsparken Hub-Mölndal Centrum Hub': 'via E6/E20 motorway',
+        'Mölndal Centrum Hub-Brunnsparken Hub': 'via E6/E20 motorway',
+        'Brunnsparken Hub-Partille Centrum Hub': 'via Göteborgsvägen and Route 190',
+        'Partille Centrum Hub-Brunnsparken Hub': 'via Route 190 and Göteborgsvägen',
+      };
+
+      const routeKey = `${from}-${to}`;
+      return routes[routeKey] || 'via city center roads';
+    };
+
+    return {
+      distance: `${distance.toFixed(1)} km`,
+      time: `${estimatedTime} minutes`,
+      route: getRouteDescription(pickup, dropoff)
+    };
   };
 
   const formatCreditCardNumber = (value: string) => {
@@ -212,7 +389,7 @@ const BookingProgress = () => {
   const generateSeatLayout = () => {
     switch (selectedVehicle) {
       case 'bus':
-        // 5 rows of 8 seats (4 on each side with aisle)
+        // 10 rows of 4 seats (2 on each side with aisle)
         return [
           ['1', '2', null, '3', '4'],
           ['5', '6', null, '7', '8'],
@@ -231,10 +408,12 @@ const BookingProgress = () => {
           ['1', '2', null],
           ['3', '4', '5'],
         ];
-      case 'truck':
-        // 1 row of 3 seats
+      case 'van':
+        // 3 rows of 2 seats each (6 seats total)
         return [
-          ['1', '2', '3'],
+          ['1', '2'],
+          ['3', '4'],
+          ['5', '6'],
         ];
       default:
         return [
@@ -308,62 +487,80 @@ const BookingProgress = () => {
                   {/* Vehicle Selection */}
                   <div className="mb-8">
                     <h2 className="text-xl font-semibold mb-4">Select Vehicle Type</h2>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div
-                        className={`border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition ${selectedVehicle === 'car' ? 'border-blue-500 bg-blue-50' : ''}`}
-                        onClick={() => setSelectedVehicle('car')}
-                      >
-                        <Car className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                        <p className="font-medium">Sedan</p>
-                        <p className="text-sm text-gray-600">Up to 3 passengers</p>
-                        <p className="text-sm font-semibold mt-2">$25-35</p>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                        <p className="text-gray-500 mt-2">Loading vehicle types...</p>
                       </div>
-                      <div
-                        className={`border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition ${selectedVehicle === 'truck' ? 'border-blue-500 bg-blue-50' : ''}`}
-                        onClick={() => setSelectedVehicle('truck')}
-                      >
-                        <Truck className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                        <p className="font-medium">SUV</p>
-                        <p className="text-sm text-gray-600">Up to 5 passengers</p>
-                        <p className="text-sm font-semibold mt-2">$35-50</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {vehicleTypes.filter(vt => vt.is_active).map((vehicleType) => {
+                          const isSelected = selectedVehicle === vehicleType.name.toLowerCase();
+                          const getIcon = (name: string) => {
+                            const lowerName = name.toLowerCase();
+                            if (lowerName.includes('car') || lowerName.includes('sedan')) return <Car className="h-8 w-8 mx-auto mb-2 text-blue-500" />;
+                            if (lowerName.includes('van') || lowerName.includes('truck')) return <Truck className="h-8 w-8 mx-auto mb-2 text-blue-500" />;
+                            if (lowerName.includes('bus')) return <Bus className="h-8 w-8 mx-auto mb-2 text-blue-500" />;
+                            return <Car className="h-8 w-8 mx-auto mb-2 text-blue-500" />;
+                          };
+
+                          const getPriceRange = (capacity: number, priceFactor: number) => {
+                            // Base price in SEK based on Swedish transport market
+                            const basePrice = capacity <= 4 ? 180 : capacity <= 8 ? 150 : 90;
+                            const capacityFactor = capacity <= 4 ? 1.2 : capacity <= 8 ? 1.0 : 0.6;
+                            const adjustedPrice = Math.round(basePrice * priceFactor * capacityFactor);
+
+                            // Price range with seat position variations
+                            const minPrice = Math.round(adjustedPrice * 0.95); // Discount seats
+                            const maxPrice = Math.round(adjustedPrice * 1.15); // Premium seats
+                            return `${minPrice}-${maxPrice} SEK`;
+                          };
+
+                          return (
+                            <div
+                              key={vehicleType.id}
+                              className={`border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition ${isSelected ? 'border-blue-500 bg-blue-50' : ''}`}
+                              onClick={() => setSelectedVehicle(vehicleType.name.toLowerCase())}
+                            >
+                              {getIcon(vehicleType.name)}
+                              <p className="font-medium">{vehicleType.name}</p>
+                              <p className="text-sm text-gray-600">Up to {vehicleType.capacity} passengers</p>
+                              <p className="text-sm font-semibold mt-2">{getPriceRange(vehicleType.capacity, vehicleType.price_factor)}</p>
+                              {vehicleType.description && (
+                                <p className="text-xs text-gray-500 mt-1">{vehicleType.description}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div
-                        className={`border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition ${selectedVehicle === 'bus' ? 'border-blue-500 bg-blue-50' : ''}`}
-                        onClick={() => setSelectedVehicle('bus')}
-                      >
-                        <Bus className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                        <p className="font-medium">Bus</p>
-                        <p className="text-sm text-gray-600">Up to 40 passengers</p>
-                        <p className="text-sm font-semibold mt-2">$10-15</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Date Selection */}
                   <div className="mb-8">
                     <h2 className="text-xl font-semibold mb-4">Select Date</h2>
-                    <div className="bg-white p-4 rounded-lg border">
+                    <div className="bg-background p-4 rounded-lg border border-border">
                       <div className="flex justify-between items-center mb-4">
                         <button
                           onClick={getPreviousMonth}
-                          className="p-2 rounded-full hover:bg-gray-100"
+                          className="p-2 rounded-full hover:bg-muted transition-colors"
                         >
-                          <ChevronLeft className="h-5 w-5" />
+                          <ChevronLeft className="h-5 w-5 text-foreground" />
                         </button>
-                        <h3 className="font-semibold">
+                        <h3 className="font-semibold text-foreground">
                           {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </h3>
                         <button
                           onClick={getNextMonth}
-                          className="p-2 rounded-full hover:bg-gray-100"
+                          className="p-2 rounded-full hover:bg-muted transition-colors"
                         >
-                          <ChevronRight className="h-5 w-5" />
+                          <ChevronRight className="h-5 w-5 text-foreground" />
                         </button>
                       </div>
 
                       <div className="grid grid-cols-7 gap-1 text-center">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                          <div key={day} className="font-medium text-sm py-2">{day}</div>
+                          <div key={day} className="font-medium text-sm py-2 text-muted-foreground">{day}</div>
                         ))}
                       </div>
 
@@ -384,10 +581,10 @@ const BookingProgress = () => {
                           return (
                             <div
                               key={`day-${day}`}
-                              className={`h-10 w-10 flex items-center justify-center rounded-full cursor-pointer transition-colors
-                                ${isSelected ? 'bg-blue-600 text-white' : ''}
-                                ${isCurrentDay && !isSelected ? 'border border-blue-600 text-blue-600' : ''}
-                                ${isPast ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100'}
+                              className={`h-10 w-10 flex items-center justify-center rounded-full cursor-pointer transition-colors text-sm
+                                ${isSelected ? 'bg-primary text-primary-foreground' : ''}
+                                ${isCurrentDay && !isSelected ? 'border border-primary text-primary' : ''}
+                                ${isPast ? 'text-muted-foreground cursor-not-allowed' : !isSelected ? 'text-foreground hover:bg-muted' : ''}
                               `}
                               onClick={() => {
                                 if (!isPast) {
@@ -410,8 +607,8 @@ const BookingProgress = () => {
                       {generateTimeSlots().map(time => (
                         <div
                           key={time}
-                          className={`border rounded-lg p-2 text-center cursor-pointer transition-colors
-                            ${selectedTime === time ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}
+                          className={`border border-border rounded-lg p-2 text-center cursor-pointer transition-colors text-sm
+                            ${selectedTime === time ? 'bg-primary text-primary-foreground border-primary' : 'text-foreground hover:bg-muted'}
                           `}
                           onClick={() => setSelectedTime(time)}
                         >
@@ -434,10 +631,39 @@ const BookingProgress = () => {
                       <div className="text-gray-500">
                         {pickup && dropoff ? (
                           <div className="text-center">
-                            <p>Map would show route from {pickup} to {dropoff}</p>
-                            <p className="mt-2">
-                              Distance: 5.2 km | Estimated time: 15 minutes
-                            </p>
+                            <div className="mb-4">
+                              <div className="flex items-center justify-center mb-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                <span className="text-sm font-medium text-green-700">{pickup}</span>
+                              </div>
+                              <div className="flex justify-center">
+                                <div className="w-px h-8 bg-gray-300"></div>
+                              </div>
+                              <div className="flex items-center justify-center mt-2">
+                                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                                <span className="text-sm font-medium text-red-700">{dropoff}</span>
+                              </div>
+                            </div>
+                            {(() => {
+                              const routeInfo = getRouteInfo();
+                              if (routeInfo) {
+                                return (
+                                  <>
+                                    <p className="text-sm">
+                                      Distance: {routeInfo.distance} | Estimated time: {routeInfo.time}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      Route {routeInfo.route}
+                                    </p>
+                                  </>
+                                );
+                              }
+                              return (
+                                <p className="text-sm text-gray-400">
+                                  Calculating route information...
+                                </p>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <p>Select pickup and dropoff locations to see the route</p>
@@ -450,61 +676,81 @@ const BookingProgress = () => {
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
                           <MapPin className="h-5 w-5 text-blue-500" />
                         </div>
-                        <Input
-                          type="text"
-                          value={pickup}
-                          onChange={(e) => setPickup(e.target.value)}
-                          className="flex-1"
-                          placeholder="Enter pickup location"
-                        />
+                        <div className="flex-1">
+                          <Label htmlFor="pickup" className="text-sm font-medium mb-1 block">
+                            Pickup Location
+                          </Label>
+                          <select
+                            id="pickup"
+                            value={pickup}
+                            onChange={(e) => setPickup(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="">Select pickup location</option>
+                            {hubs.map((hub) => (
+                              <option key={hub.id} value={hub.name}>
+                                {hub.name} - {hub.city}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
                           <Flag className="h-5 w-5 text-red-500" />
                         </div>
-                        <Input
-                          type="text"
-                          value={dropoff}
-                          onChange={(e) => setDropoff(e.target.value)}
-                          className="flex-1"
-                          placeholder="Enter dropoff location"
-                        />
+                        <div className="flex-1">
+                          <Label htmlFor="dropoff" className="text-sm font-medium mb-1 block">
+                            Dropoff Location
+                          </Label>
+                          <select
+                            id="dropoff"
+                            value={dropoff}
+                            onChange={(e) => setDropoff(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="">Select dropoff location</option>
+                            {hubs.map((hub) => (
+                              <option key={hub.id} value={hub.name}>
+                                {hub.name} - {hub.city}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Ride Summary */}
-                  <div className="bg-gray-50 p-4 rounded-lg border">
+                  <div className="bg-muted/50 p-4 rounded-lg border border-border">
                     <h2 className="text-xl font-semibold mb-4">Ride Summary</h2>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Vehicle:</span>
-                        <span className="font-medium">
-                          {selectedVehicle === 'car' ? 'Sedan' : selectedVehicle === 'truck' ? 'SUV' : 'Bus'}
+                        <span className="text-muted-foreground">Vehicle:</span>
+                        <span className="font-medium text-foreground">
+                          {vehicleTypes.find(vt => vt.name.toLowerCase() === selectedVehicle)?.name || 'Not selected'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Date:</span>
-                        <span className="font-medium">{formatDate(selectedDate)}</span>
+                        <span className="text-muted-foreground">Date:</span>
+                        <span className="font-medium text-foreground">{formatDate(selectedDate)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Time:</span>
-                        <span className="font-medium">{selectedTime}</span>
+                        <span className="text-muted-foreground">Time:</span>
+                        <span className="font-medium text-foreground">{selectedTime}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Pickup:</span>
-                        <span className="font-medium">{pickup || 'Not selected'}</span>
+                        <span className="text-muted-foreground">Pickup:</span>
+                        <span className="font-medium text-foreground">{pickup || 'Not selected'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Dropoff:</span>
-                        <span className="font-medium">{dropoff || 'Not selected'}</span>
+                        <span className="text-muted-foreground">Dropoff:</span>
+                        <span className="font-medium text-foreground">{dropoff || 'Not selected'}</span>
                       </div>
-                      <div className="border-t border-gray-200 my-2"></div>
+                      <div className="border-t border-border my-2"></div>
                       <div className="flex justify-between font-bold text-lg">
                         <span>Estimated Price:</span>
-                        <span>
-                          ${selectedVehicle === 'bus' ? '12.50' : selectedVehicle === 'car' ? '30.00' : '45.00'}
-                        </span>
+                        <span>{formatSEK(getBasePrice(selectedVehicle))}</span>
                       </div>
                     </div>
                     <Button
@@ -563,7 +809,7 @@ const BookingProgress = () => {
                                   ${!isBooked && !isSelected ? 'bg-green-200 hover:bg-green-300' : ''}
                                 `}
                                 onClick={() => toggleSeatSelection(seat)}
-                                title={`Seat ${seat} - $${getSeatPrice(seat).toFixed(2)}`}
+                                title={`Seat ${seat} - ${formatSEK(getSeatPrice(seat))}`}
                               >
                                 {seat}
                               </div>
@@ -639,7 +885,7 @@ const BookingProgress = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Vehicle:</span>
                         <span className="font-medium">
-                          {selectedVehicle === 'car' ? 'Sedan' : selectedVehicle === 'truck' ? 'SUV' : 'Bus'}
+                          {vehicleTypes.find(vt => vt.name.toLowerCase() === selectedVehicle)?.name || 'Not selected'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -667,7 +913,7 @@ const BookingProgress = () => {
                           <div className="flex flex-wrap gap-2 mb-4">
                             {selectedSeats.map(seat => (
                               <div key={`selected-${seat}`} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center">
-                                Seat {seat} - ${getSeatPrice(seat).toFixed(2)}
+                                Seat {seat} - {formatSEK(getSeatPrice(seat))}
                               </div>
                             ))}
                           </div>
@@ -681,15 +927,15 @@ const BookingProgress = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span>Base Fare (x{selectedSeats.length}):</span>
-                          <span>${calculateTotalPrice().toFixed(2)}</span>
+                          <span>{formatSEK(calculateTotalPrice())}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Taxes & Fees:</span>
-                          <span>${(calculateTotalPrice() * 0.1).toFixed(2)}</span>
+                          <span>Taxes & Fees (25% VAT):</span>
+                          <span>{formatSEK(calculateTotalPrice() * 0.25)}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg">
                           <span>Total:</span>
-                          <span>${(calculateTotalPrice() * 1.1).toFixed(2)}</span>
+                          <span>{formatSEK(calculateTotalPrice() * 1.25)}</span>
                         </div>
                       </div>
 
@@ -726,13 +972,22 @@ const BookingProgress = () => {
                   <div className="bg-white p-6 rounded-lg border">
                     <div className="mb-6">
                       <h3 className="font-medium mb-3">Payment Method</h3>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <div
                           className={`border rounded-lg p-3 text-center cursor-pointer hover:border-blue-500 transition ${selectedPaymentMethod === 'credit_card' ? 'border-blue-500 bg-blue-50' : ''}`}
                           onClick={() => setSelectedPaymentMethod('credit_card')}
                         >
                           <CreditCardIcon className="h-6 w-6 mx-auto mb-2 text-blue-500" />
                           <p className="text-sm">Credit Card</p>
+                        </div>
+                        <div
+                          className={`border rounded-lg p-3 text-center cursor-pointer hover:border-blue-500 transition ${selectedPaymentMethod === 'swish' ? 'border-blue-500 bg-blue-50' : ''}`}
+                          onClick={() => setSelectedPaymentMethod('swish')}
+                        >
+                          <div className="h-6 w-6 mx-auto mb-2 flex items-center justify-center bg-pink-500 rounded text-white font-bold text-xs">
+                            S
+                          </div>
+                          <p className="text-sm">Swish</p>
                         </div>
                         <div
                           className={`border rounded-lg p-3 text-center cursor-pointer hover:border-blue-500 transition ${selectedPaymentMethod === 'paypal' ? 'border-blue-500 bg-blue-50' : ''}`}
@@ -817,6 +1072,37 @@ const BookingProgress = () => {
                       </div>
                     )}
 
+                    {selectedPaymentMethod === 'swish' && (
+                      <div className="bg-pink-50 p-4 rounded-lg">
+                        <div className="text-center mb-4">
+                          <div className="h-12 w-12 mx-auto mb-3 flex items-center justify-center bg-pink-500 rounded-full text-white font-bold text-lg">
+                            S
+                          </div>
+                          <h4 className="font-medium text-pink-800 mb-2">Pay with Swish</h4>
+                          <p className="text-sm text-pink-700 mb-4">
+                            Enter your phone number to receive a Swish payment request
+                          </p>
+                        </div>
+                        <div className="mb-4">
+                          <Label htmlFor="swish-phone" className="block text-pink-700 mb-2">Phone Number</Label>
+                          <Input
+                            id="swish-phone"
+                            type="tel"
+                            placeholder="+46 70 123 45 67"
+                            className="w-full border-pink-300 focus:border-pink-500 focus:ring-pink-500"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <Button className="bg-pink-500 hover:bg-pink-600 text-white w-full">
+                            Send Swish Request
+                          </Button>
+                          <p className="text-xs text-pink-600 mt-2">
+                            You will receive a push notification in your Swish app
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {selectedPaymentMethod === 'paypal' && (
                       <div className="bg-gray-100 p-4 rounded-lg text-center">
                         <p className="mb-4">You will be redirected to PayPal to complete your payment</p>
@@ -858,7 +1144,7 @@ const BookingProgress = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Vehicle:</span>
                         <span className="font-medium">
-                          {selectedVehicle === 'car' ? 'Sedan' : selectedVehicle === 'truck' ? 'SUV' : 'Bus'}
+                          {vehicleTypes.find(vt => vt.name.toLowerCase() === selectedVehicle)?.name || 'Not selected'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -897,15 +1183,15 @@ const BookingProgress = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span>Base Fare:</span>
-                          <span>${calculateTotalPrice().toFixed(2)}</span>
+                          <span>{formatSEK(calculateTotalPrice())}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Taxes & Fees:</span>
-                          <span>${(calculateTotalPrice() * 0.1).toFixed(2)}</span>
+                          <span>Taxes & Fees (25% VAT):</span>
+                          <span>{formatSEK(calculateTotalPrice() * 0.25)}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg">
                           <span>Total:</span>
-                          <span>${(calculateTotalPrice() * 1.1).toFixed(2)}</span>
+                          <span>{formatSEK(calculateTotalPrice() * 1.25)}</span>
                         </div>
                       </div>
 

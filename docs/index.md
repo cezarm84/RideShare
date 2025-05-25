@@ -1,6 +1,6 @@
 # RideShare API Documentation
 
-Welcome to the RideShare API documentation. This documentation provides detailed information about the RideShare API, including endpoints, models, and usage examples.
+Welcome to the RideShare API documentation. This comprehensive documentation covers all aspects of the RideShare platform, including APIs, features, and implementation guides.
 
 ## Table of Contents
 
@@ -9,6 +9,7 @@ Welcome to the RideShare API documentation. This documentation provides detailed
 - [API Documentation](api_consolidated.md) - Comprehensive API reference with authentication, endpoints, and examples
 - [Architecture](architecture.md) - System architecture overview
 - [Authentication Flow](auth_flow.md) - Detailed authentication process
+- [Project Status](project_status.md) - Current development status and completed features
 
 ### Core Features
 
@@ -16,6 +17,12 @@ Welcome to the RideShare API documentation. This documentation provides detailed
 - [Ride Creation Examples](ride_creation_examples.md) - Detailed examples for creating different types of rides
 - [Payment Methods](payment_methods.md) - Payment processing and management
 - [User Preferences](user_preferences.md) - User preference system documentation
+
+### Communication & AI
+
+- [AI Chatbot System](ai_chatbot_system.md) - **NEW** AI-powered chatbot with OpenAI GPT integration
+- [Messaging System](messaging_system.md) - **NEW** Real-time WebSocket messaging and chat channels
+- [Email System](email_system.md) - Email service with SMTP integration and templates
 
 ### Administration
 
@@ -49,13 +56,34 @@ For a complete list of endpoints with detailed request/response examples, see th
 
 ### Rides
 
-- `GET /api/v1/rides` - List available rides
+- `GET /api/v1/rides` - List available rides with filtering
 - `POST /api/v1/rides` - Create a new ride
+- `GET /api/v1/rides/{id}` - Get ride details
 
 ### Bookings
 
 - `GET /api/v1/bookings` - List user bookings
 - `POST /api/v1/bookings` - Create a new booking
+- `POST /api/v1/bookings/{id}/payment` - Process payment for booking
+
+### AI Chatbot **NEW**
+
+- `POST /api/v1/chatbot/chat` - Send message to AI chatbot (authenticated)
+- `POST /api/v1/chatbot/public/chat` - Send message to AI chatbot (public)
+- `POST /api/v1/chatbot/public/feedback` - Submit chatbot feedback
+
+### Real-Time Messaging **NEW**
+
+- `POST /api/v1/messaging/channels` - Create a new chat channel
+- `GET /api/v1/messaging/channels` - List user's channels
+- `POST /api/v1/messaging/channels/{id}/messages` - Send message to channel
+- `WebSocket /api/v1/messaging/ws` - Real-time messaging connection
+
+### Email System **NEW**
+
+- `POST /api/v1/auth/verify-email` - Verify email address
+- `POST /api/v1/auth/forgot-password` - Request password reset
+- `POST /api/v1/auth/reset-password` - Reset password with token
 
 ### User Preferences
 
@@ -72,14 +100,68 @@ For a complete list of endpoints with detailed request/response examples, see th
 
 - `POST /api/v1/drivers` - Register as a driver
 - `GET /api/v1/drivers/me` - Get current driver profile
+- `PUT /api/v1/drivers/me` - Update driver profile
+
+### Admin Features
+
+- `GET /api/v1/admin/users` - List all users with verification status
+- `GET /api/v1/admin/drivers` - List all drivers
+- `GET /api/v1/admin/enterprises` - List all enterprises
+- `GET /api/v1/admin/chatbot/feedback` - Get chatbot feedback for review
 
 ## Development Resources
 
-- [Database Schema](database_schema.md)
-- [API Response Formats](api_response_formats.md)
-- [Error Codes](error_codes.md)
-- [Webhooks](webhooks.md)
+- [Database Schema](database_schema.md) - Complete database structure and relationships
+- [Frontend Components](frontend_components.md) - React component documentation
+- [Pre-commit Setup](pre-commit-setup.md) - Development workflow and code quality
+- [CI/CD Documentation](CI_CD_DOCS.md) - Continuous integration and deployment
+- [Backend Testing Plan](backend-testing-plan.md) - Testing strategies and guidelines
+- [Frontend Testing Plan](frontend-testing-plan.md) - Frontend testing approaches
+
+## Recent Features ✨
+
+### AI-Powered Chatbot
+
+- **OpenAI GPT Integration** for intelligent responses
+- **Context-aware conversations** with sentiment analysis
+- **Human agent escalation** with temporary chat channels
+- **Multi-language support** and FAQ integration
+
+### Real-Time Messaging
+
+- **WebSocket-based communication** for instant messaging
+- **Multi-channel support** (support, driver, enterprise, community)
+- **Message types** including text, system, and media messages
+- **Admin moderation tools** and channel management
+
+### Enhanced Email System
+
+- **SMTP integration** with template support
+- **Email verification** and password reset workflows
+- **Notification emails** for bookings and system events
+- **Development testing** with MailHog integration
+
+### Advanced Admin Dashboard
+
+- **Comprehensive user management** with verification status
+- **Real-time analytics** and system monitoring
+- **Chatbot feedback review** and performance metrics
+- **Multi-role management** for drivers and enterprises
+
+## Technology Stack
+
+- **Backend**: FastAPI (Python 3.11+) with SQLAlchemy 2.0
+- **Frontend**: React 18 with TypeScript and Tailwind CSS
+- **Database**: PostgreSQL with Alembic migrations
+- **AI**: OpenAI GPT-4o-mini for chatbot intelligence
+- **Real-time**: WebSocket for messaging and notifications
+- **Email**: aiosmtplib with Jinja2 templates
 
 ## Support
 
-If you need help with the RideShare API, please contact our support team at support@rideshare.example.com.
+If you need help with the RideShare API or platform:
+
+- **Documentation**: Check this comprehensive documentation
+- **AI Chatbot**: Use the built-in AI assistant for instant help
+- **Support Channels**: Create a support ticket through the messaging system
+- **Email**: Contact support@rideshare.com for technical assistance

@@ -16,6 +16,7 @@ from app.models.user import User
 from app.services.faq_service import FAQService
 from app.services.enhanced_notification_service import EnhancedNotificationService
 from app.services.websocket_service import broadcast_to_channel
+from app.services.ai_service import AIService
 
 # Import for geocoding and traffic services
 from app.core.geocoding import geocode_address
@@ -42,21 +43,38 @@ FAREWELL_PATTERNS = [
 ]
 
 HELP_PATTERNS = [
-    r"help\b", r"assist", r"support", r"guidance", r"how do I", r"how can I",
-    r"how to", r"what can you do", r"what do you do"
+    r"help\b", r"assist", r"support", r"guidance",
+    r"what can you do", r"what do you do", r"what can you help",
+    r"general help", r"need help", r"can you help"
 ]
 
 BOOKING_PATTERNS = [
     r"book", r"reserve", r"schedule", r"ride", r"trip", r"journey", r"travel",
     r"pickup", r"destination", r"when", r"where", r"how much", r"cost", r"price",
-    r"fare", r"payment", r"cancel", r"modify", r"change", r"how to book", r"booking",
+    r"fare", r"payment", r"modify", r"change", r"how to book", r"booking",
     r"how do i book", r"need help with book", r"help with booking", r"create a booking",
     r"make a booking", r"book a ride", r"need a ride", r"get a ride", r"show me how"
+]
+
+CANCELLATION_PATTERNS = [
+    r"cancel", r"cancellation", r"cancel booking", r"cancel ride", r"cancel my booking",
+    r"cancel my ride", r"how to cancel", r"how do i cancel", r"cancel reservation",
+    r"cancel trip", r"refund", r"cancel and refund", r"how to cancel a booking",
+    r"how to cancel a ride", r"cancelling", r"canceling", r"cancel my reservation"
 ]
 
 ACCOUNT_PATTERNS = [
     r"account", r"profile", r"sign up", r"register", r"login", r"password",
     r"email", r"phone", r"settings", r"preferences", r"update", r"change"
+]
+
+PAYMENT_PATTERNS = [
+    r"pay", r"payment", r"paying", r"cost", r"price", r"fare", r"charge",
+    r"how to pay", r"payment methods", r"payment options", r"billing",
+    r"credit card", r"debit card", r"swish", r"paypal", r"apple pay", r"google pay",
+    r"bank transfer", r"payment process", r"how much", r"what does it cost",
+    r"payment method", r"pay for", r"payment info", r"card", r"visa", r"mastercard",
+    r"complete payment", r"finish payment", r"payment step", r"checkout"
 ]
 
 HUMAN_AGENT_PATTERNS = [
@@ -117,6 +135,30 @@ INTENT_EXAMPLES = {
         "Guide me through the booking process",
         "I need to schedule a ride",
         "Can you show me how to book?"
+    ],
+    "cancellation": [
+        "How do I cancel a booking?",
+        "I need to cancel my ride",
+        "How to cancel a reservation?",
+        "Cancel my booking",
+        "How do I get a refund?",
+        "I want to cancel my trip",
+        "How to cancel and get refund?",
+        "Cancel booking process",
+        "How do I cancel my ride?",
+        "Cancellation policy"
+    ],
+    "payment": [
+        "How do I pay?",
+        "What payment methods do you accept?",
+        "How to pay for my ride?",
+        "Can I pay with credit card?",
+        "Do you accept Swish?",
+        "Payment options available?",
+        "How much does it cost?",
+        "What are the payment methods?",
+        "Can I use PayPal?",
+        "How to complete payment?"
     ],
     "geocode": [
         "Where is Skärholmen located?",
@@ -182,6 +224,9 @@ class ChatbotService:
             except Exception as e:
                 logger.warning(f"Failed to initialize documentation search service: {str(e)}")
 
+        # Initialize AI service for smart responses
+        self.ai_service = AIService()
+
         # Initialize embedding model for intent classification
         self.model = None
         self.intent_embeddings = None
@@ -219,7 +264,7 @@ class ChatbotService:
             self.model = None
             self.intent_embeddings = None
 
-    def process_message(self, content: str, user_id: Optional[int] = None) -> Dict:
+    async def process_message(self, content: str, user_id: Optional[int] = None) -> Dict:
         """
         Process a message from a user and generate a response.
 
@@ -325,7 +370,18 @@ class ChatbotService:
                     "multiple_intents": multiple_intents
                 }
 
-            # If no intent detected by patterns, try embedding-based classification
+            # If no intent detected by patterns, try AI-powered intent detection first
+            if not intent and self.ai_service.is_enabled():
+                logger.info("No pattern-based intent detected, trying AI intent detection")
+                try:
+                    ai_intent_result = await self.ai_service.analyze_intent_with_ai(content, context)
+                    if ai_intent_result.get("intent") and ai_intent_result.get("confidence", 0) > 0.7:
+                        intent = ai_intent_result["intent"]
+                        logger.info(f"AI-detected intent: {intent}, confidence: {ai_intent_result.get('confidence')}")
+                except Exception as e:
+                    logger.warning(f"AI intent detection failed: {str(e)}")
+
+            # If still no intent, try embedding-based classification
             if not intent and self.model is not None:
                 intent, confidence = self._classify_intent(content)
                 logger.info(f"Embedding-based intent: {intent}, confidence: {confidence}")
@@ -366,17 +422,99 @@ class ChatbotService:
                 return self._handle_documentation_search(content)
 
             elif intent:
-                # Handle other intents with the existing method
+                # Try AI-enhanced response first for better personalization
+                if self.ai_service.is_enabled() and intent not in ["geocode", "traffic", "docs"]:
+                    try:
+                        ai_response = await self.ai_service.generate_smart_response(
+                            user_message=content,
+                            context=context,
+                            user_info=self._get_user_info(user_id) if user_id else None,
+                            conversation_history=self.chat_history.get(user_id, []),
+                            intent=intent,
+                            sentiment=sentiment_score
+                        )
+
+                        if ai_response.get("response") and not ai_response.get("fallback_required"):
+                            logger.info(f"Generated AI-enhanced response for intent '{intent}'")
+
+                            # Generate follow-up questions
+                            follow_up_questions = await self.ai_service.generate_follow_up_questions(
+                                content, intent, context
+                            )
+
+                            # Update conversation context
+                            self._update_conversation_context(user_id, intent, content)
+
+                            response_data = {
+                                "response": ai_response["response"],
+                                "source": "ai",
+                                "intent": intent,
+                                "sentiment": sentiment_score,
+                                "ai_generated": True
+                            }
+
+                            if follow_up_questions:
+                                response_data["suggestions"] = follow_up_questions
+
+                            return response_data
+                        else:
+                            logger.info(f"AI response failed for intent '{intent}', falling back to template")
+                    except Exception as e:
+                        logger.warning(f"AI-enhanced response failed for intent '{intent}': {str(e)}")
+
+                # Handle other intents with the existing method (fallback)
                 response = self._handle_intent(intent, content, user_id)
-                logger.info(f"Generated response for intent '{intent}': '{response}'")
+                logger.info(f"Generated template response for intent '{intent}': '{response}'")
 
                 # Update conversation context
                 self._update_conversation_context(user_id, intent, content)
 
                 return {"response": response, "intent": intent}
 
-            # If no intent detected, search FAQs for a relevant answer
-            logger.info(f"No intent detected, searching FAQs for: '{content}'")
+            # If no intent detected, try AI-powered response first (if enabled)
+            if self.ai_service.is_enabled():
+                logger.info("No intent detected, trying AI-powered response")
+                try:
+                    ai_response = await self.ai_service.generate_smart_response(
+                        user_message=content,
+                        context=context,
+                        user_info=self._get_user_info(user_id) if user_id else None,
+                        conversation_history=self.chat_history.get(user_id, []),
+                        sentiment=sentiment_score
+                    )
+
+                    if ai_response.get("response") and not ai_response.get("fallback_required"):
+                        logger.info("Generated AI response successfully")
+                        # Try to detect intent from AI response for better tracking
+                        ai_intent_result = await self.ai_service.analyze_intent_with_ai(content, context)
+                        detected_intent = ai_intent_result.get("intent")
+
+                        # Generate follow-up questions if appropriate
+                        follow_up_questions = []
+                        if detected_intent:
+                            follow_up_questions = await self.ai_service.generate_follow_up_questions(
+                                content, detected_intent, context
+                            )
+
+                        response_data = {
+                            "response": ai_response["response"],
+                            "source": "ai",
+                            "intent": detected_intent,
+                            "sentiment": sentiment_score,
+                            "ai_generated": True
+                        }
+
+                        if follow_up_questions:
+                            response_data["suggestions"] = follow_up_questions
+
+                        return response_data
+                    else:
+                        logger.info("AI response failed or requires fallback, continuing to FAQ search")
+                except Exception as e:
+                    logger.warning(f"AI response generation failed: {str(e)}, falling back to FAQ search")
+
+            # If AI failed or not enabled, search FAQs for a relevant answer
+            logger.info(f"Searching FAQs for: '{content}'")
             try:
                 faq_results = self.faq_service.search_faqs(content, limit=1)
 
@@ -517,7 +655,17 @@ class ChatbotService:
             logger.info("Detected farewell intent")
             return "farewell"
 
-        # Check for help requests
+        # Check for cancellation-related queries first (most specific)
+        if any(re.search(pattern, content_lower) for pattern in CANCELLATION_PATTERNS):
+            logger.info("Detected cancellation intent")
+            return "cancellation"
+
+        # Check for payment-related queries
+        if any(re.search(pattern, content_lower) for pattern in PAYMENT_PATTERNS):
+            logger.info("Detected payment intent")
+            return "payment"
+
+        # Check for help requests (after more specific intents)
         if any(re.search(pattern, content_lower) for pattern in HELP_PATTERNS):
             logger.info("Detected help intent")
             return "help"
@@ -792,11 +940,12 @@ class ChatbotService:
                 booking_response = (
                     "Here's how to book a ride with RideShare:\n\n"
                     "1. **Navigate to the Booking Page**: Go to the 'Bookings' page from the main navigation\n"
-                    "2. **Select Your Route**: Choose your pickup location and destination\n"
-                    "3. **Choose Date and Time**: Select when you want to travel\n"
-                    "4. **Passenger Details**: Enter the number of passengers\n"
-                    "5. **Review Details**: Check all the information is correct\n"
-                    "6. **Payment**: Sign in (if not already) and complete payment\n\n"
+                    "2. **Select Your Ride Type**: Choose from Hub-to-Hub, Hub-to-Destination (Free Ride), or Enterprise\n"
+                    "3. **Choose Your Route**: Select your pickup hub and destination\n"
+                    "4. **Choose Date and Time**: Select when you want to travel\n"
+                    "5. **Passenger Details**: Enter the number of passengers\n"
+                    "6. **Review Details**: Check all the information is correct\n"
+                    "7. **Payment**: Sign in (if not already) and complete payment\n\n"
                     "You can browse and select options without signing in, but you'll need to sign in to complete the payment step.\n\n"
                     "Would you like more specific information about any part of the booking process?"
                 )
@@ -927,7 +1076,27 @@ class ChatbotService:
                 return f"To book a ride similar to your recent booking (ID: {recent_booking['id']}):\n\n1. Go to the 'Bookings' page\n2. Select your pickup and destination\n3. Choose date and time\n4. Enter passenger details\n5. Review and proceed to payment\n\nNeed more specific help?"
             else:
                 # Default booking response
-                return "To book a ride:\n\n1. Go to the 'Bookings' page or click 'Book a Ride' in the navigation\n2. Select your pickup location and destination\n3. Choose your preferred date and time\n4. Select the number of passengers\n5. Review the details and proceed to payment\n\nYou can browse and select options without signing in, but you'll need to sign in to complete the payment step. Need more specific help?"
+                return "To book a ride:\n\n1. Go to the 'Bookings' page or click 'Book a Ride' in the navigation\n2. Select your pickup location and destination\n3. Choose your preferred date and time\n4. Select the number of passengers\n5. Review the details and proceed to payment\n\n**Payment Options:**\n• Credit/Debit cards (Visa, Mastercard)\n• Swish (mobile payment)\n• PayPal\n• Apple Pay & Google Pay\n• Bank transfer\n\nYou can browse and select options without signing in, but you'll need to sign in to complete the payment step. Need more specific help?"
+
+        elif intent == "cancellation":
+            # Personalized cancellation response if user info is available
+            if user_info and user_info.get('recent_bookings'):
+                active_bookings = [b for b in user_info['recent_bookings'] if b.get('status') in ['confirmed', 'scheduled']]
+                if active_bookings:
+                    booking = active_bookings[0]
+                    return f"To cancel your booking (ID: {booking['id']}):\n\n1. Go to 'My Bookings' in your profile\n2. Find your booking for {booking.get('departure_time', 'your scheduled time')}\n3. Click 'Cancel Booking'\n4. Confirm the cancellation\n\n**Refund Policy:**\n• Cancel 24+ hours before: Full refund\n• Cancel 2-24 hours before: 50% refund\n• Cancel less than 2 hours: No refund\n\nRefunds are processed within 3-5 business days. Need help finding your booking?"
+                else:
+                    return "To cancel a booking:\n\n1. Sign in to your account\n2. Go to 'My Bookings' in your profile\n3. Find the booking you want to cancel\n4. Click 'Cancel Booking'\n5. Confirm the cancellation\n\n**Refund Policy:**\n• Cancel 24+ hours before: Full refund\n• Cancel 2-24 hours before: 50% refund\n• Cancel less than 2 hours: No refund\n\nRefunds are processed within 3-5 business days. I don't see any active bookings for you right now."
+            else:
+                # Default cancellation response
+                return "To cancel a booking:\n\n1. **Sign in** to your RideShare account\n2. Go to **'My Bookings'** in your profile menu\n3. Find the booking you want to cancel\n4. Click **'Cancel Booking'** next to your ride\n5. Confirm the cancellation\n\n**Refund Policy:**\n• **24+ hours before departure**: Full refund\n• **2-24 hours before**: 50% refund  \n• **Less than 2 hours**: No refund\n\n**Refund Processing:** 3-5 business days to your original payment method\n\n**Need Help?** If you can't find your booking or need assistance, contact our support team.\n\nDo you need help finding a specific booking?"
+
+        elif intent == "payment":
+            # Check if user is asking about cost/pricing specifically
+            if any(word in content.lower() for word in ["cost", "price", "how much", "fare", "charge"]):
+                return "**RideShare Pricing:**\n\nPricing varies by ride type and distance:\n• **Hub-to-Hub**: Fixed routes with standard pricing\n• **Hub-to-Destination**: Distance-based pricing\n• **Enterprise**: Custom pricing for business clients\n\n**Payment Methods:**\n• Credit/Debit Cards (Visa, Mastercard)\n• Swish (Swedish mobile payment)\n• PayPal, Apple Pay, Google Pay\n• Bank transfer\n\nExact pricing is shown during booking before payment. You'll see the total cost before confirming your ride.\n\nWant to see available rides and pricing?"
+            else:
+                return "**Payment Methods Available:**\n\n• **Credit/Debit Cards**: Visa, Mastercard, American Express\n• **Swish**: Swedish mobile payment (recommended for local users)\n• **PayPal**: Secure online payments\n• **Apple Pay & Google Pay**: Quick mobile payments\n• **Bank Transfer**: Direct bank transfers\n\n**How to Pay:**\n1. Complete your booking details\n2. Click 'Proceed to Payment'\n3. Choose your preferred payment method\n4. Enter payment details securely\n5. Confirm your booking\n\n**Payment Security:** All payments are processed securely with encryption. You can save payment methods for faster future bookings.\n\nNeed help with a specific payment method?"
 
         elif intent == "account":
             # Personalized account response if user info is available
@@ -948,7 +1117,7 @@ class ChatbotService:
             return "Click 'Create support ticket' below."
 
         elif intent == "company_info":
-            return "RideShare is a modern ride-sharing platform that connects passengers with drivers for convenient, affordable, and sustainable transportation. We offer various ride types including hub-to-hub, hub-to-destination, and enterprise services. Our mission is to make transportation accessible, efficient, and environmentally friendly across Gothenburg and surrounding areas."
+            return "RideShare is a modern ride-sharing platform that connects passengers with drivers for convenient, affordable, and sustainable transportation. We offer three main ride types:\n\n1. **Hub-to-Hub**: Fixed routes between designated transportation hubs\n2. **Hub-to-Destination** (also called 'Free Ride'): Travel from any hub to your chosen destination\n3. **Enterprise**: Special services for businesses with customized locations\n\nOur mission is to make transportation accessible, efficient, and environmentally friendly across Gothenburg and surrounding areas."
 
         return "Could you rephrase that?"
 

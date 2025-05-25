@@ -148,6 +148,22 @@ class Settings(BaseSettings):
     EMAIL_TEMPLATES_DIR: str = os.getenv("EMAIL_TEMPLATES_DIR", "app/templates/email")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
+    # AI/LLM settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_MAX_TOKENS: int = int(os.getenv("OPENAI_MAX_TOKENS", "1000"))
+    OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
+    AI_CHATBOT_ENABLED: bool = os.getenv("AI_CHATBOT_ENABLED", "True").lower() in (
+        "true",
+        "1",
+        "t",
+    )
+    AI_FALLBACK_ENABLED: bool = os.getenv("AI_FALLBACK_ENABLED", "True").lower() in (
+        "true",
+        "1",
+        "t",
+    )
+
     class Config:
         env_file = ".env"
         case_sensitive = True

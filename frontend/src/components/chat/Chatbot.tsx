@@ -103,6 +103,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
 
   // Show feedback popup when closing the chat
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   // Handle closing the chatbot with feedback popup
   const handleCloseChatbot = () => {
@@ -666,7 +667,21 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
           <div className={`w-60 rounded-lg shadow-xl p-4 ${
             theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
           }`}>
-            <div className="flex justify-center space-x-8">
+            {feedbackSubmitted ? (
+              <div className="text-center">
+                <div className="text-green-500 mb-2">
+                  <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium">Thank you for your feedback!</p>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-3">
+                  <p className="text-sm font-medium">How was your experience?</p>
+                </div>
+                <div className="flex justify-center space-x-8">
               <button
                 onClick={async () => {
                   console.log('Feedback: Helpful');
@@ -697,8 +712,13 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
                     console.error('Error submitting positive feedback:', error);
                   }
 
-                  setShowFeedbackPopup(false);
-                  setIsOpen(false);
+                  // Show thank you message and auto-close
+                  setFeedbackSubmitted(true);
+                  setTimeout(() => {
+                    setShowFeedbackPopup(false);
+                    setFeedbackSubmitted(false);
+                    setIsOpen(false);
+                  }, 1500);
                 }}
                 className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
@@ -735,26 +755,33 @@ const Chatbot: React.FC<ChatbotProps> = ({ initialOpen = false }) => {
                     console.error('Error submitting negative feedback:', error);
                   }
 
-                  setShowFeedbackPopup(false);
-                  setIsOpen(false);
+                  // Show thank you message and auto-close
+                  setFeedbackSubmitted(true);
+                  setTimeout(() => {
+                    setShowFeedbackPopup(false);
+                    setFeedbackSubmitted(false);
+                    setIsOpen(false);
+                  }, 1500);
                 }}
                 className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <ThumbsDown className="h-10 w-10 text-red-500" />
               </button>
-            </div>
+                </div>
 
-            <div className="flex justify-center mt-2">
-              <button
-                onClick={() => {
-                  setShowFeedbackPopup(false);
-                  setIsOpen(false);
-                }}
-                className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                Skip
-              </button>
-            </div>
+                <div className="flex justify-center mt-2">
+                  <button
+                    onClick={() => {
+                      setShowFeedbackPopup(false);
+                      setIsOpen(false);
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

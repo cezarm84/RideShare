@@ -27,6 +27,17 @@ const searchInMockData = (query: string): FAQ[] => {
     return [];
   }
 
+  // Skip chatbot-style queries that should go to the backend
+  // These are conversational queries that need intelligent processing
+  if (searchTerm.startsWith("how to ") ||
+      searchTerm.startsWith("how do i ") ||
+      searchTerm.startsWith("how can i ") ||
+      searchTerm.includes("how to cancel") ||
+      searchTerm.includes("how to book") ||
+      searchTerm.includes("show me how")) {
+    return [];
+  }
+
   // Search in mock categories - prioritize question matches
   let categoryResults = mockFAQData.categories.flatMap(category =>
     category.faqs.filter(faq =>
