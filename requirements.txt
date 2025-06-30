@@ -20,7 +20,7 @@ passlib[bcrypt]==1.7.4    # Works with Python 3.12
 python-multipart==0.0.20   # Added for form data handling
 
 # Utilities
-python-dotenv==1.0.1      # Latest
+python-dotenv==1.1.1      # Latest
 pandas==2.2.3             # Latest, supports Python 3.12
 numpy==2.0.2              # Latest, supports Python 3.12
 faker==37.1.0             # Latest
