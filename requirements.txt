@@ -1,6 +1,6 @@
 # Web Framework
 fastapi==0.115.2          # Latest, supports Python 3.12
-uvicorn==0.30.6           # Latest
+uvicorn==0.35.0           # Latest
 pydantic==2.11.3           # Latest in 2.x series, compatible with FastAPI 0.115.0
 pydantic-settings==2.3.0  # Required for BaseSettings in Pydantic 2.x
 starlette==0.40.0
